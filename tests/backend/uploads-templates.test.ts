@@ -66,7 +66,7 @@ const ENGLISH_FORBIDDEN = /\b(stop riding|affected|manual review|replacement fra
 describe("plantillas de correo", () => {
   it("confirmación de reemplazo: español, instrucción de no uso, datos del caso, sin contacto inventado", () => {
     const m = customerConfirmationEmail(baseCase, ctx);
-    expect(m.subject).toBe("Confirmación de registro — Recall Polygon Collosus DH");
+    expect(m.subject).toBe("Confirmación de registro — Aviso de suspensión de uso Polygon Collosus DH");
     expect(m.text).toContain("NO UTILICES LA BICICLETA");
     expect(m.text).toContain("RCDH-ABC23");
     expect(m.text).toContain("DEMO-AFECTADA-0001");
@@ -92,7 +92,7 @@ describe("plantillas de correo", () => {
 
   it("alerta interna marca ALTA PRIORIDAD y enlaza al panel", () => {
     const m = internalNotificationEmail(baseCase, ctx);
-    expect(m.subject).toBe("[ALTA PRIORIDAD] Nuevo caso RCDH-ABC23 — Recall Collosus DH");
+    expect(m.subject).toBe("[ALTA PRIORIDAD] Nuevo caso RCDH-ABC23 — Aviso de suspensión de uso Collosus DH");
     expect(m.text).toContain("https://recallcollosusdh.cl/admin/casos/RCDH-ABC23");
     expect(m.text).toContain("Accidente reportado: Sí");
     expect(m.text).toContain("Daño reportado: Sí");
@@ -103,7 +103,7 @@ describe("plantillas de correo", () => {
   it("resultados tras reproceso: afectada y no identificada (nunca certifica seguridad)", () => {
     const a = customerResultAffectedEmail(baseCase, ctx);
     expect(a.text).toContain("NO UTILICES LA BICICLETA");
-    expect(a.text).toContain("TU BICICLETA ESTÁ INCLUIDA EN ESTE RECALL");
+    expect(a.text).toContain("TU BICICLETA ESTÁ INCLUIDA EN ESTA CAMPAÑA DE SEGURIDAD");
     const n = customerResultNotIdentifiedEmail(baseCase, { ...ctx, contactEmail: "postventa@example.test", contactWhatsapp: "+56 9 0000 0000" });
     expect(n.text).toContain("NO APARECE ACTUALMENTE");
     expect(n.text).toContain("no constituye una inspección técnica");

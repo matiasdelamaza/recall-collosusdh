@@ -17,14 +17,14 @@ export const BRAND = {
 } as const;
 
 export const SEO = {
-  title: "Recall Polygon Collosus DH Chile | Verificación de Número de Serie",
+  title: "Aviso de suspensión de uso Polygon Collosus DH Chile | Verificación de Número de Serie",
   description:
-    "Campaña oficial de seguridad Polygon Collosus DH en Chile. Ingresa el número de serie de tu bicicleta para verificar si está incluida en el recall y conocer los pasos para el cambio de cuadro.",
-  siteName: "Recall de Seguridad Polygon Collosus DH — Chile",
+    "Campaña oficial de seguridad Polygon Collosus DH en Chile. Ingresa el número de serie de tu bicicleta para verificar si está incluida en la campaña de seguridad y conocer los pasos para el cambio de cuadro.",
+  siteName: "Aviso de suspensión de uso Polygon Collosus DH — Chile",
 } as const;
 
 export const HEADER = {
-  eyebrow: "Collosus DH · Recall de Seguridad",
+  eyebrow: "Collosus DH · Aviso de suspensión de uso",
   nav: {
     verify: "Verificar bicicleta",
     whatToDo: "Qué hacer",
@@ -35,9 +35,9 @@ export const HEADER = {
 
 export const HERO = {
   kicker: "POLYGON COLLOSUS DH",
-  title: "RECALL DE SEGURIDAD",
+  title: "AVISO DE SUSPENSIÓN DE USO",
   subtitle: "La seguridad de nuestros riders es nuestra máxima prioridad.",
-  body1: "Polygon Bikes y Cross Mountain han iniciado una campaña de recall en Chile para determinadas unidades Polygon Collosus DH.",
+  body1: "Polygon Bikes y Cross Mountain han iniciado una campaña de seguridad en Chile para determinadas unidades Polygon Collosus DH.",
   body2: "Si tienes una Polygon Collosus DH, verifica el número de serie de tu bicicleta.",
   serialLabel: "Número de serie",
   serialPlaceholder: "Ej.: A25012345",
@@ -58,9 +58,9 @@ export const SERIAL_VALIDATION = {
 
 export const RESULT_AFFECTED = {
   badge: "Unidad afectada",
-  title: "TU BICICLETA ESTÁ INCLUIDA EN ESTE RECALL",
+  title: "TU BICICLETA ESTÁ INCLUIDA EN ESTA CAMPAÑA DE SEGURIDAD",
   subtitle: "NO UTILICES LA BICICLETA",
-  body1: "El número de serie ingresado corresponde a una unidad incluida en la campaña de recall Polygon Collosus DH.",
+  body1: "El número de serie ingresado corresponde a una unidad incluida en la campaña de seguridad Polygon Collosus DH.",
   body2: "No utilices la bicicleta hasta que se haya realizado el reemplazo del cuadro.",
   body3: "Polygon Bikes y Cross Mountain realizarán el reemplazo del cuadro afectado por una nueva versión sin costo para el propietario.",
   body4: "Para realizar el cambio, deberás enviarnos el cuadro afectado. Nuestro equipo de Postventa te indicará cómo hacerlo.",
@@ -71,7 +71,7 @@ export const RESULT_AFFECTED = {
 export const RESULT_NOT_IDENTIFIED = {
   badge: "No identificada actualmente",
   title: "TU NÚMERO DE SERIE NO APARECE ACTUALMENTE DENTRO DE LAS UNIDADES INCLUIDAS EN ESTA CAMPAÑA",
-  body1: "El número ingresado no coincide con los números de serie actualmente identificados por Polygon Bikes para este recall.",
+  body1: "El número ingresado no coincide con los números de serie actualmente identificados por Polygon Bikes para esta campaña de seguridad.",
   body2: "Esto no constituye una inspección técnica ni una certificación individual del estado de tu bicicleta.",
   body3: "Si observas cualquier fisura, separación, deformación o daño en el cuadro, suspende su uso y comunícate con nuestro equipo de Postventa.",
   ctaReview: "SOLICITAR REVISIÓN",
@@ -185,7 +185,7 @@ export const FORM = {
     damageReported: "¿El cuadro presenta actualmente alguna fisura, separación, deformación o daño estructural?",
     acknowledge: "Confirmo que he leído la instrucción de no utilizar la bicicleta hasta completar el procedimiento de reemplazo.",
     acknowledgeDamage: "Confirmo que no utilizaré la bicicleta hasta que Postventa revise el cuadro.",
-    privacy: "He leído el aviso de privacidad y autorizo el uso de mis datos exclusivamente para la gestión de esta campaña de recall.",
+    privacy: "He leído el aviso de privacidad y autorizo el uso de mis datos exclusivamente para la gestión de esta campaña de seguridad.",
   },
   options: {
     model: { COLLOSUS_DH7: "Collosus DH7", COLLOSUS_DH9: "Collosus DH9", NOT_SURE: "No estoy seguro/a" },
@@ -284,7 +284,7 @@ export const FAQ = {
   title: "PREGUNTAS FRECUENTES",
   items: [
     {
-      q: "¿Por qué se está realizando este recall?",
+      q: "¿Por qué se está realizando esta campaña de seguridad?",
       a: [
         "Se han recibido reportes relacionados con una posible falla estructural en determinados cuadros Polygon Collosus DH.",
         "Como medida preventiva, Polygon Bikes y Cross Mountain han iniciado esta campaña para identificar las unidades involucradas y reemplazar los cuadros afectados.",
@@ -299,7 +299,7 @@ export const FAQ = {
     },
     {
       q: "Mi bicicleta no tiene daños visibles. ¿Puedo seguir usándola?",
-      a: ["Si tu número de serie corresponde a una unidad incluida en el recall, no debes utilizarla, aunque no presente daños visibles."],
+      a: ["Si tu número de serie corresponde a una unidad incluida en la campaña de seguridad, no debes utilizarla, aunque no presente daños visibles."],
     },
     {
       q: "¿Qué solución recibiré?",
@@ -347,21 +347,21 @@ export const CONTACT = {
 
 export const FOOTER = {
   line1: "POLYGON BIKES × CROSS MOUNTAIN",
-  line2: "COLLOSUS DH RECALL DE SEGURIDAD — CHILE",
+  line2: "COLLOSUS DH · AVISO DE SUSPENSIÓN DE USO — CHILE",
   lastUpdated: "Última actualización",
   links: {
     privacy: "Aviso de privacidad",
-    recallInfo: "Información del recall",
+    recallInfo: "Información de la campaña",
     contact: "Contacto",
     crossMountain: "Cross Mountain",
     polygon: "Polygon Bikes",
   },
-  legal: "Este sitio es el portal oficial de verificación y registro de la campaña de recall de seguridad Polygon Collosus DH en Chile, operado por Cross Mountain SpA, distribuidor oficial de Polygon Bikes en Chile.",
+  legal: "Este sitio es el portal oficial de verificación y registro de la campaña de seguridad Polygon Collosus DH en Chile, operado por Cross Mountain SpA, distribuidor oficial de Polygon Bikes en Chile.",
 } as const;
 
 export const PRIVACY = {
   title: "AVISO DE PRIVACIDAD",
-  intro: "Cross Mountain SpA recopila los datos de este formulario exclusivamente para gestionar la campaña de recall de seguridad Polygon Collosus DH en Chile.",
+  intro: "Cross Mountain SpA recopila los datos de este formulario exclusivamente para gestionar la campaña de seguridad Polygon Collosus DH en Chile.",
   sections: [
     {
       h: "Qué datos recopilamos",
@@ -389,12 +389,12 @@ export const PRIVACY = {
 
 /** Textos de correos. */
 export const EMAIL = {
-  customerSubject: "Confirmación de registro — Recall Polygon Collosus DH",
-  customerSubjectManualReview: "Solicitud de revisión recibida — Recall Polygon Collosus DH",
-  customerSubjectPending: "Registro recibido — Recall Polygon Collosus DH",
-  resultAffectedSubject: "IMPORTANTE: tu bicicleta está incluida en el recall — Polygon Collosus DH",
-  resultNotIdentifiedSubject: "Resultado de verificación — Recall Polygon Collosus DH",
-  internalSubject: (caseId: string, high: boolean) => `${high ? "[ALTA PRIORIDAD] " : ""}Nuevo caso ${caseId} — Recall Collosus DH`,
+  customerSubject: "Confirmación de registro — Aviso de suspensión de uso Polygon Collosus DH",
+  customerSubjectManualReview: "Solicitud de revisión recibida — Aviso de suspensión de uso Polygon Collosus DH",
+  customerSubjectPending: "Registro recibido — Aviso de suspensión de uso Polygon Collosus DH",
+  resultAffectedSubject: "IMPORTANTE: tu bicicleta está incluida en la campaña de seguridad — Polygon Collosus DH",
+  resultNotIdentifiedSubject: "Resultado de verificación — Aviso de suspensión de uso Polygon Collosus DH",
+  internalSubject: (caseId: string, high: boolean) => `${high ? "[ALTA PRIORIDAD] " : ""}Nuevo caso ${caseId} — Aviso de suspensión de uso Collosus DH`,
   greeting: (name: string) => `Hola ${name},`,
   stopRiding: "NO UTILICES LA BICICLETA hasta que se haya completado el procedimiento de reemplazo.",
   caseIdLabel: "Número de caso",
@@ -405,7 +405,7 @@ export const EMAIL = {
   keepCaseId: "Guarda este número de caso para futuras consultas.",
   siteLink: "Más información en",
   signature: "Equipo de Postventa Polygon Chile\nCross Mountain SpA — Distribuidor Polygon Bikes en Chile",
-  footer: "Este es un correo automático de la campaña de recall de seguridad Polygon Collosus DH en Chile.",
+  footer: "Este es un correo automático de la campaña de seguridad Polygon Collosus DH en Chile.",
 } as const;
 
 /** Etiquetas en español para estados técnicos (panel interno). */

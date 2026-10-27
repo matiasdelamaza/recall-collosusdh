@@ -15,7 +15,7 @@ const envSchema = z.object({
   IP_HASH_SALT: z.string().optional(),
 
   EMAIL_PROVIDER: z.enum(["console", "resend", "smtp"]).default("console"),
-  EMAIL_FROM: z.string().default("Recall Polygon Collosus DH <no-reply@recallcollosusdh.cl>"),
+  EMAIL_FROM: z.string().default("Polygon Collosus DH · Cross Mountain <no-reply@recallcollosusdh.cl>"),
   INTERNAL_NOTIFICATION_EMAILS: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   SMTP_HOST: z.string().optional(),

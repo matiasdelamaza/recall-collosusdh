@@ -93,7 +93,7 @@ function wrapHtml(title: string, blocks: HtmlBlock[]): string {
 <html lang="es-CL"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title></head>
 <body style="margin:0;padding:0;background:#f5f5f6;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#0b0b0c;">
 <div style="max-width:600px;margin:0 auto;padding:24px 16px;">
-<div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#55555c;margin-bottom:12px;">${escapeHtml(BRAND.product)} · Recall de Seguridad · Chile</div>
+<div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#55555c;margin-bottom:12px;">${escapeHtml(BRAND.product)} · Aviso de suspensión de uso · Chile</div>
 <div style="background:#ffffff;padding:24px;border:1px solid #d9d9dd;">
 ${body}
 </div>
@@ -130,10 +130,10 @@ export function customerConfirmationEmail(c: CaseEmailData, ctx: EmailContext): 
 
   const intro =
     c.requestType === "REPLACEMENT"
-      ? "Hemos recibido tu solicitud de reemplazo de cuadro dentro de la campaña de recall de seguridad Polygon Collosus DH en Chile."
+      ? "Hemos recibido tu solicitud de reemplazo de cuadro dentro de la campaña de seguridad Polygon Collosus DH en Chile."
       : c.requestType === "PENDING_DATABASE"
-        ? "Hemos recibido el registro de tu bicicleta dentro de la campaña de recall de seguridad Polygon Collosus DH en Chile."
-        : "Hemos recibido tu solicitud de revisión manual dentro de la campaña de recall de seguridad Polygon Collosus DH en Chile.";
+        ? "Hemos recibido el registro de tu bicicleta dentro de la campaña de seguridad Polygon Collosus DH en Chile."
+        : "Hemos recibido tu solicitud de revisión manual dentro de la campaña de seguridad Polygon Collosus DH en Chile.";
 
   const contact = contactLines(ctx);
   const text = [
@@ -204,7 +204,7 @@ export function internalNotificationEmail(c: CaseEmailData, ctx: EmailContext): 
     ["Fecha de registro", c.createdAt.toISOString()],
   ];
   const text = [
-    high ? "*** ALTA PRIORIDAD: el cliente reporta un incidente o caída ***" : "Nuevo caso registrado en el portal de recall.",
+    high ? "*** ALTA PRIORIDAD: el cliente reporta un incidente o caída ***" : "Nuevo caso registrado en el portal de la campaña de seguridad.",
     "",
     ...rows.map(([k, v]) => `${k}: ${v}`),
     "",
@@ -216,14 +216,14 @@ export function internalNotificationEmail(c: CaseEmailData, ctx: EmailContext): 
     { type: "heading", text: `Nuevo caso ${c.caseId}` },
     high
       ? { type: "alert", text: "ALTA PRIORIDAD: el cliente reporta un incidente o caída." }
-      : { type: "p", text: "Nuevo caso registrado en el portal de recall." },
+      : { type: "p", text: "Nuevo caso registrado en el portal de la campaña de seguridad." },
     { type: "kv", rows },
     { type: "p", text: `Ver caso: ${link}` },
   ]);
   return { subject, text, html };
 }
 
-/** Resultado tras reproceso: la unidad SÍ está incluida en el recall. */
+/** Resultado tras reproceso: la unidad SÍ está incluida en la campaña de seguridad. */
 export function customerResultAffectedEmail(c: CaseEmailData, ctx: EmailContext): RenderedEmail {
   const subject = EMAIL.resultAffectedSubject;
   const contact = contactLines(ctx);

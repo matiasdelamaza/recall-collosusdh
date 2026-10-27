@@ -67,8 +67,8 @@ export async function GET(req: NextRequest) {
       body.email = { provider, ok: false, recipients: 0, error: "sin_destinatarios" };
     } else {
       try {
-        const text = "Correo de prueba del portal de recall Polygon Collosus DH. Si lo recibes, el envío de correos funciona. No requiere ninguna acción.";
-        const res = await getEmailProvider().send({ to, subject: "Prueba de correo · Recall Polygon Collosus DH", text, html: `<p>${text}</p>` });
+        const text = "Correo de prueba del portal de la campaña de seguridad Polygon Collosus DH. Si lo recibes, el envío de correos funciona. No requiere ninguna acción.";
+        const res = await getEmailProvider().send({ to, subject: "Prueba de correo · Aviso de suspensión de uso Polygon Collosus DH", text, html: `<p>${text}</p>` });
         body.email = { provider: res.provider, ok: res.ok, recipients: to.length, ...(res.ok ? {} : { error: (res.error ?? "error").slice(0, 160) }) };
         if (!res.ok) body.ok = false;
       } catch (err) {

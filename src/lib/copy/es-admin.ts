@@ -3,8 +3,8 @@
  * Las etiquetas de estados técnicos están en `src/lib/copy/es.ts` (STATUS_LABELS).
  */
 export const ADMIN = {
-  appTitle: "Panel interno — Recall Collosus DH",
-  brand: "Recall Collosus DH · Panel interno",
+  appTitle: "Panel interno — Aviso de suspensión de uso Collosus DH",
+  brand: "Collosus DH · Panel interno",
   nav: {
     cases: "Casos",
     metrics: "Métricas",
