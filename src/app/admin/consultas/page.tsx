@@ -119,6 +119,10 @@ export default async function AdminLookupsPage({ searchParams }: { searchParams:
                       <a href={`mailto:${r.contactEmail}`} className="break-all underline underline-offset-2">
                         {r.contactEmail}
                       </a>
+                    ) : r.result === "AFFECTED" && r.caseId ? (
+                      <span className="text-ink-500" title={L.contactInCaseHint}>
+                        {L.contactInCase}
+                      </span>
                     ) : r.result === "AFFECTED" ? (
                       <span className="text-alert">{L.noContact}</span>
                     ) : (

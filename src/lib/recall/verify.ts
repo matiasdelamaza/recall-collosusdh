@@ -9,10 +9,10 @@
  *   todo lo que no sea coincidencia positiva queda como PENDING_DATABASE.
  */
 import "server-only";
-import { count, eq } from "drizzle-orm";
+import { count, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { affectedSerials, SETTING_KEYS, settings, type SerialDatabaseStatus, type SerialVerificationStatus } from "@/db/schema";
-import { validateSerial } from "@/lib/serial";
+import { splitSizeSuffix, validateSerial, withSizeSuffixes } from "@/lib/serial";
 
 export type VerificationOutcome =
   | { state: "AFFECTED"; serial: string; model: string | null; size: string | null; productionBatch: string | null }
@@ -53,6 +53,25 @@ export async function findListedSerial(serialNormalized: string) {
   return row ?? null;
 }
 
+/**
+ * Busca una serie en la lista de Polygon tolerando la talla pegada al final: la lista trae algunas
+ * series como "A25022640XL" y el cuadro lleva grabado "A25022640" (o al revés).
+ * Devuelve la fila tal como está en la lista, para que consultas y casos muestren la serie de Polygon.
+ */
+export async function matchListedSerial(serialNormalized: string) {
+  const exact = await findListedSerial(serialNormalized);
+  if (exact) return exact;
+  const variants = withSizeSuffixes(serialNormalized);
+  if (variants.length > 0) {
+    const db = await getDb();
+    const rows = await db.select().from(affectedSerials).where(inArray(affectedSerials.serialNumber, variants));
+    // Si hubiera más de una talla, prima la afectada (lado seguro).
+    return rows.find((r) => r.status === "RECALL") ?? rows.find((r) => r.status === "REINFORCED") ?? null;
+  }
+  const withSize = splitSizeSuffix(serialNormalized);
+  return withSize ? findListedSerial(withSize.serial) : null;
+}
+
 /** Busca una serie normalizada en la tanda afectada (estado RECALL). Coincidencia exacta. */
 export async function findAffectedSerial(serialNormalized: string) {
   const row = await findListedSerial(serialNormalized);
@@ -69,8 +88,9 @@ export async function verifySerial(input: string): Promise<VerificationOutcome> 
   if (!validation.valid) {
     return { state: "UNVERIFIED", serial: "", reason: validation.reason };
   }
-  const serial = validation.serial;
-  const match = await findListedSerial(serial);
+  const match = await matchListedSerial(validation.serial);
+  // Con coincidencia, la serie que se registra es la de la lista de Polygon (con talla si la trae).
+  const serial = match && match.status !== "EXCLUDED" ? match.serialNumber : validation.serial;
   if (match?.status === "RECALL") {
     return { state: "AFFECTED", serial, model: match.model, size: match.size, productionBatch: match.productionBatch };
   }

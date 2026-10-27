@@ -9,7 +9,7 @@ import { getDb } from "@/db/client";
 import { ACTIVE_CASE_STATUSES, recallCases, type RecallCase } from "@/db/schema";
 import { logAudit } from "@/lib/server/audit";
 import { sendResultNotification } from "./notifications";
-import { findListedSerial, getSerialDatabaseStatus } from "./verify";
+import { getSerialDatabaseStatus, matchListedSerial } from "./verify";
 
 export interface ReprocessOptions {
   actor: string;
@@ -48,7 +48,7 @@ export async function reprocessPendingCases(options: ReprocessOptions): Promise<
 
   for (const c of candidates) {
     try {
-      const listed = await findListedSerial(c.serialNumber);
+      const listed = await matchListedSerial(c.serialNumber);
       if (listed?.status === "RECALL") {
         result.nowAffected++;
         if (options.dryRun) continue;
@@ -57,7 +57,7 @@ export async function reprocessPendingCases(options: ReprocessOptions): Promise<
         const nextCaseStatus = c.caseStatus === "MANUAL_REVIEW" ? "REGISTERED" : c.caseStatus;
         const [updated] = await db
           .update(recallCases)
-          .set({ serialVerificationStatus: "AFFECTED", requestType: "REPLACEMENT", caseStatus: nextCaseStatus, updatedAt: now })
+          .set({ serialNumber: listed.serialNumber, serialVerificationStatus: "AFFECTED", requestType: "REPLACEMENT", caseStatus: nextCaseStatus, updatedAt: now })
           .where(eq(recallCases.id, c.id))
           .returning();
         await logAudit({
@@ -91,7 +91,7 @@ export async function reprocessPendingCases(options: ReprocessOptions): Promise<
         const now = new Date();
         const [updated] = await db
           .update(recallCases)
-          .set({ serialVerificationStatus: "REINFORCED", requestType: "MANUAL_REVIEW", caseStatus: "MANUAL_REVIEW", updatedAt: now })
+          .set({ serialNumber: listed.serialNumber, serialVerificationStatus: "REINFORCED", requestType: "MANUAL_REVIEW", caseStatus: "MANUAL_REVIEW", updatedAt: now })
           .where(eq(recallCases.id, c.id))
           .returning();
         await logAudit({
