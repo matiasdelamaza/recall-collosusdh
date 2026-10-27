@@ -39,6 +39,8 @@ export const ADMIN = {
       clear: "Limpiar",
     },
     exportCsv: "Exportar CSV",
+    onlyAffected: "Mostrando solo unidades afectadas.",
+    showAll: "Ver todos los casos",
     columns: {
       caseId: "Caso",
       createdAt: "Fecha",

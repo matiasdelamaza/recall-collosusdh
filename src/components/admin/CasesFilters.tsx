@@ -1,6 +1,6 @@
 import { CASE_STATUSES, PRIORITIES, REQUEST_TYPES, SERIAL_VERIFICATION_STATUSES, TRI_STATE } from "@/db/schema";
 import { ADMIN } from "@/lib/copy/es-admin";
-import type { CaseListFilters } from "@/lib/recall/cases";
+import { VERIFICATION_ALL, type CaseListFilters } from "@/lib/recall/cases";
 import { labelPriority, labelRequestType, labelStatus, labelTri, labelVerification } from "./format";
 import { buttonPrimary, buttonSecondary, inputClass, labelClass, selectClass } from "./ui";
 
@@ -18,7 +18,7 @@ export function CasesFilters({ filters }: { filters: CaseListFilters }) {
       <Select id="status" label={F.status} value={filters.status ?? ""} options={CASE_STATUSES.map((s) => [s, labelStatus(s)])} />
       <Select id="priority" label={F.priority} value={filters.priority ?? ""} options={PRIORITIES.map((s) => [s, labelPriority(s)])} />
       <Select id="requestType" label={F.requestType} value={filters.requestType ?? ""} options={REQUEST_TYPES.map((s) => [s, labelRequestType(s)])} />
-      <Select id="verification" label={F.verification} value={filters.verification ?? ""} options={SERIAL_VERIFICATION_STATUSES.map((s) => [s, labelVerification(s)])} />
+      <Select id="verification" label={F.verification} value={filters.verification ?? ""} allValue={VERIFICATION_ALL} options={SERIAL_VERIFICATION_STATUSES.map((s) => [s, labelVerification(s)])} />
       <Select id="damage" label={F.damage} value={filters.damage ?? ""} options={TRI_STATE.map((s) => [s, labelTri(s)])} />
       <Select
         id="accident"
@@ -41,14 +41,14 @@ export function CasesFilters({ filters }: { filters: CaseListFilters }) {
   );
 }
 
-function Select({ id, label, value, options }: { id: string; label: string; value: string; options: (readonly [string, string])[] }) {
+function Select({ id, label, value, options, allValue = "" }: { id: string; label: string; value: string; options: (readonly [string, string])[]; allValue?: string }) {
   return (
     <div>
       <label htmlFor={id} className={labelClass}>
         {label}
       </label>
       <select id={id} name={id} defaultValue={value} className={selectClass}>
-        <option value="">{F.all}</option>
+        <option value={allValue}>{F.all}</option>
         {options.map(([v, l]) => (
           <option key={v} value={v}>
             {l}

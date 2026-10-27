@@ -35,12 +35,16 @@ export interface CaseListFilters {
   damage?: TriState;
   accident?: "YES" | "NO";
   requestType?: RequestType;
-  verification?: SerialVerificationStatus;
+  /** "ALL" = todas las verificaciones. Sin filtro explícito la lista muestra solo unidades afectadas. */
+  verification?: SerialVerificationStatus | typeof VERIFICATION_ALL;
   page?: number;
   pageSize?: number;
 }
 
 export const DEFAULT_PAGE_SIZE = 50;
+
+/** Valor del filtro Verificación para ver todos los casos (afectadas, no afectadas y en revisión). */
+export const VERIFICATION_ALL = "ALL";
 
 /** Convierte searchParams (strings) en filtros tipados, descartando valores inválidos. */
 export function parseCaseFilters(params: Record<string, string | string[] | undefined>): CaseListFilters {
@@ -58,7 +62,11 @@ export function parseCaseFilters(params: Record<string, string | string[] | unde
     damage: inList(pick("damage"), TRI_STATE),
     accident: inList(pick("accident"), ["YES", "NO"] as const),
     requestType: inList(pick("requestType"), REQUEST_TYPES),
-    verification: inList(pick("verification"), SERIAL_VERIFICATION_STATUSES),
+    // Casos parte mostrando solo unidades afectadas (27-10-2026, pedido de Cross Mountain); una búsqueda abarca todos.
+    verification:
+      pick("verification") === VERIFICATION_ALL
+        ? VERIFICATION_ALL
+        : (inList(pick("verification"), SERIAL_VERIFICATION_STATUSES) ?? (pick("q") ? VERIFICATION_ALL : "AFFECTED")),
     page,
     pageSize: DEFAULT_PAGE_SIZE,
   };
@@ -71,7 +79,7 @@ function buildWhere(filters: CaseListFilters): SQL | undefined {
   if (filters.damage) conds.push(eq(recallCases.damageReported, filters.damage));
   if (filters.accident) conds.push(eq(recallCases.accidentReported, filters.accident === "YES"));
   if (filters.requestType) conds.push(eq(recallCases.requestType, filters.requestType));
-  if (filters.verification) conds.push(eq(recallCases.serialVerificationStatus, filters.verification));
+  if (filters.verification && filters.verification !== VERIFICATION_ALL) conds.push(eq(recallCases.serialVerificationStatus, filters.verification));
 
   const q = filters.q?.trim();
   if (q) {
