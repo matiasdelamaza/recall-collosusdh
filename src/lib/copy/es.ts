@@ -418,5 +418,41 @@ export const COMMON = {
   notFoundBody: "La página que buscas no existe. Vuelve al inicio para verificar tu bicicleta.",
   errorTitle: "OCURRIÓ UN ERROR",
   errorBody: "Ocurrió un problema inesperado. Inténtalo nuevamente en unos minutos.",
+  retry: "Reintentar",
   backHome: "Volver al inicio",
+} as const;
+
+/** Textos adicionales del verificador (verificación humana / anti-abuso). */
+export const RESULT_TURNSTILE = {
+  title: "CONFIRMA QUE ERES UNA PERSONA",
+  body: "Por seguridad, antes de continuar necesitamos una verificación rápida.",
+  unavailableTitle: "VERIFICACIONES LIMITADAS TEMPORALMENTE",
+  unavailableBody: "Por seguridad, hemos limitado temporalmente las verificaciones desde tu conexión. Espera unos minutos e inténtalo nuevamente, o contacta a nuestro equipo de Postventa.",
+  failed: "No pudimos completar la verificación de seguridad. Inténtalo nuevamente.",
+} as const;
+
+/** Textos adicionales del flujo (enlaces secundarios, estados intermedios). */
+export const FLOW = {
+  manualFromInvalid: "¿El número aparece así en el cuadro? Solicita una verificación manual",
+  verifiedSerialLabel: "Serie ingresada",
+  serialEditableHint: "Corrige el número si es necesario, tal como aparece en el cuadro.",
+  resultRegionLabel: "Resultado de la verificación",
+  formRegionLabel: "Formulario de registro",
+  successRegionLabel: "Confirmación de registro",
+  stepsRegionLabel: "Pasos de la campaña",
+  modelLabel: "Modelo",
+  sizeLabel: "Talla",
+  filesSelected: (n: number) => (n === 1 ? "1 archivo seleccionado" : `${n} archivos seleccionados`),
+  noFileSelected: "Ningún archivo seleccionado",
+  chooseFile: "Seleccionar archivo",
+  chooseFiles: "Seleccionar archivos",
+  formErrorsTitle: "Revisa los siguientes puntos:",
+  privacyLinkText: "aviso de privacidad",
+  externalLink: "(enlace externo)",
+  devPageTitle: "Estados de la interfaz (solo desarrollo)",
+  compact: {
+    AFFECTED: "Unidad afectada · No utilices la bicicleta",
+    PENDING_DATABASE: "Verificación pendiente",
+    MANUAL_REVIEW: "Revisión manual",
+  },
 } as const;

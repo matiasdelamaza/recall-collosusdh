@@ -12,9 +12,9 @@
     "test:watch": "vitest",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed:dev": "tsx scripts/seed-dev.ts",
-    "serials:import": "tsx scripts/import-serials.ts",
-    "cases:reprocess": "tsx scripts/reprocess-pending.ts",
+    "db:seed:dev": "tsx --conditions=react-server scripts/seed-dev.ts",
+    "serials:import": "tsx --conditions=react-server scripts/import-serials.ts",
+    "cases:reprocess": "tsx --conditions=react-server scripts/reprocess-pending.ts",
     "audit:copy": "tsx scripts/audit-copy.ts"
   },
   "dependencies": {
