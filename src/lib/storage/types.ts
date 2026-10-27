@@ -10,7 +10,7 @@ export interface StoredObject {
 }
 
 export interface StorageProvider {
-  readonly name: "local" | "s3";
+  readonly name: "local" | "s3" | "supabase";
   /** Guarda bytes bajo la clave indicada (la clave la genera el servidor, no el cliente). */
   put(key: string, data: Uint8Array, contentType: string): Promise<StoredObject>;
   /** Devuelve el contenido o null si no existe. */

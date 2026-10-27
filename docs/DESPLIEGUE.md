@@ -11,7 +11,15 @@ Guía paso a paso para publicar `recallcollosusdh.cl`. El sitio puede publicarse
 
 ## 2. Opción A — Vercel + Supabase (recomendada por simplicidad)
 
-### Base de datos (Supabase)
+### Camino rápido: integración Supabase desde Vercel (recomendado)
+1. En el proyecto de Vercel: **Storage → Create Database → Supabase** (o Marketplace → Supabase). Elegir región `sa-east-1` (São Paulo) y conectarla al proyecto.
+2. Vercel inyecta automáticamente `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y otras. La aplicación las usa sin configuración adicional:
+   - Base de datos: `POSTGRES_URL` para la app y `POSTGRES_URL_NON_POOLING` para las migraciones (si defines `DATABASE_URL`, esta tiene prioridad).
+   - Migraciones: el script `vercel-build` las aplica en cada build (`tsx scripts/migrate.ts --if-configured && next build`); no hace falta ejecutarlas a mano.
+   - Fotos: define `STORAGE_PROVIDER=supabase`. El bucket privado `recall-files` (o `SUPABASE_STORAGE_BUCKET`) se crea solo en la primera subida; no se necesitan claves S3.
+3. TLS: Supabase usa una CA propia. Por defecto la conexión va cifrada sin verificar el certificado (lo que recomienda Supabase para node-postgres). Para verificarlo, descarga la CA en Supabase (Project Settings → Database → SSL) y ponla en `DATABASE_SSL_CA`.
+
+### Camino manual: base de datos (Supabase)
 1. Crear un proyecto en Supabase (región más cercana: `sa-east-1`, São Paulo).
 2. Copiar la cadena de conexión **directa o con pooler en modo sesión** (Project Settings → Database). Usar la versión con `sslmode=require` como `DATABASE_URL`. La aplicación verifica el certificado TLS por defecto: descargar el certificado de CA de Supabase (Project Settings → Database → SSL) y entregarlo en `DATABASE_SSL_CA` (contenido PEM). Solo si no es posible, usar `DATABASE_SSL=no-verify` (TLS sin verificación de certificado), dejando constancia en el checklist.
 3. Desactivar la exposición de tablas vía API REST (el portal no la usa) o dejar RLS activado sin políticas públicas.

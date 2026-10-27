@@ -1,25 +1,33 @@
 /**
  * Aplica las migraciones de ./drizzle a la base de datos configurada.
- *   DATABASE_URL definida  → PostgreSQL / Supabase
- *   sin DATABASE_URL       → PGlite local (./.data/pglite)
+ *   DATABASE_URL o POSTGRES_URL(_NON_POOLING) definida → PostgreSQL / Supabase
+ *   sin URL                                            → PGlite local (./.data/pglite)
+ *
  * Uso: npm run db:migrate
+ *      tsx scripts/migrate.ts --if-configured   (en el build de Vercel: si no hay URL de PostgreSQL, no hace nada)
  */
 import fs from "node:fs";
 import path from "node:path";
 import * as schema from "../src/db/schema";
+import { resolveDatabaseSsl, resolveDatabaseUrl } from "../src/lib/db-url";
 
 async function main() {
   const migrationsFolder = path.join(process.cwd(), "drizzle");
-  const url = process.env.DATABASE_URL?.trim();
+  const ifConfigured = process.argv.includes("--if-configured");
+  const url = resolveDatabaseUrl({ forMigrations: true });
   if (url) {
     const { Pool } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");
     const { migrate } = await import("drizzle-orm/node-postgres/migrator");
-    const pool = new Pool({ connectionString: url, max: 1 });
+    const pool = new Pool({ connectionString: url, max: 1, ssl: resolveDatabaseSsl(url) });
     const db = drizzle(pool, { schema });
     await migrate(db, { migrationsFolder });
     await pool.end();
     console.log("Migraciones aplicadas en PostgreSQL.");
+    return;
+  }
+  if (ifConfigured) {
+    console.log("Sin URL de PostgreSQL configurada: se omiten las migraciones (modo --if-configured).");
     return;
   }
   const { PGlite } = await import("@electric-sql/pglite");

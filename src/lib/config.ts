@@ -26,8 +26,12 @@ const envSchema = z.object({
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
 
-  STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
+  STORAGE_PROVIDER: z.enum(["local", "s3", "supabase"]).default("local"),
   LOCAL_STORAGE_DIR: z.string().default("./.data/uploads"),
+  // Supabase Storage vía API REST (variables inyectadas por la integración Supabase-Vercel).
+  SUPABASE_URL: z.string().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  SUPABASE_STORAGE_BUCKET: z.string().default("recall-files"),
   S3_BUCKET: z.string().optional(),
   S3_REGION: z.string().default("auto"),
   S3_ENDPOINT: z.string().optional(),
