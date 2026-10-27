@@ -21,7 +21,7 @@ Nada de esta lista debe inventarse. Mientras un ítem esté pendiente, el sitio 
 
 | | Ítem | Dónde se refleja |
 |---|---|---|
-| [ ] | Correo de soporte del recall | `NEXT_PUBLIC_CONTACT_EMAIL` en `.env` (sección Contacto, pie y correos). Vacío → "[POR DEFINIR]" |
+| [x] | Correo de soporte del recall | `contacto@crossmountain.cl`, entregado por Cross Mountain el 27-10-2026 (`CONTACT.defaultEmail` en `src/lib/copy/es.ts`). `NEXT_PUBLIC_CONTACT_EMAIL`, si se define, tiene prioridad |
 | [ ] | WhatsApp / teléfono del recall | `NEXT_PUBLIC_CONTACT_WHATSAPP` en `.env` |
 | [ ] | Horario de atención | `NEXT_PUBLIC_CONTACT_HOURS` en `.env` |
 | [ ] | Correos internos que reciben las alertas de casos | `INTERNAL_NOTIFICATION_EMAILS` en `.env` |

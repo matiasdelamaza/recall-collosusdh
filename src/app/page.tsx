@@ -11,7 +11,7 @@ import { SiteHeader } from "@/components/public/SiteHeader";
 import { StepsSection } from "@/components/public/StepsSection";
 import { WhereSerialSection } from "@/components/public/WhereSerialSection";
 import type { SerialDatabaseStatus } from "@/db/schema";
-import { MODELS } from "@/lib/copy/es";
+import { CONTACT, MODELS } from "@/lib/copy/es";
 import { getSerialDatabaseStatus } from "@/lib/recall/verify";
 
 // El estado de la base de series se lee en cada petición (no debe quedar congelado en el build).
@@ -38,7 +38,7 @@ export default async function Page() {
   }
 
   const contact = {
-    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL,
+    email: process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || CONTACT.defaultEmail,
     whatsapp: process.env.NEXT_PUBLIC_CONTACT_WHATSAPP,
     hours: process.env.NEXT_PUBLIC_CONTACT_HOURS,
   };

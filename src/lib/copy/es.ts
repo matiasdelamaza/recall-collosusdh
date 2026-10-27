@@ -316,6 +316,10 @@ export const FAQ = {
 
 export const CONTACT = {
   title: "¿NECESITAS AYUDA?",
+  name: "Cross Mountain",
+  channelsTitle: "Canales de contacto",
+  /** Correo entregado por Cross Mountain (27-10-2026). La variable NEXT_PUBLIC_CONTACT_EMAIL, si se define, tiene prioridad. */
+  defaultEmail: "contacto@crossmountain.cl",
   team: "Equipo de Postventa Polygon Chile",
   company: "Cross Mountain SpA",
   role: "Distribuidor Polygon Bikes en Chile",

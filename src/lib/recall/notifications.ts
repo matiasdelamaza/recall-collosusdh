@@ -1,6 +1,7 @@
 import "server-only";
 import type { RecallCase } from "@/db/schema";
 import { getEnv, getInternalNotificationEmails } from "@/lib/config";
+import { CONTACT } from "@/lib/copy/es";
 import { getEmailProvider } from "@/lib/email";
 import {
   customerConfirmationEmail,
@@ -18,7 +19,7 @@ export function getEmailContext(): EmailContext {
   const env = getEnv();
   return {
     siteUrl: env.NEXT_PUBLIC_SITE_URL,
-    contactEmail: env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || undefined,
+    contactEmail: env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || CONTACT.defaultEmail,
     contactWhatsapp: env.NEXT_PUBLIC_CONTACT_WHATSAPP?.trim() || undefined,
     contactHours: env.NEXT_PUBLIC_CONTACT_HOURS?.trim() || undefined,
   };
