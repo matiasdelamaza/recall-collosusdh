@@ -62,6 +62,8 @@ export const AUDIT_TYPE_LABELS: Record<string, string> = {
   FILE_VIEWED: "Archivo visualizado",
   EXPORT_CSV: "Exportación CSV",
   LOOKUP_SUSPICIOUS: "Actividad sospechosa de consultas",
+  AFFECTED_CONTACT_SAVED: "Correo dejado en serie afectada",
+  AFFECTED_REMINDERS_SENT: "Recordatorios a consultas sin registro",
 };
 
 export function labelAuditType(t: string): string {
