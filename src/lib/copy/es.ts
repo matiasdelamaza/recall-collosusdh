@@ -87,7 +87,7 @@ export const RESULT_REINFORCED = {
   badge: "No afectada",
   title: "TU BICICLETA NO PERTENECE A LA TANDA AFECTADA",
   body1: "El número de serie ingresado no forma parte de las unidades incluidas en esta campaña.",
-  body2: "No necesitas registrar tu bicicleta ni realizar ningún trámite.",
+  body2: "Puedes seguir usando tu bicicleta con normalidad. No necesitas registrarla ni realizar ningún trámite.",
   body3: "Como con cualquier bicicleta, si notas algún daño en el cuadro, comunícate con nuestro equipo de Postventa.",
   serialLabel: "Número de serie verificado",
   ctaAnother: "VERIFICAR OTRO NÚMERO",
