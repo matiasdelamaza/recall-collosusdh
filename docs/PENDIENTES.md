@@ -61,10 +61,10 @@ Hecho sin intervención: código en GitHub (`matiasdelamaza/recall-collosusdh`),
 Pendiente y **solo puede hacerlo Cross Mountain** (por permisos o por tratarse de credenciales que no deben pasar por el asistente):
 
 1. ~~Autorizar el conector de Vercel y crear el proyecto~~ **Hecho**: proyecto `recall-collosusdh` desplegado en https://recall-collosusdh.vercel.app con base efímera (ver `docs/DESPLIEGUE.md`).
-2. ~~Conectar la base de datos~~ **Hecho**: Vercel usa Supabase con el rol dedicado `recall_app` (ver `docs/DESPLIEGUE.md`). **Falta solo la clave para las fotos**: copiar en Vercel `SUPABASE_SERVICE_ROLE_KEY` (Supabase → Project Settings → API Keys → `service_role`, es secreta) y poner `STORAGE_PROVIDER=supabase`. Hasta entonces las fotos se guardan en `/tmp` (efímero).
-3. **Variables que faltan en Vercel** (Settings → Environment Variables, Production y Preview); todo lo demás ya está cargado:
-   - `ADMIN_PASSWORD` (mínimo 8 caracteres; la elige Cross Mountain) → activa el panel interno
-   - `SUPABASE_SERVICE_ROLE_KEY` + `STORAGE_PROVIDER=supabase` → fotos persistentes
-   - Más adelante: proveedor de correo (`EMAIL_PROVIDER=resend` + `RESEND_API_KEY`, o SMTP), `NEXT_PUBLIC_CONTACT_*`, y al lanzar con dominio: `NEXT_PUBLIC_SITE_URL=https://recallcollosusdh.cl` y `NEXT_PUBLIC_NOINDEX=false`
+2. ~~Conectar la base de datos y las fotos~~ **Hecho**: Vercel usa Supabase (rol `recall_app`) para los datos y Vercel Blob privado para las fotos (ver `docs/DESPLIEGUE.md`).
+3. ~~Panel interno~~ **Hecho**: `ADMIN_PASSWORD` inicial cargada (léela en Vercel → Settings → Environment Variables y cámbiala por una propia). **Variables que aún faltan**, cuando Cross Mountain tenga los datos:
+   - Correo transaccional: `EMAIL_PROVIDER=resend` + `RESEND_API_KEY` (o SMTP), `EMAIL_FROM`, `INTERNAL_NOTIFICATION_EMAILS`
+   - Contacto público: `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_CONTACT_WHATSAPP`, `NEXT_PUBLIC_CONTACT_HOURS`
+   - Al lanzar con dominio: `NEXT_PUBLIC_SITE_URL=https://recallcollosusdh.cl` y `NEXT_PUBLIC_NOINDEX=false`
 4. **Redesplegar** tras cambiar variables (Deployments → Redeploy).
-5. Comprobar: `/api/health` → `{"ok":true,"db":"ok"}` (ya verificado contra Supabase); `/` muestra el aviso de modo interino; `/admin` pide contraseña.
+5. Comprobar: `/api/health?storage=1` → `{"ok":true,"db":"ok","storage":{"provider":"vercel-blob","ok":true}}`; `/` muestra el aviso de modo interino; `/admin` pide contraseña.

@@ -21,13 +21,14 @@ Guía paso a paso para publicar `recallcollosusdh.cl`. El sitio puede publicarse
 | Región de funciones | `gru1` (São Paulo), junto a la base Supabase |
 | Protección | Vercel Authentication activa en las URLs `*.vercel.app` (solo miembros del equipo); el dominio propio quedará público al asignarlo |
 | Base de datos actual | **Supabase (real, persistente)** vía pooler Supavisor `aws-1-sa-east-1.pooler.supabase.com` (puerto 6543 para la app, 5432 para migraciones), con el rol dedicado `recall_app` (sin privilegios de superusuario; acceso por políticas RLS explícitas). `ALLOW_PGLITE_IN_PRODUCTION=false` |
-| Fotos | `STORAGE_PROVIDER=local` en `/tmp` (efímero) hasta cambiar a `supabase` |
+| Fotos | **Vercel Blob privado** (`STORAGE_PROVIDER=vercel-blob`, almacén `recall-collosusdh-fotos` en `gru1`, prefijo `recall/`). Sin URL pública; el panel las sirve por su ruta autenticada. Alternativa: `supabase` con `SUPABASE_SERVICE_ROLE_KEY` |
 | Correo | `EMAIL_PROVIDER=console` (solo logs) |
+| Panel interno | Activo: `ADMIN_PASSWORD` (visible en Vercel → Settings → Environment Variables; rotarla), `ADMIN_SESSION_SECRET` e `IP_HASH_SALT` cargados |
 | Indexación | `NEXT_PUBLIC_NOINDEX=true` |
 
 Variables ya cargadas en Vercel (Production y Preview): `DATABASE_URL`, `POSTGRES_URL_NON_POOLING`, `ADMIN_SESSION_SECRET`, `IP_HASH_SALT` (sensibles), `ALLOW_PGLITE_IN_PRODUCTION=false`, `PGLITE_DATA_DIR`, `STORAGE_PROVIDER`, `LOCAL_STORAGE_DIR`, `EMAIL_PROVIDER`, `TRUSTED_PROXY`, `NEXT_PUBLIC_NOINDEX`, `NEXT_PUBLIC_SITE_URL`, `SUPABASE_URL`, `SUPABASE_STORAGE_BUCKET`, `NEXT_PUBLIC_LAST_UPDATED`.
 
-**Para fotos persistentes y panel interno**, ver el checklist de `docs/PENDIENTES.md` (`SUPABASE_SERVICE_ROLE_KEY` + `STORAGE_PROVIDER=supabase`, y `ADMIN_PASSWORD`).
+Comprobación rápida del almacenamiento: `GET /api/health?storage=1` escribe, lee y borra un objeto de prueba y devuelve `storage: {provider, ok}`.
 
 Nota sobre el pooler: la conexión directa `db.<ref>.supabase.co` es solo IPv6 en el plan gratuito y Vercel no sale por IPv6, por eso se usa Supavisor. El host correcto para este proyecto es `aws-1-sa-east-1` (el `aws-0` responde "tenant/user not found"). El rol `recall_app` tiene `CREATE` sobre la base porque el migrador de Drizzle ejecuta `CREATE SCHEMA IF NOT EXISTS` en cada build; con `SKIP_DB_MIGRATIONS=true` ese paso se omite.
 
