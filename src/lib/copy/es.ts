@@ -408,6 +408,45 @@ export const EMAIL = {
   footer: "Este es un correo automático de la campaña de seguridad Polygon Collosus DH en Chile.",
 } as const;
 
+/**
+ * Aviso directo a compradores y distribuidores (textos entregados por Cross Mountain, 27-10-2026).
+ * Se envía uno por destinatario con scripts/enviar-aviso.ts; el enlace no se publica.
+ */
+export const OUTREACH = {
+  signature: "Equipo Cross Mountain\nPolygon Bikes Chile",
+  customer: {
+    subject: "Aviso de suspensión de uso – Polygon Collosus DH",
+    heading: "Verifica el número de serie de tu bicicleta",
+    greeting: "Hola,",
+    body1: "Te contactamos porque nuestros registros indican que compraste una bicicleta Polygon Collosus DH a través de Cross Mountain.",
+    body2: "Polygon Bikes y Cross Mountain han iniciado una campaña de seguridad para determinadas unidades de este modelo.",
+    body3: "Como medida preventiva, necesitamos que verifiques el número de serie de tu bicicleta antes de volver a utilizarla. Puedes hacerlo aquí:",
+    body4: "El sistema verificará automáticamente tu número de serie con la base proporcionada por Polygon Bikes.",
+    body5: "Si tu bicicleta corresponde a una de las unidades incluidas en esta campaña de seguridad, recibirás inmediatamente la instrucción de suspender su uso y se te solicitarán tus datos para que nuestro equipo de Postventa pueda contactarte y coordinar el reemplazo del cuadro sin costo.",
+    important: "Te pedimos realizar esta verificación antes de volver a utilizar tu bicicleta.",
+    body6: "Si tu unidad resulta afectada, no la utilices hasta completar el proceso de reemplazo coordinado por nuestro equipo.",
+  },
+  distributor: {
+    subject: "Aviso de suspensión de uso – Polygon Collosus DH",
+    heading: "Campaña de seguridad Polygon Collosus DH",
+    greeting: "Estimado distribuidor,",
+    body1: "Te contactamos porque nuestros registros indican que has adquirido unidades Polygon Collosus DH a través de Cross Mountain.",
+    body2: "Polygon Bikes y Cross Mountain han iniciado una campaña de seguridad para determinadas unidades de este modelo.",
+    body3: "Hemos habilitado un sistema de verificación conectado directamente con la base de números de serie proporcionada por Polygon Bikes:",
+    actionsTitle: "Necesitamos tu colaboración con las siguientes acciones:",
+    action1: "1. Verificar todas las unidades Polygon Collosus DH que aún mantengas en stock ingresando su número de serie en la plataforma.",
+    action2: "2. Contactar directamente a cada cliente al que hayas vendido una Polygon Collosus DH, por correo electrónico o WhatsApp, y pedirle que verifique su número de serie antes de volver a utilizar la bicicleta. Al final de este correo te dejamos un mensaje listo para enviar.",
+    body4: "Si una unidad corresponde a esta campaña de seguridad, el sistema indicará inmediatamente la suspensión de su uso y solicitará los datos del propietario para que nuestro equipo de Postventa pueda gestionar directamente el reemplazo del cuadro.",
+    stock: (email: string) => `Si tienes unidades afectadas actualmente en stock, suspende inmediatamente su venta y entrega y escríbenos a ${email} para coordinar los siguientes pasos.`,
+    private:
+      "Importante: esta comunicación se está realizando solo de forma directa a propietarios y distribuidores. Contacta a tus clientes de manera individual (correo o mensaje directo de WhatsApp). Te pedimos no publicar este enlace ni información relacionada con esta campaña en redes sociales, sitios web, estados de WhatsApp, grupos ni otros canales públicos.",
+    body5: "Agradecemos tu colaboración para identificar rápidamente las unidades involucradas y gestionar los reemplazos de manera ordenada y segura.",
+    forwardTitle: "Mensaje para enviar a tus clientes (correo o WhatsApp)",
+    forward: (url: string, email: string) =>
+      `Hola, te escribimos de [NOMBRE DE LA TIENDA]. Polygon Bikes y Cross Mountain iniciaron una campaña de seguridad para algunas unidades Polygon Collosus DH. Antes de volver a usar tu bicicleta, verifica su número de serie aquí: ${url} . Si tu unidad está incluida, el sistema te indicará los pasos para el reemplazo del cuadro sin costo. Dudas: ${email}`,
+  },
+} as const;
+
 /** Etiquetas en español para estados técnicos (panel interno). */
 export const STATUS_LABELS = {
   caseStatus: {

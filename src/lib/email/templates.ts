@@ -3,7 +3,7 @@
  * TODO EL TEXTO EN ESPAÑOL. Los datos del usuario se escapan en HTML.
  */
 import type { RecallCase } from "@/db/schema";
-import { BRAND, CONTACT, EMAIL, RESULT_AFFECTED, RESULT_NOT_IDENTIFIED, RESULT_REINFORCED, STATUS_LABELS } from "@/lib/copy/es";
+import { BRAND, CONTACT, EMAIL, HERO, MODELS, OUTREACH, RESULT_AFFECTED, RESULT_NOT_IDENTIFIED, RESULT_REINFORCED, STATUS_LABELS } from "@/lib/copy/es";
 
 export interface RenderedEmail {
   subject: string;
@@ -60,8 +60,12 @@ function contactLines(ctx: EmailContext): string[] {
 }
 
 /** Enlace visible para el cliente: con "www." (pedido de Cross Mountain); www redirige al dominio principal. */
+function publicUrl(ctx: EmailContext): string {
+  return ctx.siteUrl.replace(/\/$/, "").replace(/^https:\/\/(?!www\.)/, "https://www.");
+}
+
 function siteLine(ctx: EmailContext): string {
-  return `${EMAIL.siteLink} ${ctx.siteUrl.replace(/\/$/, "").replace(/^https:\/\/(?!www\.)/, "https://www.")}`;
+  return `${EMAIL.siteLink} ${publicUrl(ctx)}`;
 }
 
 // Colores del sitio (src/app/globals.css). Los correos no leen CSS externo: todo va en línea.
@@ -115,6 +119,15 @@ function renderBlock(b: HtmlBlock): string {
       return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;border-collapse:collapse;"><tr><td style="background:${C.ink};"><a href="${escapeHtml(b.href)}" style="display:inline-block;padding:13px 22px;font-size:14px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#ffffff;text-decoration:none;">${escapeHtml(b.label)}</a></td></tr></table>`;
     case "contact":
       return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;border-collapse:collapse;"><tr><td style="background:${C.paper100};padding:16px 18px;"><p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${C.ink500};">${escapeHtml(CONTACT.title)}</p><p style="margin:0;font-size:14px;line-height:1.55;color:${C.ink};">${richText(b.lines.join("\n"))}</p></td></tr></table>`;
+    case "models":
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;border-collapse:collapse;"><tr>${b.items
+        .map(
+          (m, i) =>
+            `<td width="50%" style="width:50%;vertical-align:top;${i ? "padding-left:6px;" : "padding-right:6px;"}"><img src="${escapeHtml(m.src)}" width="270" alt="${escapeHtml(m.alt)}" style="display:block;border:0;width:100%;max-width:270px;height:auto;margin:0 auto;font-size:12px;color:${C.ink500};"><p style="margin:8px 0 0;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:0.02em;color:${C.ink};text-align:center;">${escapeHtml(m.name)}</p><p style="margin:2px 0 0;font-size:12px;line-height:1.4;color:${C.ink500};text-align:center;">${escapeHtml(m.caption)}</p></td>`,
+        )
+        .join("")}</tr></table>`;
+    case "box":
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;border-collapse:collapse;border:1px dashed ${C.line};"><tr><td style="padding:16px 18px;"><p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${C.ink500};">${escapeHtml(b.title)}</p><p style="margin:0;font-size:14px;line-height:1.55;color:${C.ink};">${richText(b.text)}</p></td></tr></table>`;
     case "signature":
       return `<p style="margin:20px 0 0;padding-top:16px;border-top:1px solid ${C.line};font-size:13px;line-height:1.5;color:${C.ink500};">${richText(b.text)}</p>`;
     case "small":
@@ -159,7 +172,18 @@ type HtmlBlock =
   | { type: "kv"; rows: [string, string][] }
   | { type: "button"; label: string; href: string }
   | { type: "contact"; lines: string[] }
+  | { type: "box"; title: string; text: string }
+  | { type: "models"; items: { src: string; alt: string; name: string; caption: string }[] }
   | { type: "signature"; text: string };
+
+/** Fotos de los dos modelos incluidos. JPG con fondo blanco en /correo (Outlook no muestra WebP). */
+function modelsBlock(ctx: EmailContext): HtmlBlock {
+  const base = ctx.siteUrl.replace(/\/$/, "");
+  return {
+    type: "models",
+    items: MODELS.items.map((m) => ({ src: `${base}/correo/collosus-${m.key}.jpg`, alt: m.alt, name: m.name, caption: m.description })),
+  };
+}
 
 const STOP_RIDING_SOFT = "Hasta recibir confirmación, recomendamos no utilizar la bicicleta.";
 
@@ -459,4 +483,65 @@ export function testEmail(ctx: EmailContext): RenderedEmail {
     { type: "signature", text: EMAIL.signature },
   ], { siteUrl: ctx.siteUrl });
   return { subject, text, html };
+}
+
+// ── Aviso directo (uno por destinatario, scripts/enviar-aviso.ts) ─────────
+
+function contactEmailOf(ctx: EmailContext): string {
+  return ctx.contactEmail || CONTACT.defaultEmail;
+}
+
+/** Aviso a quien compró una Polygon Collosus DH a Cross Mountain. */
+export function outreachCustomerEmail(ctx: EmailContext): RenderedEmail {
+  const t = OUTREACH.customer;
+  const url = `${publicUrl(ctx)}/`;
+  const help = `Ante cualquier duda, puedes escribirnos a ${contactEmailOf(ctx)}.`;
+  const text = [t.greeting, "", t.body1, "", t.body2, "", t.body3, "", url, "", t.body4, "", t.body5, "", t.important, "", t.body6, "", help, "", "Saludos,", "", OUTREACH.signature, "", EMAIL.footer].join("\n");
+  const html = wrapHtml(t.subject, [
+    { type: "heading", text: t.heading },
+    { type: "p", text: t.greeting },
+    { type: "p", text: t.body1 },
+    { type: "p", text: t.body2 },
+    modelsBlock(ctx),
+    { type: "p", text: t.body3 },
+    { type: "button", label: HERO.cta, href: url },
+    { type: "small", text: url },
+    { type: "p", text: t.body4 },
+    { type: "p", text: t.body5 },
+    { type: "caution", text: t.important },
+    { type: "p", text: t.body6 },
+    { type: "p", text: help },
+    { type: "signature", text: `Saludos,\n${OUTREACH.signature}` },
+  ], { siteUrl: ctx.siteUrl });
+  return { subject: t.subject, text, html };
+}
+
+/** Aviso a distribuidores (ventas de MAYORISTA CROSSPORTS): revisar stock y contactar a sus clientes sin publicar. */
+export function outreachDistributorEmail(ctx: EmailContext): RenderedEmail {
+  const t = OUTREACH.distributor;
+  const url = `${publicUrl(ctx)}/`;
+  const mail = contactEmailOf(ctx);
+  const forward = t.forward(url, mail);
+  const text = [
+    t.greeting, "", t.body1, "", t.body2, "", t.body3, "", url, "", t.actionsTitle, "", t.action1, t.action2, "", t.body4, "", t.stock(mail), "", t.private, "", t.body5, "", "Saludos,", "", OUTREACH.signature,
+    "", `--- ${t.forwardTitle} ---`, "", forward, "", EMAIL.footer,
+  ].join("\n");
+  const html = wrapHtml(t.subject, [
+    { type: "heading", text: t.heading },
+    { type: "p", text: t.greeting },
+    { type: "p", text: t.body1 },
+    { type: "p", text: t.body2 },
+    modelsBlock(ctx),
+    { type: "p", text: t.body3 },
+    { type: "button", label: HERO.cta, href: url },
+    { type: "small", text: url },
+    { type: "p", text: `${t.actionsTitle}\n\n${t.action1}\n\n${t.action2}` },
+    { type: "p", text: t.body4 },
+    { type: "alert", text: t.stock(mail) },
+    { type: "caution", text: t.private },
+    { type: "p", text: t.body5 },
+    { type: "box", title: t.forwardTitle, text: forward },
+    { type: "signature", text: `Saludos,\n${OUTREACH.signature}` },
+  ], { siteUrl: ctx.siteUrl });
+  return { subject: t.subject, text, html };
 }
