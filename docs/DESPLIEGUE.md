@@ -131,3 +131,13 @@ También puede subirse el CSV desde `/admin/series` (con la casilla "Solo valida
 - [ ] Prueba completa en móvil real: verificar serie → registrar con fotos → recibir correo → ver el caso en `/admin`.
 - [ ] Base de Polygon: importada y marcada `COMPLETE` **o** sitio en modo interino con el aviso visible en la portada.
 - [ ] Procedimiento de notificación del recall revisado conforme a los requisitos de SERNAC (brief §40).
+
+## Integración continua (GitHub Actions)
+
+El workflow de CI (typecheck, pruebas, auditoría de idioma y build) está en `.github/ci.yml.example`. Para activarlo, muévelo a `.github/workflows/ci.yml` desde tu propio equipo o desde la interfaz de GitHub:
+
+```bash
+mkdir -p .github/workflows && git mv .github/ci.yml.example .github/workflows/ci.yml && git commit -m "CI: activar workflow" && git push
+```
+
+(Se entrega como ejemplo porque la credencial automatizada que subió el repositorio no tiene permiso para crear workflows.)

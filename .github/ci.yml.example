@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  verificar:
+    name: Typecheck, pruebas, auditoría de idioma y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      # El build no toca la base de datos; estas variables evitan avisos de configuración.
+      NEXT_PUBLIC_SITE_URL: https://recallcollosusdh.cl
+      EMAIL_PROVIDER: console
+      STORAGE_PROVIDER: local
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Pruebas
+        run: npm test
+
+      - name: Auditoría de idioma (interfaz 100 % en español)
+        run: npm run audit:copy
+
+      - name: Build de producción
+        run: npm run build
