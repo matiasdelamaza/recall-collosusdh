@@ -262,7 +262,12 @@ export const WHERE_SERIAL = {
   body1: "El número de serie está grabado en el cuadro. En la mayoría de las bicicletas Polygon se ubica en la parte inferior del cuadro, bajo la caja del pedalier (donde se unen las bielas), o en la zona de la pipa de dirección.",
   body2: "Gira la bicicleta o inclínala con cuidado para leerlo. Ingresa todos los caracteres tal como aparecen, sin espacios.",
   body3: "Si el número está parcialmente ilegible, ingresa lo que puedas leer y solicita una revisión manual adjuntando una foto.",
-  figureCaption: "Ubicación habitual del número de serie: bajo la caja del pedalier.",
+  figureAlt:
+    "Polygon Collosus DH7 vista de lado. Un círculo marca la parte inferior del cuadro, bajo la caja del pedalier, y otro la zona de la pipa de dirección.",
+  markers: [
+    { n: "1", label: "Bajo la caja del pedalier (ubicación habitual)" },
+    { n: "2", label: "Zona de la pipa de dirección" },
+  ],
 } as const;
 
 export const FAQ = {
