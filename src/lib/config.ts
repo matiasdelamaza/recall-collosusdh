@@ -101,6 +101,8 @@ export const RATE_LIMITS = {
   registration: { windowMs: 60 * 60 * 1000, max: 5 },
   analytics: { windowMs: 60 * 1000, max: 60 },
   adminLogin: { windowMs: 15 * 60 * 1000, max: 8 },
+  /** Prueba de correo de /api/health: límite global (no por IP), solo a los correos internos. */
+  healthEmail: { windowMs: 60 * 60 * 1000, max: 3 },
 } as const;
 
 /** Máximo de casos activos por serie antes de rechazar nuevos registros (control de duplicados). */
