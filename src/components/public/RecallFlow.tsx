@@ -201,7 +201,7 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
                   aria-invalid={inlineError ? true : undefined}
                   aria-describedby={inlineError ? "serie-error" : "serie-ayuda"}
                   disabled={loading}
-                  className={cx(inputClass, "mt-2 font-mono text-[18px] font-bold uppercase tracking-wider placeholder:font-sans placeholder:text-[15px] placeholder:font-normal placeholder:normal-case placeholder:tracking-normal")}
+                  className={cx(inputClass, "mt-2 serial text-[18px] font-bold uppercase placeholder:font-sans placeholder:text-[15px] placeholder:font-normal placeholder:normal-case placeholder:tracking-normal")}
                 />
                 {inlineMessage ? (
                   <p id="serie-error" role="alert" className="mt-2 text-sm font-medium text-alert">
@@ -282,7 +282,7 @@ function CompactResult({ result }: { result: VerifyOk }) {
       <span className={cx("text-[12px] font-bold uppercase tracking-[0.12em]", affected ? "text-alert-700" : "text-ink-500")}>
         {affected ? FLOW.compact.AFFECTED : result.state === "PENDING_DATABASE" ? FLOW.compact.PENDING_DATABASE : FLOW.compact.MANUAL_REVIEW}
       </span>
-      {result.serial ? <span className="font-mono text-sm font-bold text-ink">{result.serial}</span> : null}
+      {result.serial ? <span className="serial text-sm font-bold text-ink">{result.serial}</span> : null}
     </div>
   );
 }

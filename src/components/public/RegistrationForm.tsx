@@ -321,7 +321,7 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
             autoCorrect="off"
             spellCheck={false}
             maxLength={40}
-            className={cx(inputClass, "font-mono font-bold", !serialEditable && "bg-paper-100 text-ink-700")}
+            className={cx(inputClass, "serial font-bold", !serialEditable && "bg-paper-100 text-ink-700")}
             {...aria("serial")}
           />
         </Field>

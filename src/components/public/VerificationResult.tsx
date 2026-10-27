@@ -19,7 +19,7 @@ function SerialLine({ label, serial, model, size }: { label: string; serial: str
     <dl className={cx("mt-5 grid gap-3 rounded-sm border border-line bg-paper p-4 text-sm", (model || size) && "sm:grid-cols-3")}>
       <div>
         <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-500">{label}</dt>
-        <dd className="mt-1 break-all font-mono text-[15px] font-bold text-ink">{serial || "—"}</dd>
+        <dd className="mt-1 break-all serial text-[15px] font-bold text-ink">{serial || "—"}</dd>
       </div>
       {model ? (
         <div>

@@ -41,7 +41,7 @@ export function SuccessState({ outcome, caseId, serial, requestType, headingRef,
           </div>
           <div className="rounded-sm bg-paper-100 p-4">
             <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-500">{SUCCESS.serialLabel}</dt>
-            <dd className="mt-1 break-all font-mono text-[18px] font-bold text-ink">{serial}</dd>
+            <dd className="mt-1 break-all serial text-[18px] font-bold text-ink">{serial}</dd>
           </div>
         </dl>
 
