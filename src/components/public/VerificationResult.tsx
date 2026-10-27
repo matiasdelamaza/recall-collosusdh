@@ -101,7 +101,7 @@ export function VerificationResult({ result, headingRef, failedAttempts, onStart
               {RESULT_REINFORCED.ctaDamage}
             </Button>
           </div>
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <div className="mt-6 flex justify-center">
             <Button variant="secondary" onClick={onVerifyAnother}>
               {RESULT_REINFORCED.ctaAnother}
             </Button>
