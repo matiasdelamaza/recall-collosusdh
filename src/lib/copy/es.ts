@@ -125,11 +125,17 @@ export const RESULT_NOT_FOUND = {
   locationBody: "Grabado en la parte inferior del cuadro, bajo la caja del pedalier (donde se unen las bielas).",
   locationLink: "Ver foto de dónde está el número de serie",
   retry: "VOLVER A INTENTAR",
-  /** Tras varios intentos sin coincidencia se ofrece la revisión manual. */
-  manualTitle: "¿El número está bien escrito?",
-  manualBody: "Si ya lo revisaste y sigue sin aparecer, solicita una revisión manual: nuestro equipo de Postventa verificará el número con la foto del cuadro y te contactará.",
+  /** Tras MANUAL_REVIEW_AFTER_ATTEMPTS intentos sin coincidencia: Postventa ayuda con fotos, modelo y talla. */
+  helpTitle: "TE AYUDAMOS A VERIFICAR TU BICICLETA",
+  helpBody: "El número sigue sin aparecer. Envíanos estos datos y nuestro equipo de Postventa verificará tu bicicleta y te contactará:",
+  helpItems: [
+    "Una foto del número de serie, bajo la caja del pedalier.",
+    "Una foto de la bicicleta completa.",
+    "El modelo (Collosus DH7 o DH9) y la talla. Si no los sabes, marca \"No estoy seguro/a\".",
+  ],
   manualSafety: "Hasta recibir confirmación, recomendamos no utilizar la bicicleta.",
-  manualCta: "SOLICITAR REVISIÓN MANUAL",
+  manualCta: "ENVIAR FOTOS Y DATOS",
+  retryAgain: "VOLVER A ESCRIBIR EL NÚMERO",
   contactLink: "Ver canales de contacto de Postventa",
 } as const;
 
@@ -165,7 +171,7 @@ export const FORM = {
   },
   intro: {
     REPLACEMENT: "Completa tus datos para generar tu caso. Nuestro equipo de Postventa se pondrá en contacto contigo para coordinar el reemplazo del cuadro.",
-    MANUAL_REVIEW: "Completa tus datos y adjunta una foto clara del número de serie. Nuestro equipo de Postventa revisará tu caso.",
+    MANUAL_REVIEW: "Adjunta una foto clara del número de serie y una de la bicicleta completa, e indica el modelo y la talla. Nuestro equipo de Postventa revisará tu caso y te contactará.",
     PENDING_DATABASE: "Completa tus datos. Una vez que Polygon Bikes confirme la base de números de serie, te notificaremos el resultado de la verificación.",
     DAMAGE_REVIEW: "Completa tus datos y adjunta fotos de la zona dañada del cuadro. Nuestro equipo de Postventa revisará tu caso y se pondrá en contacto contigo.",
   },
