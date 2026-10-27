@@ -1,0 +1,98 @@
+/**
+ * Configuración de entorno (server-side). Validada con zod; nunca importar desde componentes cliente.
+ * Los valores NEXT_PUBLIC_* se leen directamente con process.env en el cliente.
+ */
+import { z } from "zod";
+
+const envSchema = z.object({
+  NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  NEXT_PUBLIC_SITE_URL: z.string().url().default("http://localhost:3000"),
+  DATABASE_URL: z.string().optional(),
+
+  ADMIN_SESSION_SECRET: z.string().min(32).optional(),
+  ADMIN_PASSWORD: z.string().min(8).optional(),
+  IP_HASH_SALT: z.string().optional(),
+
+  EMAIL_PROVIDER: z.enum(["console", "resend", "smtp"]).default("console"),
+  EMAIL_FROM: z.string().default("Recall Polygon Collosus DH <no-reply@recallcollosusdh.cl>"),
+  INTERNAL_NOTIFICATION_EMAILS: z.string().optional(),
+  RESEND_API_KEY: z.string().optional(),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().default(587),
+  SMTP_SECURE: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+
+  STORAGE_PROVIDER: z.enum(["local", "s3"]).default("local"),
+  LOCAL_STORAGE_DIR: z.string().default("./.data/uploads"),
+  S3_BUCKET: z.string().optional(),
+  S3_REGION: z.string().default("auto"),
+  S3_ENDPOINT: z.string().optional(),
+  S3_ACCESS_KEY_ID: z.string().optional(),
+  S3_SECRET_ACCESS_KEY: z.string().optional(),
+  S3_FORCE_PATH_STYLE: z
+    .string()
+    .optional()
+    .transform((v) => v !== "false"),
+
+  TURNSTILE_SECRET_KEY: z.string().optional(),
+  NEXT_PUBLIC_TURNSTILE_SITE_KEY: z.string().optional(),
+
+  NEXT_PUBLIC_CONTACT_EMAIL: z.string().optional(),
+  NEXT_PUBLIC_CONTACT_WHATSAPP: z.string().optional(),
+  NEXT_PUBLIC_CONTACT_HOURS: z.string().optional(),
+
+  ANALYTICS_PROVIDER: z.enum(["internal", "none"]).default("internal"),
+  NEXT_PUBLIC_NOINDEX: z
+    .string()
+    .optional()
+    .transform((v) => v === "true"),
+});
+
+export type Env = z.infer<typeof envSchema>;
+
+let cached: Env | undefined;
+
+export function getEnv(): Env {
+  if (cached) return cached;
+  const parsed = envSchema.safeParse(process.env);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((i) => `${i.path.join(".")}: ${i.message}`).join("; ");
+    throw new Error(`Configuración de entorno inválida: ${issues}`);
+  }
+  cached = parsed.data;
+  return cached;
+}
+
+/** Lista de correos internos de notificación (puede estar vacía si aún no se define). */
+export function getInternalNotificationEmails(): string[] {
+  return (getEnv().INTERNAL_NOTIFICATION_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+/** Límites de carga de archivos. */
+export const UPLOAD_LIMITS = {
+  maxFileBytes: 10 * 1024 * 1024, // 10 MB por archivo
+  maxFilesPerCase: 10,
+  maxTotalBytes: 40 * 1024 * 1024,
+  allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"] as const,
+  allowedExtensions: [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"] as const,
+} as const;
+
+/** Límites de tasa (por IP hasheada). */
+export const RATE_LIMITS = {
+  serialLookup: { windowMs: 10 * 60 * 1000, max: 12 },
+  /** A partir de este número de resultados no afectados en la ventana se exige Turnstile (si está configurado) o se bloquea. */
+  serialLookupSuspiciousThreshold: 6,
+  registration: { windowMs: 60 * 60 * 1000, max: 5 },
+  analytics: { windowMs: 60 * 1000, max: 60 },
+  adminLogin: { windowMs: 15 * 60 * 1000, max: 8 },
+} as const;
+
+/** Máximo de casos activos por serie antes de rechazar nuevos registros (control de duplicados). */
+export const MAX_ACTIVE_CASES_PER_SERIAL = 3;

@@ -1,0 +1,51 @@
+{
+  "name": "recallcollosusdh",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Portal oficial de recall de seguridad Polygon Collosus DH — Chile (Cross Mountain SpA)",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed:dev": "tsx scripts/seed-dev.ts",
+    "serials:import": "tsx scripts/import-serials.ts",
+    "cases:reprocess": "tsx scripts/reprocess-pending.ts",
+    "audit:copy": "tsx scripts/audit-copy.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.700.0",
+    "@electric-sql/pglite": "^0.5.12",
+    "csv-parse": "^6.0.0",
+    "drizzle-orm": "^0.45.4",
+    "next": "^16.4.3",
+    "nodemailer": "^10.2.1",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "resend": "^6.34.1",
+    "server-only": "^0.0.1",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^22.0.0",
+    "@types/nodemailer": "^7.0.0",
+    "@types/pg": "^8.15.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "drizzle-kit": "^0.31.11",
+    "postcss": "^8.5.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  },
+  "engines": {
+    "node": ">=20.9"
+  }
+}
