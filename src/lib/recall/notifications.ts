@@ -49,7 +49,9 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
 async function deliver(kind: Kind, to: string | string[], rendered: RenderedEmail, c: Pick<RecallCase, "id" | "caseId">): Promise<boolean> {
   try {
     const provider = getEmailProvider();
-    const res = await withTimeout(provider.send({ to, subject: rendered.subject, text: rendered.text, html: rendered.html }), SEND_TIMEOUT_MS);
+    // Se envía desde EMAIL_FROM (no-reply); las respuestas llegan al correo de contacto de Cross Mountain.
+    const replyTo = getEmailContext().contactEmail;
+    const res = await withTimeout(provider.send({ to, subject: rendered.subject, text: rendered.text, html: rendered.html, replyTo }), SEND_TIMEOUT_MS);
     if (res.ok) {
       await logAudit({ type: "EMAIL_SENT", caseId: c.id, payload: { kind, provider: res.provider, id: res.id, caseId: c.caseId } });
       return true;
