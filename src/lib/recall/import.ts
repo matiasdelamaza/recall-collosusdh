@@ -34,7 +34,25 @@ export interface ImportSerialsResult {
 const MAX_ERRORS = 50;
 const BATCH_SIZE = 500;
 const SERIAL_ALIASES = ["serial_number", "serial", "frame_number", "serie", "numero_de_serie", "número_de_serie", "n_serie", "frame_serial", "serialnumber"];
-const ALLOWED_STATUS = new Set(["RECALL", "EXCLUDED"]);
+/** Valores aceptados en la columna de estado (en inglés o en español) → estado guardado. */
+const STATUS_ALIASES: Record<string, string> = {
+  RECALL: "RECALL",
+  AFFECTED: "RECALL",
+  AFECTADA: "RECALL",
+  REINFORCED: "REINFORCED",
+  REFORZADA: "REINFORCED",
+  EXCLUDED: "EXCLUDED",
+  EXCLUIDA: "EXCLUDED",
+};
+
+function normalizeStatus(value: string): string | undefined {
+  const key = value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toUpperCase();
+  return STATUS_ALIASES[key];
+}
 
 function normalizeHeader(h: string): string {
   return h
@@ -125,9 +143,10 @@ export function parseSerialsCsv(csvText: string): { rows: ParsedRow[]; errors: {
       return;
     }
     seen.set(serialNumber, rowNumber);
-    const statusRaw = (pick(r, ["status", "estado"]) ?? "RECALL").toUpperCase();
-    if (!ALLOWED_STATUS.has(statusRaw)) {
-      if (errors.length < MAX_ERRORS) errors.push({ row: rowNumber, message: `Estado no permitido "${statusRaw}" (use RECALL o EXCLUDED)` });
+    const statusRaw = pick(r, ["status", "estado", "tanda"]) ?? "RECALL";
+    const status = normalizeStatus(statusRaw);
+    if (!status) {
+      if (errors.length < MAX_ERRORS) errors.push({ row: rowNumber, message: `Estado no permitido "${statusRaw.slice(0, 40)}" (use AFECTADA, REFORZADA o EXCLUIDA)` });
       return;
     }
     rows.push({
@@ -137,7 +156,7 @@ export function parseSerialsCsv(csvText: string): { rows: ParsedRow[]; errors: {
       model: pick(r, ["model", "modelo"])?.slice(0, 80) ?? null,
       size: pick(r, ["size", "talla", "frame_size"])?.slice(0, 20) ?? null,
       productionBatch: pick(r, ["production_batch", "batch", "lote", "lote_de_produccion", "lote_de_producción"])?.slice(0, 80) ?? null,
-      status: statusRaw,
+      status,
     });
   });
 

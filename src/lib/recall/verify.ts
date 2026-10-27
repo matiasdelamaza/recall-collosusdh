@@ -16,6 +16,7 @@ import { validateSerial } from "@/lib/serial";
 
 export type VerificationOutcome =
   | { state: "AFFECTED"; serial: string; model: string | null; size: string | null; productionBatch: string | null }
+  | { state: "REINFORCED"; serial: string; model: string | null; size: string | null }
   | { state: "NOT_IDENTIFIED"; serial: string }
   | { state: "PENDING_DATABASE"; serial: string }
   | { state: "UNVERIFIED"; serial: string; reason: "EMPTY" | "TOO_SHORT" | "TOO_LONG" | "INVALID_CHARS" };
@@ -45,10 +46,16 @@ export async function countRecallSerials(): Promise<number> {
   return Number(row?.total ?? 0);
 }
 
-/** Busca una serie normalizada en la base oficial. Coincidencia exacta. */
-export async function findAffectedSerial(serialNormalized: string) {
+/** Busca una serie normalizada en la lista importada, con cualquier estado. Coincidencia exacta. */
+export async function findListedSerial(serialNormalized: string) {
   const db = await getDb();
   const row = await db.query.affectedSerials.findFirst({ where: eq(affectedSerials.serialNumber, serialNormalized) });
+  return row ?? null;
+}
+
+/** Busca una serie normalizada en la tanda afectada (estado RECALL). Coincidencia exacta. */
+export async function findAffectedSerial(serialNormalized: string) {
+  const row = await findListedSerial(serialNormalized);
   if (!row || row.status !== "RECALL") return null;
   return row;
 }
@@ -63,9 +70,12 @@ export async function verifySerial(input: string): Promise<VerificationOutcome> 
     return { state: "UNVERIFIED", serial: "", reason: validation.reason };
   }
   const serial = validation.serial;
-  const match = await findAffectedSerial(serial);
-  if (match) {
+  const match = await findListedSerial(serial);
+  if (match?.status === "RECALL") {
     return { state: "AFFECTED", serial, model: match.model, size: match.size, productionBatch: match.productionBatch };
+  }
+  if (match?.status === "REINFORCED") {
+    return { state: "REINFORCED", serial, model: match.model, size: match.size };
   }
   const dbStatus = await getSerialDatabaseStatus();
   return decideNonMatch(serial, dbStatus);

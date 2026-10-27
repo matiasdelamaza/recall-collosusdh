@@ -83,6 +83,9 @@ export async function POST(req: NextRequest) {
       case "AFFECTED":
         await recordLookup({ serialNormalized: outcome.serial, result: "AFFECTED", ipHash, userAgent });
         return json({ ok: true, state: "AFFECTED", serial: outcome.serial, model: outcome.model, size: outcome.size });
+      case "REINFORCED":
+        await recordLookup({ serialNormalized: outcome.serial, result: "REINFORCED", ipHash, userAgent });
+        return json({ ok: true, state: "REINFORCED", serial: outcome.serial, model: outcome.model, size: outcome.size });
       case "NOT_IDENTIFIED":
         await recordLookup({ serialNormalized: outcome.serial, result: "NOT_IDENTIFIED", ipHash, userAgent });
         return json({ ok: true, state: "NOT_IDENTIFIED", serial: outcome.serial });

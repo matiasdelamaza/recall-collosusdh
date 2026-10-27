@@ -1,7 +1,8 @@
 import "server-only";
-import { and, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, gt, ilike, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { serialLookups, type LookupResult } from "@/db/schema";
+import { LOOKUP_RESULTS, recallCases, serialLookups, type LookupResult } from "@/db/schema";
+import { normalizeSerial } from "@/lib/serial";
 
 export interface RecordLookupInput {
   serialNormalized: string;
@@ -44,4 +45,117 @@ export async function countRecentMisses(ipHash: string, windowMs: number): Promi
       ),
     );
   return Number(rows[0]?.n ?? 0);
+}
+
+// ── Panel interno: listado de consultas ────────────────────────────────
+
+export interface LookupListFilters {
+  result?: LookupResult;
+  /** Búsqueda por serie (contiene). */
+  q?: string;
+  page?: number;
+}
+
+export interface LookupRow {
+  id: string;
+  createdAt: Date;
+  serialNormalized: string;
+  result: LookupResult;
+  /** Primeros caracteres del hash de IP: permite ver intentos repetidos de una misma conexión sin exponer la IP. */
+  connection: string | null;
+  /** Caso registrado con esa serie, si existe. */
+  caseId: string | null;
+}
+
+export const LOOKUPS_PAGE_SIZE = 50;
+
+/** Interpreta los parámetros de la URL del listado. */
+export function parseLookupFilters(sp: Record<string, string | string[] | undefined>): LookupListFilters {
+  const one = (k: string) => {
+    const v = sp[k];
+    return (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
+  };
+  const result = one("result");
+  const page = Number(one("page") ?? "1");
+  return {
+    result: (LOOKUP_RESULTS as readonly string[]).includes(result ?? "") ? (result as LookupResult) : undefined,
+    q: one("q")?.slice(0, 64),
+    page: Number.isFinite(page) && page >= 1 ? Math.floor(page) : 1,
+  };
+}
+
+function lookupWhere(filters: LookupListFilters) {
+  const conds = [];
+  if (filters.result) conds.push(eq(serialLookups.result, filters.result));
+  if (filters.q) conds.push(ilike(serialLookups.serialNormalized, `%${normalizeSerial(filters.q).replace(/[%_\\]/g, "\\$&")}%`));
+  return conds.length ? and(...conds) : undefined;
+}
+
+async function selectLookups(filters: LookupListFilters, limit: number, offset: number): Promise<LookupRow[]> {
+  const db = await getDb();
+  const rows = await db
+    .select({
+      id: serialLookups.id,
+      createdAt: serialLookups.createdAt,
+      serialNormalized: serialLookups.serialNormalized,
+      result: serialLookups.result,
+      ipHash: serialLookups.ipHash,
+      caseId: sql<string | null>`(select ${recallCases.caseId} from ${recallCases} where ${recallCases.serialNumber} = ${serialLookups.serialNormalized} and ${serialLookups.serialNormalized} <> '' order by ${recallCases.createdAt} limit 1)`,
+    })
+    .from(serialLookups)
+    .where(lookupWhere(filters))
+    .orderBy(desc(serialLookups.createdAt))
+    .limit(limit)
+    .offset(offset);
+  return rows.map((r) => ({
+    id: r.id,
+    createdAt: r.createdAt,
+    serialNormalized: r.serialNormalized,
+    result: r.result,
+    connection: r.ipHash ? r.ipHash.slice(0, 8) : null,
+    caseId: r.caseId ?? null,
+  }));
+}
+
+export async function listLookups(filters: LookupListFilters): Promise<{ rows: LookupRow[]; total: number; page: number; totalPages: number }> {
+  const db = await getDb();
+  const page = Math.max(1, filters.page ?? 1);
+  const [{ total }] = await db.select({ total: count() }).from(serialLookups).where(lookupWhere(filters));
+  const rows = await selectLookups(filters, LOOKUPS_PAGE_SIZE, (page - 1) * LOOKUPS_PAGE_SIZE);
+  return { rows, total: Number(total), page, totalPages: Math.max(1, Math.ceil(Number(total) / LOOKUPS_PAGE_SIZE)) };
+}
+
+/** Todas las consultas que cumplen los filtros (exportación). Límite de seguridad: 50.000. */
+export async function listAllLookupsForExport(filters: LookupListFilters): Promise<LookupRow[]> {
+  return selectLookups(filters, 50_000, 0);
+}
+
+export interface LookupSummary {
+  total: number;
+  byResult: Record<LookupResult, number>;
+  /** Series distintas consultadas (excluye vacías). */
+  distinctSerials: number;
+  /** Conexiones distintas (hash de IP). */
+  distinctConnections: number;
+}
+
+/** Resumen de todas las consultas (todas las fechas). */
+export async function summarizeLookups(): Promise<LookupSummary> {
+  const db = await getDb();
+  const [rows, [distinct]] = await Promise.all([
+    db.select({ result: serialLookups.result, n: count() }).from(serialLookups).groupBy(serialLookups.result),
+    db
+      .select({
+        serials: sql<number>`count(distinct nullif(${serialLookups.serialNormalized}, ''))`,
+        connections: sql<number>`count(distinct ${serialLookups.ipHash})`,
+      })
+      .from(serialLookups),
+  ]);
+  const byResult = Object.fromEntries(LOOKUP_RESULTS.map((r) => [r, 0])) as Record<LookupResult, number>;
+  let total = 0;
+  for (const r of rows) {
+    byResult[r.result] = Number(r.n);
+    total += Number(r.n);
+  }
+  return { total, byResult, distinctSerials: Number(distinct.serials), distinctConnections: Number(distinct.connections) };
 }

@@ -15,6 +15,13 @@
       "when": 1793103534981,
       "tag": "0001_rate_limit_hits",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1793104548459,
+      "tag": "0002_serie_reforzada",
+      "breakpoints": true
     }
   ]
 }

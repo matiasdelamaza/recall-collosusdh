@@ -3,7 +3,7 @@
  * TODO EL TEXTO EN ESPAÑOL. Los datos del usuario se escapan en HTML.
  */
 import type { RecallCase } from "@/db/schema";
-import { BRAND, CONTACT, EMAIL, RESULT_AFFECTED, RESULT_NOT_IDENTIFIED, STATUS_LABELS } from "@/lib/copy/es";
+import { BRAND, CONTACT, EMAIL, RESULT_AFFECTED, RESULT_NOT_IDENTIFIED, RESULT_REINFORCED, STATUS_LABELS } from "@/lib/copy/es";
 
 export interface RenderedEmail {
   subject: string;
@@ -323,6 +323,62 @@ export function customerResultNotIdentifiedEmail(c: CaseEmailData, ctx: EmailCon
       type: "p",
       text: "Si tienes dudas o deseas solicitar una revisión de tu bicicleta, responde a este correo o contáctanos por los canales indicados.",
     },
+    { type: "p", text: contact.join("\n") },
+    { type: "small", text: siteLine(ctx) },
+    { type: "p", text: EMAIL.signature },
+  ]);
+  return { subject, text, html };
+}
+
+/**
+ * Resultado tras reproceso: la serie corresponde a la tanda reforzada (no incluida en la campaña).
+ * Usa el texto BORRADOR de RESULT_REINFORCED, pendiente de revisión legal. NUNCA certifica seguridad.
+ */
+export function customerResultReinforcedEmail(c: CaseEmailData, ctx: EmailContext): RenderedEmail {
+  const subject = EMAIL.resultNotIdentifiedSubject;
+  const contact = contactLines(ctx);
+  const intro = "Polygon Bikes nos ha entregado la base de números de serie de esta campaña y hemos verificado tu registro.";
+  const help = "Si tienes dudas, responde a este correo o contáctanos por los canales indicados.";
+  const text = [
+    EMAIL.greeting(c.customerName),
+    "",
+    intro,
+    "",
+    `${RESULT_REINFORCED.title}.`,
+    "",
+    RESULT_REINFORCED.body1,
+    RESULT_REINFORCED.body2,
+    RESULT_REINFORCED.body3,
+    "",
+    `${EMAIL.caseIdLabel}: ${c.caseId}`,
+    `${EMAIL.serialLabel}: ${c.serialNumber}`,
+    "",
+    help,
+    "",
+    ...contact,
+    "",
+    siteLine(ctx),
+    "",
+    EMAIL.signature,
+    "",
+    EMAIL.footer,
+  ].join("\n");
+  const html = wrapHtml(subject, [
+    { type: "heading", text: "Resultado de verificación" },
+    { type: "p", text: EMAIL.greeting(c.customerName) },
+    { type: "p", text: intro },
+    { type: "heading", text: RESULT_REINFORCED.title },
+    { type: "p", text: RESULT_REINFORCED.body1 },
+    { type: "p", text: RESULT_REINFORCED.body2 },
+    { type: "p", text: RESULT_REINFORCED.body3 },
+    {
+      type: "kv",
+      rows: [
+        [EMAIL.caseIdLabel, c.caseId],
+        [EMAIL.serialLabel, c.serialNumber],
+      ],
+    },
+    { type: "p", text: help },
     { type: "p", text: contact.join("\n") },
     { type: "small", text: siteLine(ctx) },
     { type: "p", text: EMAIL.signature },

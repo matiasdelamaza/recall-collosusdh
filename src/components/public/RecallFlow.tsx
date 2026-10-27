@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { track } from "@/lib/analytics-client";
 import { FLOW, HERO, RESULT_ERROR, RESULT_RATE_LIMITED, RESULT_TURNSTILE, SERIAL_VALIDATION } from "@/lib/copy/es";
+import { MANUAL_REVIEW_AFTER_ATTEMPTS } from "@/lib/limits";
 import { normalizeSerial, validateSerial } from "@/lib/serial";
 import { requestTypeForState, type RegistrationResponse, type RequestType, type SerialVerificationStatus, type VerifyResponse } from "@/lib/types";
 import { RegistrationForm } from "./RegistrationForm";
@@ -34,6 +35,8 @@ function eventFor(state: VerifyOk["state"]) {
   switch (state) {
     case "AFFECTED":
       return "serial_check_affected" as const;
+    case "REINFORCED":
+      return "serial_check_reinforced" as const;
     case "NOT_IDENTIFIED":
       return "serial_check_not_identified" as const;
     case "PENDING_DATABASE":
@@ -53,6 +56,8 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
   const [loading, setLoading] = useState(false);
   const [notice, setNotice] = useState<Notice | null>(null);
   const [step, setStep] = useState<Step>({ kind: "idle" });
+  /** Intentos fallidos seguidos (no encontrada / formato inválido); a partir de 3 se ofrece revisión manual. */
+  const [failedAttempts, setFailedAttempts] = useState(0);
   const lastSerial = useRef("");
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -101,6 +106,8 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
         else setNotice({ type: "ERROR", message: data.message });
         return;
       }
+      const failed = data.state === "NOT_IDENTIFIED" || data.state === "UNVERIFIED";
+      setFailedAttempts((n) => (failed ? n + 1 : 0));
       setStep({ kind: "result", result: data });
       track(eventFor(data.state));
     } catch {
@@ -115,6 +122,7 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
     if (loading) return;
     const v = validateSerial(serialInput);
     if (!v.valid) {
+      if (v.reason !== "EMPTY") setFailedAttempts((n) => n + 1);
       setInlineError({ reason: v.reason });
       setStep({ kind: "idle" });
       inputRef.current?.focus();
@@ -145,8 +153,20 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
     setNotice(null);
     setInlineError(null);
     setSerialInput("");
+    setFailedAttempts(0);
     window.setTimeout(() => {
       inputRef.current?.focus();
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 50);
+  }
+
+  /** "Volver a intentar": regresa al campo con lo escrito seleccionado para corregirlo. */
+  function retrySerial() {
+    setStep({ kind: "idle" });
+    setNotice(null);
+    window.setTimeout(() => {
+      inputRef.current?.focus();
+      inputRef.current?.select();
       inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
     }, 50);
   }
@@ -158,7 +178,7 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
   }
 
   const inlineMessage = inlineError ? SERIAL_VALIDATION[inlineError.reason] : null;
-  const showManualFromInvalid = inlineError && inlineError.reason !== "EMPTY";
+  const showManualFromInvalid = inlineError && inlineError.reason !== "EMPTY" && failedAttempts >= MANUAL_REVIEW_AFTER_ATTEMPTS;
 
   return (
     <>
@@ -240,7 +260,14 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
             {notice ? <NoticeCard notice={notice} siteKey={turnstileSiteKey} onToken={(t) => void runVerify(lastSerial.current, t)} onRetry={() => void runVerify(lastSerial.current)} /> : null}
 
             {step.kind === "result" ? (
-              <VerificationResult result={step.result} headingRef={resultHeadingRef} onStartRegistration={startRegistration} onVerifyAnother={verifyAnother} />
+              <VerificationResult
+                result={step.result}
+                headingRef={resultHeadingRef}
+                failedAttempts={failedAttempts}
+                onStartRegistration={startRegistration}
+                onRetry={retrySerial}
+                onVerifyAnother={verifyAnother}
+              />
             ) : null}
 
             {step.kind === "form" ? (

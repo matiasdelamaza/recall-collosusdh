@@ -1,0 +1,2 @@
+ALTER TYPE "public"."lookup_result" ADD VALUE 'REINFORCED' BEFORE 'NOT_IDENTIFIED';--> statement-breakpoint
+ALTER TYPE "public"."serial_verification_status" ADD VALUE 'REINFORCED' BEFORE 'NOT_IDENTIFIED';

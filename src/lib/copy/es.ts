@@ -77,15 +77,35 @@ export const RESULT_NOT_IDENTIFIED = {
   ctaAnother: "VERIFICAR OTRO NÚMERO",
 } as const;
 
-export const RESULT_UNVERIFIED = {
-  badge: "Revisión manual",
-  title: "NO PUDIMOS VERIFICAR TU NÚMERO DE SERIE",
-  body1: "Revisa que hayas ingresado todos los caracteres exactamente como aparecen en el cuadro.",
-  body2: "Si el número está correctamente ingresado y no podemos verificarlo, solicita una revisión manual.",
-  safety: "Hasta recibir confirmación, recomendamos no utilizar la bicicleta.",
-  cta: "SOLICITAR VERIFICACIÓN MANUAL",
+/**
+ * Tanda reforzada: la serie está en la lista de Polygon como unidad NO incluida en la campaña.
+ * BORRADOR pendiente de revisión legal y de Polygon (ver docs/PENDIENTES.md). Reglas: no afirmar que
+ * la bicicleta "es segura" ni usar "cuadro reforzado" hasta que Polygon confirme la terminología.
+ */
+export const RESULT_REINFORCED = {
+  badge: "No incluida en la campaña",
+  title: "TU BICICLETA NO ESTÁ INCLUIDA EN ESTE RECALL",
+  body1: "El número de serie ingresado corresponde a una unidad fabricada con la versión actualizada del cuadro, que no forma parte de esta campaña.",
+  body2: "No necesitas registrar tu bicicleta ni realizar ningún trámite.",
+  body3: "Como con cualquier bicicleta, si observas una fisura, separación, deformación o daño en el cuadro, suspende su uso y comunícate con nuestro equipo de Postventa.",
+  serialLabel: "Número de serie verificado",
   ctaAnother: "VERIFICAR OTRO NÚMERO",
 } as const;
+
+/** Base completa cargada y la serie no aparece en la lista: lo más probable es un error de tipeo. */
+export const RESULT_NOT_FOUND = {
+  badge: "Número no encontrado",
+  title: "NO ENCONTRAMOS ESE NÚMERO DE SERIE",
+  body1: "Revisa que hayas ingresado todos los caracteres exactamente como aparecen en el cuadro (letras, números y guiones) e inténtalo nuevamente.",
+  retry: "VOLVER A INTENTAR",
+  /** Tras varios intentos sin coincidencia se ofrece la revisión manual. */
+  manualTitle: "¿El número está bien escrito?",
+  manualBody: "Si ya lo revisaste y sigue sin aparecer, solicita una revisión manual: nuestro equipo de Postventa verificará el número con la foto del cuadro y te contactará.",
+  manualSafety: "Hasta recibir confirmación, recomendamos no utilizar la bicicleta.",
+  manualCta: "SOLICITAR REVISIÓN MANUAL",
+  contactLink: "Ver canales de contacto de Postventa",
+} as const;
+
 
 /** Modo interino: la base de Polygon aún no está cargada. */
 export const RESULT_PENDING_DATABASE = {
@@ -199,6 +219,7 @@ export const FORM_VALIDATION = {
   serverError: "No pudimos registrar tu solicitud. Inténtalo nuevamente en unos minutos o contacta a nuestro equipo de Postventa.",
   rateLimited: "Has enviado demasiadas solicitudes en poco tiempo. Espera unos minutos e inténtalo nuevamente.",
   tooLarge: "Las fotos adjuntas superan el tamaño total permitido (4 MB). Adjunta menos fotos o usa fotos de menor resolución.",
+  reinforcedNoRegistration: "Este número de serie no forma parte de la campaña, por lo que no es necesario registrar la bicicleta.",
   duplicateLimit: "Ya existen solicitudes activas para este número de serie. Nuestro equipo de Postventa revisará la situación y se pondrá en contacto contigo.",
 } as const;
 
@@ -386,9 +407,18 @@ export const STATUS_LABELS = {
   },
   verification: {
     AFFECTED: "Unidad afectada",
+    REINFORCED: "Tanda reforzada",
     NOT_IDENTIFIED: "No identificada",
     UNVERIFIED: "No verificable",
     PENDING_DATABASE: "Pendiente (base no cargada)",
+  },
+  lookupResult: {
+    AFFECTED: "Afectada",
+    REINFORCED: "Reforzada",
+    NOT_IDENTIFIED: "No encontrada",
+    INVALID: "Formato inválido",
+    PENDING_DATABASE: "Pendiente (base no cargada)",
+    RATE_LIMITED: "Bloqueada por límite",
   },
   requestType: {
     REPLACEMENT: "Reemplazo de cuadro",

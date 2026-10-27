@@ -1,7 +1,8 @@
 "use client";
 
 import type { RefObject } from "react";
-import { FLOW, RESULT_AFFECTED, RESULT_NOT_IDENTIFIED, RESULT_PENDING_DATABASE, RESULT_UNVERIFIED } from "@/lib/copy/es";
+import { FLOW, RESULT_AFFECTED, RESULT_NOT_FOUND, RESULT_PENDING_DATABASE, RESULT_REINFORCED, SERIAL_VALIDATION } from "@/lib/copy/es";
+import { MANUAL_REVIEW_AFTER_ATTEMPTS } from "@/lib/limits";
 import type { RequestType, VerifyResponse } from "@/lib/types";
 import { Badge, Button, cx } from "./ui";
 
@@ -10,7 +11,11 @@ export type VerifyOk = Extract<VerifyResponse, { ok: true }>;
 export interface VerificationResultProps {
   result: VerifyOk;
   headingRef?: RefObject<HTMLHeadingElement | null>;
+  /** Intentos fallidos seguidos (no encontrada / formato inválido), incluido el actual. */
+  failedAttempts: number;
   onStartRegistration: (requestType: RequestType) => void;
+  /** Vuelve al campo de serie conservando lo escrito, para corregirlo. */
+  onRetry: () => void;
   onVerifyAnother: () => void;
 }
 
@@ -38,7 +43,7 @@ function SerialLine({ label, serial, model, size }: { label: string; serial: str
 }
 
 /** Tarjeta de resultado de la verificación: cuatro estados distintos (brief §10 y §34). */
-export function VerificationResult({ result, headingRef, onStartRegistration, onVerifyAnother }: VerificationResultProps) {
+export function VerificationResult({ result, headingRef, failedAttempts, onStartRegistration, onRetry, onVerifyAnother }: VerificationResultProps) {
   const headingProps = { ref: headingRef, tabIndex: -1 as const, className: "headline outline-none" };
 
   if (result.state === "AFFECTED") {
@@ -71,26 +76,34 @@ export function VerificationResult({ result, headingRef, onStartRegistration, on
     );
   }
 
-  if (result.state === "NOT_IDENTIFIED") {
+  if (result.state === "REINFORCED") {
     return (
-      <article aria-labelledby="resultado-titulo" className="rounded-md border border-line bg-paper px-5 py-6 sm:px-8 sm:py-8">
-        <Badge tone="neutral">{RESULT_NOT_IDENTIFIED.badge}</Badge>
-        <h2 id="resultado-titulo" {...headingProps} className="headline mt-4 text-[22px] text-ink outline-none sm:text-[28px]">
-          {RESULT_NOT_IDENTIFIED.title}
+      <article aria-labelledby="resultado-titulo" className="rounded-md border-2 border-ink bg-paper px-5 py-6 sm:px-8 sm:py-8">
+        <Badge tone="neutral">{RESULT_REINFORCED.badge}</Badge>
+        <h2 id="resultado-titulo" {...headingProps} className="headline mt-4 text-[24px] text-ink outline-none sm:text-[30px]">
+          <span aria-hidden="true" className="mr-2">
+            ✓
+          </span>
+          {RESULT_REINFORCED.title}
         </h2>
         <div className="mt-4 space-y-3 text-[16px] leading-relaxed text-ink-700">
-          <p>{RESULT_NOT_IDENTIFIED.body1}</p>
-          <p>{RESULT_NOT_IDENTIFIED.body2}</p>
-          <p className="font-semibold text-ink">{RESULT_NOT_IDENTIFIED.body3}</p>
+          <p>{RESULT_REINFORCED.body1}</p>
+          <p className="font-semibold text-ink">{RESULT_REINFORCED.body2}</p>
+          <p>{RESULT_REINFORCED.body3}</p>
         </div>
-        <SerialLine label={FLOW.verifiedSerialLabel} serial={result.serial} />
-        {/* Decisión de Cross Mountain (27-10-2026): sin botón de revisión manual; solo verificar otro número. */}
+        <SerialLine label={RESULT_REINFORCED.serialLabel} serial={result.serial} model={result.model} size={result.size} />
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Button variant="primary" onClick={onVerifyAnother}>
-            {RESULT_NOT_IDENTIFIED.ctaAnother}
+          <Button variant="secondary" onClick={onVerifyAnother}>
+            {RESULT_REINFORCED.ctaAnother}
           </Button>
         </div>
       </article>
+    );
+  }
+
+  if (result.state === "NOT_IDENTIFIED") {
+    return (
+      <NotFoundCard headingProps={headingProps} serial={result.serial} failedAttempts={failedAttempts} onRetry={onRetry} onStartRegistration={onStartRegistration} />
     );
   }
 
@@ -119,27 +132,71 @@ export function VerificationResult({ result, headingRef, onStartRegistration, on
     );
   }
 
-  // UNVERIFIED
+  // UNVERIFIED (formato inválido): mismo tratamiento que "no encontrado", con el motivo concreto.
   return (
-    <article aria-labelledby="resultado-titulo" className="rounded-md border border-line bg-paper-100 px-5 py-6 sm:px-8 sm:py-8">
-      <Badge tone="neutral">{RESULT_UNVERIFIED.badge}</Badge>
+    <NotFoundCard
+      headingProps={headingProps}
+      serial={result.serial}
+      reason={SERIAL_VALIDATION[result.reason]}
+      failedAttempts={failedAttempts}
+      onRetry={onRetry}
+      onStartRegistration={onStartRegistration}
+    />
+  );
+}
+
+/**
+ * Serie no encontrada o con formato inválido: mensaje de error y "volver a intentar".
+ * Tras MANUAL_REVIEW_AFTER_ATTEMPTS intentos fallidos seguidos se ofrece la revisión manual,
+ * para que un dueño con la serie bien escrita (pero ausente de la lista) no quede sin salida.
+ */
+function NotFoundCard({
+  headingProps,
+  serial,
+  reason,
+  failedAttempts,
+  onRetry,
+  onStartRegistration,
+}: {
+  headingProps: { ref?: RefObject<HTMLHeadingElement | null>; tabIndex: -1; className: string };
+  serial: string;
+  reason?: string;
+  failedAttempts: number;
+  onRetry: () => void;
+  onStartRegistration: (requestType: RequestType) => void;
+}) {
+  const offerManual = failedAttempts >= MANUAL_REVIEW_AFTER_ATTEMPTS;
+  return (
+    <article aria-labelledby="resultado-titulo" className="rounded-md border-2 border-alert bg-paper px-5 py-6 sm:px-8 sm:py-8">
+      <Badge tone="neutral">{RESULT_NOT_FOUND.badge}</Badge>
       <h2 id="resultado-titulo" {...headingProps} className="headline mt-4 text-[22px] text-ink outline-none sm:text-[28px]">
-        {RESULT_UNVERIFIED.title}
+        {RESULT_NOT_FOUND.title}
       </h2>
       <div className="mt-4 space-y-3 text-[16px] leading-relaxed text-ink-700">
-        <p>{RESULT_UNVERIFIED.body1}</p>
-        <p>{RESULT_UNVERIFIED.body2}</p>
-        <p className="font-semibold text-ink">{RESULT_UNVERIFIED.safety}</p>
+        {reason ? <p className="font-semibold text-alert-700">{reason}</p> : null}
+        <p>{RESULT_NOT_FOUND.body1}</p>
       </div>
-      {result.serial ? <SerialLine label={FLOW.verifiedSerialLabel} serial={result.serial} /> : null}
-      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-        <Button variant="primary" onClick={() => onStartRegistration("MANUAL_REVIEW")}>
-          {RESULT_UNVERIFIED.cta}
-        </Button>
-        <Button variant="secondary" onClick={onVerifyAnother}>
-          {RESULT_UNVERIFIED.ctaAnother}
+      {serial ? <SerialLine label={FLOW.verifiedSerialLabel} serial={serial} /> : null}
+      <div className="mt-6">
+        <Button variant="primary" onClick={onRetry} className="w-full sm:w-auto">
+          {RESULT_NOT_FOUND.retry}
         </Button>
       </div>
+      {offerManual ? (
+        <div className="mt-6 border-t border-line pt-5">
+          <h3 className="text-[16px] font-bold text-ink">{RESULT_NOT_FOUND.manualTitle}</h3>
+          <p className="mt-2 text-[15px] leading-relaxed text-ink-700">{RESULT_NOT_FOUND.manualBody}</p>
+          <p className="mt-2 text-[15px] font-semibold text-ink">{RESULT_NOT_FOUND.manualSafety}</p>
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <Button variant="secondary" onClick={() => onStartRegistration("MANUAL_REVIEW")}>
+              {RESULT_NOT_FOUND.manualCta}
+            </Button>
+            <a href="#contacto" className="text-sm underline underline-offset-4 text-ink-700 hover:text-ink">
+              {RESULT_NOT_FOUND.contactLink}
+            </a>
+          </div>
+        </div>
+      ) : null}
     </article>
   );
 }

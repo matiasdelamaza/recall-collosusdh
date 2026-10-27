@@ -6,6 +6,7 @@ import {
   customerConfirmationEmail,
   customerResultAffectedEmail,
   customerResultNotIdentifiedEmail,
+  customerResultReinforcedEmail,
   internalNotificationEmail,
   type CaseEmailData,
   type EmailContext,
@@ -23,7 +24,7 @@ export function getEmailContext(): EmailContext {
   };
 }
 
-type Kind = "CUSTOMER_CONFIRMATION" | "INTERNAL_NEW_CASE" | "CUSTOMER_RESULT_AFFECTED" | "CUSTOMER_RESULT_NOT_IDENTIFIED";
+type Kind = "CUSTOMER_CONFIRMATION" | "INTERNAL_NEW_CASE" | "CUSTOMER_RESULT_AFFECTED" | "CUSTOMER_RESULT_REINFORCED" | "CUSTOMER_RESULT_NOT_IDENTIFIED";
 
 /** Tiempo máximo de espera por envío; pasado este plazo se registra el fallo y la petición continúa. */
 const SEND_TIMEOUT_MS = 15_000;
@@ -80,8 +81,9 @@ export async function sendNewCaseNotifications(c: RecallCase): Promise<{ custome
 }
 
 /** Notifica al cliente el resultado tras el reproceso contra la base oficial. Nunca lanza. */
-export async function sendResultNotification(c: RecallCase, result: "AFFECTED" | "NOT_IDENTIFIED"): Promise<boolean> {
+export async function sendResultNotification(c: RecallCase, result: "AFFECTED" | "REINFORCED" | "NOT_IDENTIFIED"): Promise<boolean> {
   const ctx = getEmailContext();
-  const rendered = result === "AFFECTED" ? customerResultAffectedEmail(c, ctx) : customerResultNotIdentifiedEmail(c, ctx);
-  return deliver(result === "AFFECTED" ? "CUSTOMER_RESULT_AFFECTED" : "CUSTOMER_RESULT_NOT_IDENTIFIED", c.email, rendered, c);
+  if (result === "AFFECTED") return deliver("CUSTOMER_RESULT_AFFECTED", c.email, customerResultAffectedEmail(c, ctx), c);
+  if (result === "REINFORCED") return deliver("CUSTOMER_RESULT_REINFORCED", c.email, customerResultReinforcedEmail(c, ctx), c);
+  return deliver("CUSTOMER_RESULT_NOT_IDENTIFIED", c.email, customerResultNotIdentifiedEmail(c, ctx), c);
 }

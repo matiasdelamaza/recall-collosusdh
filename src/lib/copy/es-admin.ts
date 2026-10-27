@@ -8,6 +8,7 @@ export const ADMIN = {
   nav: {
     cases: "Casos",
     metrics: "Métricas",
+    lookups: "Consultas",
     serials: "Base de series",
     logout: "Cerrar sesión",
   },
@@ -162,6 +163,36 @@ export const ADMIN = {
     dailyCols: { day: "Día", lookups: "Consultas", registrations: "Registros" },
     completionHint: "Reemplazos completados / casos de unidades afectadas (abiertos + cerrados).",
   },
+  lookups: {
+    title: "Consultas de número de serie",
+    intro:
+      "Cada número ingresado en el sitio queda registrado con su resultado. La conexión es un identificador anónimo (hash de la IP) que permite ver intentos repetidos de una misma persona sin guardar su IP.",
+    total: (n: number) => `${n.toLocaleString("es-CL")} consultas`,
+    exportCsv: "Exportar CSV",
+    kpis: {
+      total: "Consultas totales",
+      distinctSerials: "Series distintas ingresadas",
+      distinctConnections: "Conexiones distintas",
+      affected: "Tanda afectada",
+      reinforced: "Tanda reforzada",
+      notFound: "No encontradas",
+      invalid: "Formato inválido",
+      pending: "Pendientes (base no cargada)",
+      rateLimited: "Bloqueadas por límite",
+    },
+    search: "Buscar serie",
+    searchPlaceholder: "Parte del número de serie",
+    result: "Resultado",
+    all: "Todos",
+    apply: "Filtrar",
+    clear: "Limpiar",
+    columns: { date: "Fecha", serial: "Serie ingresada", result: "Resultado", connection: "Conexión", case: "Caso registrado" },
+    empty: "No hay consultas que coincidan con los filtros.",
+    emptySerial: "(vacía)",
+    prev: "← Anterior",
+    next: "Siguiente →",
+    page: (p: number, total: number) => `Página ${p} de ${total}`,
+  },
   serials: {
     title: "Base de series afectadas",
     statusTitle: "Estado de la base oficial de Polygon",
@@ -178,7 +209,7 @@ export const ADMIN = {
     totalSerials: "Series afectadas cargadas",
     importTitle: "Importar base de series (CSV)",
     importHelp:
-      "Archivo CSV con cabecera. Columna obligatoria: serial_number (alias: serial, frame_number, serie, numero_de_serie). Opcionales: model, size, production_batch, status (RECALL por defecto). Separador coma o punto y coma. Máximo 4 MB (para archivos más grandes, usar la importación por consola: npm run serials:import).",
+      "Archivo CSV con cabecera. Columna obligatoria: serial_number (alias: serial, frame_number, serie, numero_de_serie). Opcionales: model, size, production_batch y status (alias: estado, tanda) con AFECTADA, REFORZADA o EXCLUIDA (también RECALL, REINFORCED, EXCLUDED; AFECTADA por defecto). Separador coma o punto y coma. Máximo 4 MB (para archivos más grandes, usar la importación por consola: npm run serials:import).",
     importFile: "Archivo CSV",
     importNotes: "Notas (opcional)",
     importDryRun: "Solo validar (sin escribir)",
@@ -196,7 +227,7 @@ export const ADMIN = {
     reprocessDryRun: "Simular (sin cambios ni correos)",
     reprocessSubmit: "Reprocesar",
     reprocessResult: "Resultado del reproceso",
-    reprocessCols: { scanned: "Revisados", nowAffected: "Ahora afectadas", nowNotIdentified: "Ahora no identificadas", unchanged: "Sin cambios", notified: "Notificados", errors: "Errores" },
+    reprocessCols: { scanned: "Revisados", nowAffected: "Ahora afectadas", nowReinforced: "Ahora tanda reforzada", nowNotIdentified: "Ahora no identificadas", unchanged: "Sin cambios", notified: "Notificados", errors: "Errores" },
     messages: {
       statusChanged: "Estado de la base actualizado.",
       completeWithoutSerials:

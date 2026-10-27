@@ -147,6 +147,7 @@ export function ReprocessForm() {
           <dl className="grid grid-cols-2 gap-x-4 gap-y-1 sm:grid-cols-6">
             <Stat label={S.reprocessCols.scanned} value={state.result.scanned} />
             <Stat label={S.reprocessCols.nowAffected} value={state.result.nowAffected} alert={state.result.nowAffected > 0} />
+            <Stat label={S.reprocessCols.nowReinforced} value={state.result.nowReinforced} />
             <Stat label={S.reprocessCols.nowNotIdentified} value={state.result.nowNotIdentified} />
             <Stat label={S.reprocessCols.unchanged} value={state.result.unchanged} />
             <Stat label={S.reprocessCols.notified} value={state.result.notified} />

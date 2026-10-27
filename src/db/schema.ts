@@ -22,7 +22,8 @@ import {
 
 /** Resultado de la verificación de un número de serie. */
 export const SERIAL_VERIFICATION_STATUSES = [
-  "AFFECTED", // coincidencia exacta con la base oficial de Polygon
+  "AFFECTED", // coincidencia exacta con la base oficial de Polygon (tanda afectada)
+  "REINFORCED", // coincidencia exacta con una unidad de la tanda reforzada (no incluida en la campaña)
   "NOT_IDENTIFIED", // base completa cargada y no aparece
   "UNVERIFIED", // formato inválido / no se pudo verificar
   "PENDING_DATABASE", // base de Polygon aún no cargada (modo interino)
@@ -92,7 +93,7 @@ export const FILE_KINDS = ["SERIAL_PHOTO", "BIKE_PHOTO", "HEADTUBE_PHOTO", "ADDI
 export type FileKind = (typeof FILE_KINDS)[number];
 export const fileKindEnum = pgEnum("file_kind", FILE_KINDS);
 
-export const LOOKUP_RESULTS = ["AFFECTED", "NOT_IDENTIFIED", "INVALID", "PENDING_DATABASE", "RATE_LIMITED"] as const;
+export const LOOKUP_RESULTS = ["AFFECTED", "REINFORCED", "NOT_IDENTIFIED", "INVALID", "PENDING_DATABASE", "RATE_LIMITED"] as const;
 export type LookupResult = (typeof LOOKUP_RESULTS)[number];
 export const lookupResultEnum = pgEnum("lookup_result", LOOKUP_RESULTS);
 
@@ -113,7 +114,7 @@ export const affectedSerials = pgTable(
     model: text("model"),
     size: text("size"),
     productionBatch: text("production_batch"),
-    /** Estado dentro de la campaña. Hoy solo "RECALL". */
+    /** Estado dentro de la campaña: "RECALL" (tanda afectada), "REINFORCED" (tanda reforzada) o "EXCLUDED". */
     status: text("status").notNull().default("RECALL"),
     importId: integer("import_id").references(() => serialImports.id, { onDelete: "set null" }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

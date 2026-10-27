@@ -22,6 +22,7 @@ export type VerifyResponse =
       model?: string | null;
       size?: string | null;
     }
+  | { ok: true; state: "REINFORCED"; serial: string; model?: string | null; size?: string | null }
   | { ok: true; state: "NOT_IDENTIFIED"; serial: string }
   | { ok: true; state: "PENDING_DATABASE"; serial: string }
   | { ok: true; state: "UNVERIFIED"; serial: string; reason: "EMPTY" | "TOO_SHORT" | "TOO_LONG" | "INVALID_CHARS" }
@@ -103,6 +104,7 @@ export const ANALYTICS_EVENTS = [
   "page_view",
   "serial_check_started",
   "serial_check_affected",
+  "serial_check_reinforced",
   "serial_check_not_identified",
   "serial_check_manual_review",
   "serial_check_pending_database",

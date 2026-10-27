@@ -9,11 +9,11 @@ import { getDb } from "@/db/client";
 import { ACTIVE_CASE_STATUSES, recallCases, type RecallCase } from "@/db/schema";
 import { logAudit } from "@/lib/server/audit";
 import { sendResultNotification } from "./notifications";
-import { findAffectedSerial, getSerialDatabaseStatus } from "./verify";
+import { findListedSerial, getSerialDatabaseStatus } from "./verify";
 
 export interface ReprocessOptions {
   actor: string;
-  /** Enviar correo a los clientes con el resultado (afectada / no identificada). */
+  /** Enviar correo a los clientes con el resultado (afectada / tanda reforzada / no identificada). */
   notifyCustomers: boolean;
   dryRun?: boolean;
 }
@@ -21,6 +21,7 @@ export interface ReprocessOptions {
 export interface ReprocessResult {
   scanned: number;
   nowAffected: number;
+  nowReinforced: number;
   nowNotIdentified: number;
   unchanged: number;
   notified: number;
@@ -30,7 +31,7 @@ export interface ReprocessResult {
 export async function reprocessPendingCases(options: ReprocessOptions): Promise<ReprocessResult> {
   const db = await getDb();
   const dbStatus = await getSerialDatabaseStatus();
-  const result: ReprocessResult = { scanned: 0, nowAffected: 0, nowNotIdentified: 0, unchanged: 0, notified: 0, errors: [] };
+  const result: ReprocessResult = { scanned: 0, nowAffected: 0, nowReinforced: 0, nowNotIdentified: 0, unchanged: 0, notified: 0, errors: [] };
 
   const candidates: RecallCase[] = await db
     .select()
@@ -47,8 +48,8 @@ export async function reprocessPendingCases(options: ReprocessOptions): Promise<
 
   for (const c of candidates) {
     try {
-      const match = await findAffectedSerial(c.serialNumber);
-      if (match) {
+      const listed = await findListedSerial(c.serialNumber);
+      if (listed?.status === "RECALL") {
         result.nowAffected++;
         if (options.dryRun) continue;
         const now = new Date();
@@ -75,6 +76,40 @@ export async function reprocessPendingCases(options: ReprocessOptions): Promise<
         });
         if (options.notifyCustomers && updated) {
           const ok = await sendResultNotification(updated, "AFFECTED");
+          if (ok) {
+            result.notified++;
+            await db.update(recallCases).set({ resultNotifiedAt: new Date() }).where(eq(recallCases.id, c.id));
+          }
+        }
+        continue;
+      }
+
+      if (listed?.status === "REINFORCED") {
+        // Tanda reforzada: no forma parte de la campaña. El caso queda en revisión manual para que Postventa lo cierre.
+        result.nowReinforced++;
+        if (options.dryRun) continue;
+        const now = new Date();
+        const [updated] = await db
+          .update(recallCases)
+          .set({ serialVerificationStatus: "REINFORCED", requestType: "MANUAL_REVIEW", caseStatus: "MANUAL_REVIEW", updatedAt: now })
+          .where(eq(recallCases.id, c.id))
+          .returning();
+        await logAudit({
+          type: "STATUS_CHANGED",
+          actor: options.actor,
+          caseId: c.id,
+          payload: {
+            caseId: c.caseId,
+            field: "serialVerificationStatus",
+            from: c.serialVerificationStatus,
+            to: "REINFORCED",
+            caseStatusFrom: c.caseStatus,
+            caseStatusTo: "MANUAL_REVIEW",
+            reason: "reprocess",
+          },
+        });
+        if (options.notifyCustomers && updated) {
+          const ok = await sendResultNotification(updated, "REINFORCED");
           if (ok) {
             result.notified++;
             await db.update(recallCases).set({ resultNotifiedAt: new Date() }).where(eq(recallCases.id, c.id));
