@@ -13,6 +13,24 @@
 export const SERIAL_MIN_LENGTH = 5;
 export const SERIAL_MAX_LENGTH = 32;
 
+/** Tallas que la lista de Polygon pega al final de algunas series, p. ej. "A25022640XL". */
+export const SERIAL_SIZE_SUFFIXES = ["XS", "S", "M", "L", "XL"] as const;
+
+/** Serie Polygon (1 letra + 8 números) con la talla pegada al final. En el cuadro va grabada sin la talla. */
+const SERIAL_WITH_SIZE = /^([A-Z][0-9]{8})(XS|S|M|L|XL)$/;
+const SERIAL_BASE = /^[A-Z][0-9]{8}$/;
+
+/** Si la serie trae la talla pegada al final, devuelve la serie sin ella y la talla; si no, null. */
+export function splitSizeSuffix(serial: string): { serial: string; size: string } | null {
+  const m = SERIAL_WITH_SIZE.exec(serial);
+  return m ? { serial: m[1]!, size: m[2]! } : null;
+}
+
+/** Variantes con talla de una serie sin talla ("A25022640" → "A25022640XS" … "A25022640XL"); vacío si no aplica. */
+export function withSizeSuffixes(serial: string): string[] {
+  return SERIAL_BASE.test(serial) ? SERIAL_SIZE_SUFFIXES.map((s) => serial + s) : [];
+}
+
 /** Caracteres permitidos tras la normalización. */
 const SERIAL_PATTERN = /^[A-Z0-9-]+$/;
 

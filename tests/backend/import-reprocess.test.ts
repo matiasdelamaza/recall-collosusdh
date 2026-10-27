@@ -75,6 +75,17 @@ describe("importSerialsFromCsv", () => {
     await setSerialDatabaseStatus("PENDING", "test");
   });
 
+  it("la lista trae la talla pegada (A25022640XL): se encuentra escrita con o sin talla y se registra como la de Polygon", async () => {
+    await importSerialsFromCsv("serial_number;status\nA25022640XL;OK\nB25028554;NOT OK\n", { filename: "talla.csv", importedBy: "prueba" });
+    await setSerialDatabaseStatus("COMPLETE", "prueba");
+    expect(await verifySerial("A25022640")).toMatchObject({ state: "REINFORCED", serial: "A25022640XL" });
+    expect(await verifySerial("a25022640xl")).toMatchObject({ state: "REINFORCED", serial: "A25022640XL" });
+    // Al revés: la lista sin talla y el cliente la escribe con talla.
+    expect(await verifySerial("B25028554M")).toMatchObject({ state: "AFFECTED", serial: "B25028554" });
+    expect(await verifySerial("A99999999XL")).toMatchObject({ state: "NOT_IDENTIFIED", serial: "A99999999XL" });
+    await setSerialDatabaseStatus("PENDING", "prueba");
+  });
+
   it("dry-run no escribe", async () => {
     const db = await getDb();
     const before = (await db.select().from(affectedSerials)).length;
@@ -134,5 +145,19 @@ describe("reprocessPendingCases", () => {
     expect(audits.filter((x) => x.type === "STATUS_CHANGED").length).toBe(2);
     expect(audits.filter((x) => x.type === "EMAIL_SENT" && (x.payload as { kind?: string })?.kind === "CUSTOMER_RESULT_AFFECTED").length).toBe(1);
     expect(audits.filter((x) => x.type === "EMAIL_SENT" && (x.payload as { kind?: string })?.kind === "CUSTOMER_RESULT_NOT_IDENTIFIED").length).toBe(1);
+  });
+
+  it("reproceso: un caso con la serie sin talla toma la serie de la lista de Polygon (A25022699 → A25022699XL)", async () => {
+    await setSerialDatabaseStatus("PENDING", "test");
+    await resetRateLimits();
+    const db = await getDb();
+    const c = await (await POST(postForm(URL_, buildRegistrationForm({ serial: "A25022699", rut: rutFor(1111114), email: "pt@example.test" }), { "x-forwarded-for": "198.51.100.3" }))).json();
+    expect(c).toMatchObject({ ok: true, outcome: "CREATED", verification: "PENDING_DATABASE" });
+
+    await importSerialsFromCsv("serial_number;status\nA25022699XL;OK\n", { filename: "polygon-talla.csv", importedBy: "prueba" });
+    const r = await reprocessPendingCases({ actor: "prueba", notifyCustomers: false });
+    expect(r).toMatchObject({ nowReinforced: 1, errors: [] });
+    const row = (await db.select().from(recallCases).where(eq(recallCases.caseId, c.caseId)))[0]!;
+    expect(row).toMatchObject({ serialNumber: "A25022699XL", serialRaw: "A25022699", serialVerificationStatus: "REINFORCED", caseStatus: "MANUAL_REVIEW" });
   });
 });
