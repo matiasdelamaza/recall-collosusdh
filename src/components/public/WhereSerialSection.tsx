@@ -3,7 +3,7 @@ import { Container, SectionTitle } from "./ui";
 
 export function WhereSerialSection() {
   return (
-    <section id="donde-esta-la-serie" aria-labelledby="serie-titulo" className="scroll-mt-6 border-t border-line bg-paper-100 py-14 sm:py-20">
+    <section id="donde-esta-la-serie" aria-labelledby="serie-titulo" className="border-t border-line bg-paper-100 py-14 sm:py-20">
       <Container wide>
         <div className="grid items-start gap-8 lg:grid-cols-2">
           <div>

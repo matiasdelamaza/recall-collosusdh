@@ -62,7 +62,7 @@ El secreto de "bypass" de Vercel usado en las pruebas fue revocado.
 - Contacto de Postventa: `NEXT_PUBLIC_CONTACT_EMAIL`, `NEXT_PUBLIC_CONTACT_WHATSAPP`, `NEXT_PUBLIC_CONTACT_HOURS`.
 - Dominio `recallcollosusdh.cl` en Vercel (Settings → Domains); luego `NEXT_PUBLIC_SITE_URL=https://recallcollosusdh.cl` y `NEXT_PUBLIC_NOINDEX=false`.
   El dominio propio queda público automáticamente; las URLs `*.vercel.app` siguen protegidas.
-- Cambiar `ADMIN_PASSWORD` por una propia; borrar los dos casos de prueba; copiar las fotos oficiales a `public/modelos/collosus-dh7.jpg` y `collosus-dh9.jpg`.
+- Cambiar `ADMIN_PASSWORD` por una propia; borrar los dos casos de prueba; las fotos oficiales ya están en `public/modelos/collosus-dh7.webp` y `collosus-dh9.webp`.
 - Revisión legal del aviso de privacidad (`PRIVACY` en `src/lib/copy/es.ts`) y validación del proceso con SERNAC.
 - Activar CI: mover `.github/ci.yml.example` a `.github/workflows/ci.yml`.
 

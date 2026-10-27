@@ -1,6 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import { Barlow_Condensed, Inter } from "next/font/google";
 import "./globals.css";
 import { SEO } from "@/lib/copy/es";
+
+// Fuentes autoalojadas por Next (el navegador no hace peticiones a Google).
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const display = Barlow_Condensed({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-barlow", display: "swap" });
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://recallcollosusdh.cl";
 const noindex = process.env.NEXT_PUBLIC_NOINDEX === "true";
@@ -31,7 +36,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es-CL">
+    <html lang="es-CL" className={`${inter.variable} ${display.variable}`}>
       <body className="min-h-dvh bg-paper text-ink">{children}</body>
     </html>
   );

@@ -25,7 +25,7 @@ export function ContactSection({ contact }: { contact: ContactInfo }) {
   const waHref = whatsapp ? whatsappHref(whatsapp) : null;
 
   return (
-    <section id="contacto" aria-labelledby="contacto-titulo" className="scroll-mt-6 border-t border-line bg-paper-100 py-14 sm:py-20">
+    <section id="contacto" aria-labelledby="contacto-titulo" className="border-t border-line bg-paper-100 py-14 sm:py-20">
       <Container>
         <SectionTitle id="contacto-titulo">{CONTACT.title}</SectionTitle>
         <div className="rounded-md border border-line bg-paper p-6 sm:p-8">

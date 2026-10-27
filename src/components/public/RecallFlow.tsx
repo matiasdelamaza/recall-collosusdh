@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { track } from "@/lib/analytics-client";
-import { FLOW, HERO, RESULT_ERROR, RESULT_RATE_LIMITED, RESULT_TURNSTILE, SERIAL_VALIDATION } from "@/lib/copy/es";
+import { FLOW, HERO, MODELS, RESULT_ERROR, RESULT_RATE_LIMITED, RESULT_TURNSTILE, SERIAL_VALIDATION } from "@/lib/copy/es";
 import { MANUAL_REVIEW_AFTER_ATTEMPTS } from "@/lib/limits";
 import { normalizeSerial, validateSerial } from "@/lib/serial";
 import { requestTypeForState, type RegistrationResponse, type RequestType, type SerialVerificationStatus, type VerifyResponse } from "@/lib/types";
@@ -183,21 +183,35 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
   return (
     <>
       {/* ── HERO + VERIFICADOR ── */}
-      <section id="verificar" aria-labelledby="hero-titulo" className="scroll-mt-4 bg-paper">
-        <div className="mx-auto max-w-5xl px-5 pb-10 pt-8 sm:px-8 sm:pb-16 sm:pt-14">
-          <div className="grid gap-8 lg:grid-cols-[1.1fr_1fr] lg:gap-12">
+      <section id="verificar" aria-labelledby="hero-titulo" className="bg-paper">
+        <div className="mx-auto max-w-6xl px-5 pb-12 pt-8 sm:px-8 sm:pb-16 sm:pt-14">
+          <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
             <div>
-              <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-ink-500">{HERO.kicker}</p>
-              <h1 id="hero-titulo" className="headline mt-2 text-[40px] text-ink sm:text-[56px] lg:text-[64px]">
+              <p className="flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.2em] text-ink-500">
+                <span aria-hidden="true" className="inline-block h-2 w-2 rounded-full bg-alert" />
+                {HERO.kicker}
+              </p>
+              <h1 id="hero-titulo" className="headline mt-3 text-[52px] text-ink sm:text-[72px] lg:text-[88px]">
                 {HERO.title}
               </h1>
-              <p className="mt-4 text-[18px] font-semibold leading-snug text-ink sm:text-[22px]">{HERO.subtitle}</p>
-              <p className="mt-4 text-[15px] leading-relaxed text-ink-700 sm:text-[17px]">{HERO.body1}</p>
-              <p className="mt-2 text-[15px] leading-relaxed text-ink-700 sm:text-[17px]">{HERO.body2}</p>
+              <p className="mt-5 max-w-xl text-[18px] font-semibold leading-snug text-ink sm:text-[22px]">{HERO.subtitle}</p>
+              <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-ink-700 sm:text-[17px]">{HERO.body1}</p>
+              <p className="mt-2 max-w-xl text-[15px] leading-relaxed text-ink-700 sm:text-[17px]">{HERO.body2}</p>
+
+              {/* Modelos incluidos: ayuda a reconocer la bicicleta antes de buscar la serie (solo escritorio; en móvil el verificador va primero). */}
+              <ul aria-label={MODELS.title} className="mt-10 hidden grid-cols-2 gap-4 lg:grid">
+                {MODELS.items.map((m) => (
+                  <li key={m.key} className="rounded-md bg-paper-100 px-3 pb-3 pt-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={m.image} alt={m.alt} width={720} height={420} className="h-auto w-full" />
+                    <p translate="no" className="headline mt-1 text-[18px] text-ink">{m.name}</p>
+                  </li>
+                ))}
+              </ul>
             </div>
 
-            <div>
-              <form onSubmit={handleSubmit} noValidate className="rounded-md border border-ink bg-paper p-5 sm:p-6" aria-label={HERO.cta}>
+            <div className="lg:sticky lg:top-24 lg:self-start">
+              <form onSubmit={handleSubmit} noValidate className="rounded-md border-2 border-ink bg-paper p-5 shadow-[0_18px_40px_-24px_rgba(11,11,12,0.45)] sm:p-7" aria-label={HERO.cta}>
                 <label htmlFor="serie" className="block text-sm font-bold uppercase tracking-[0.1em] text-ink">
                   {HERO.serialLabel}
                 </label>
@@ -221,7 +235,7 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
                   aria-invalid={inlineError ? true : undefined}
                   aria-describedby={inlineError ? "serie-error" : "serie-ayuda"}
                   disabled={loading}
-                  className={cx(inputClass, "mt-2 serial text-[18px] font-bold uppercase placeholder:font-sans placeholder:text-[15px] placeholder:font-normal placeholder:normal-case placeholder:tracking-normal")}
+                  className={cx(inputClass, "mt-2 serial text-[18px] font-bold uppercase placeholder:font-sans placeholder:text-[14px] placeholder:font-normal sm:placeholder:text-[15px] placeholder:normal-case placeholder:tracking-normal")}
                 />
                 {inlineMessage ? (
                   <p id="serie-error" role="alert" className="mt-2 text-sm font-medium text-alert">

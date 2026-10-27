@@ -3,7 +3,7 @@ import { Container, SectionTitle } from "./ui";
 
 export function FaqSection() {
   return (
-    <section id="preguntas-frecuentes" aria-labelledby="faq-titulo" className="scroll-mt-6 border-t border-line bg-paper py-14 sm:py-20">
+    <section id="preguntas-frecuentes" aria-labelledby="faq-titulo" className="border-t border-line bg-paper py-14 sm:py-20">
       <Container>
         <SectionTitle id="faq-titulo">{FAQ.title}</SectionTitle>
         <div className="divide-y divide-line border-y border-line">

@@ -15,7 +15,7 @@ Nada de esta lista debe inventarse. Mientras un ítem esté pendiente, el sitio 
 | [ ] | Formato oficial del número de serie | `validateSerial` y `normalizeSerial` en `src/lib/serial.ts`. Hoy acepta letras, números y guiones; espacios y guiones no se igualan entre sí |
 | [ ] | Disponibilidad estimada de cuadros de reemplazo | No se publica ninguna fecha. Si Polygon la confirma por escrito, agregar un texto en `FAQ` y en la sección "¿Qué sucede ahora?" (`STEPS`) |
 | [ ] | Declaración técnica oficial aprobada para publicación | Hasta entonces el sitio dice "posible falla estructural del cuadro en la zona de la dirección / pipa de dirección": `SAFETY` y `FAQ` en `src/lib/copy/es.ts` |
-| [ ] | Logos oficiales de Polygon | `public/` y cabecera/pie en `src/components/public/`. Hoy son marcas tipográficas provisionales |
+| [x] | Logos oficiales de Polygon | `public/brand/polygon-logo.png` (cabecera) y `polygon-logo-white.png` (pie), entregados por Cross Mountain el 27-10-2026 |
 
 ## B. Decisiones de Cross Mountain
 
@@ -54,7 +54,7 @@ Consulta de estado de caso por el cliente; portal de dealers; asignación autom�
 ## Actualización 27-10-2026 — modelos y fotografías
 
 - **Modelos afectados confirmados por Cross Mountain:** Collosus DH7 y Collosus DH9. Reflejado en la sección "Modelos incluidos en la campaña" (`MODELS` en `src/lib/copy/es.ts`, componente `src/components/public/ModelsSection.tsx`). La inclusión de cada unidad sigue determinándose por número de serie.
-- **Fotografías oficiales de producto:** copiar las imágenes entregadas por Cross Mountain a `public/modelos/collosus-dh7.jpg` (cuadro negro) y `public/modelos/collosus-dh9.jpg` (cuadro azul). La sección las muestra automáticamente cuando los archivos existen; mientras tanto muestra "Fotografía oficial pendiente". Formato recomendado: JPG o WEBP, ~1440×1080, fondo blanco, < 300 KB.
+- **Fotografías oficiales de producto:** listas (27-10-2026) en `public/modelos/collosus-dh7.webp` (negra) y `collosus-dh9.webp` (azul); se muestran en el inicio y en "Modelos incluidos".
 
 ## Estado al 27-10-2026 (madrugada) — qué falta para ver el sitio publicado
 

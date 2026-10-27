@@ -25,7 +25,7 @@ export function Button({
     <button
       type={type}
       className={cx(
-        "inline-flex min-h-12 w-full items-center justify-center rounded-sm px-5 text-[15px] font-bold tracking-wide transition-colors disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto",
+        "inline-flex min-h-12 w-full items-center justify-center rounded-sm px-5 text-[15px] font-bold tracking-wide transition-[color,background-color,transform] duration-150 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 disabled:active:translate-y-0 sm:w-auto",
         VARIANTS[variant],
         className,
       )}
@@ -109,7 +109,7 @@ export const SELECT_ARROW_STYLE = {
 
 export function SectionTitle({ id, children }: { id?: string; children: ReactNode }) {
   return (
-    <h2 id={id} className="headline mb-6 text-[26px] text-ink sm:text-[32px]">
+    <h2 id={id} className="headline mb-6 text-[32px] text-ink sm:text-[44px]">
       {children}
     </h2>
   );
