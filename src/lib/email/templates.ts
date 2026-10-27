@@ -135,7 +135,7 @@ function wrapHtml(title: string, blocks: HtmlBlock[], opts: { siteUrl: string; t
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;border-collapse:collapse;">
 <tr><td style="padding:0 4px 14px;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>
-<td style="vertical-align:middle;"><img src="${base}/brand/polygon-logo.png" width="120" height="27" alt="Polygon" style="display:block;border:0;width:120px;height:auto;"></td>
+<td style="vertical-align:middle;"><img src="${base}/brand/polygon-logo.png" width="120" height="27" alt="POLYGON" style="display:block;border:0;width:120px;height:auto;font-family:${FONT};font-size:20px;font-weight:800;letter-spacing:0.08em;color:${C.ink};"></td>
 <td align="right" style="vertical-align:middle;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${C.ink500};">Aviso de suspensión de uso · Chile</td>
 </tr></table>
 </td></tr>
