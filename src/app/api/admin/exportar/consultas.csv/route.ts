@@ -18,7 +18,7 @@ function cell(v: unknown): string {
   return s;
 }
 
-const HEADERS = ["Fecha", "Serie ingresada", "Resultado", "Correo", "Código de enlace", "Conexión", "Caso registrado"];
+const HEADERS = ["Fecha", "Serie ingresada", "Resultado", "Correo", "Código de enlace", "Conexión", "Caso registrado", "Recordatorio enviado"];
 
 export async function GET(req: NextRequest) {
   const auth = await requireAdminApi();
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
   const lines: string[] = [HEADERS.map(cell).join(SEP)];
   for (const r of rows) {
-    lines.push([r.createdAt, r.serialNormalized, STATUS_LABELS.lookupResult[r.result], r.contactEmail, r.outreachRef, r.connection, r.caseId].map(cell).join(SEP));
+    lines.push([r.createdAt, r.serialNormalized, STATUS_LABELS.lookupResult[r.result], r.contactEmail, r.outreachRef, r.connection, r.caseId, r.reminderSentAt].map(cell).join(SEP));
   }
 
   await logAudit({ type: "EXPORT_CSV", actor: auth.identity.actor, payload: { export: "consultas", rows: rows.length, filters } });

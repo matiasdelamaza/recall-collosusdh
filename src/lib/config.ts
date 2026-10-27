@@ -18,6 +18,8 @@ const envSchema = z.object({
   EMAIL_FROM: z.string().default("Polygon Collosus DH · Cross Mountain <no-reply@recallcollosusdh.cl>"),
   INTERNAL_NOTIFICATION_EMAILS: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
+  /** Lo envía Vercel Cron como "Authorization: Bearer …" a /api/cron/*. */
+  CRON_SECRET: z.string().min(16).optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_SECURE: z

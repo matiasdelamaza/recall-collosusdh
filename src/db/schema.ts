@@ -260,6 +260,8 @@ export const serialLookups = pgTable(
     contactAt: timestamp("contact_at", { withTimezone: true }),
     /** Código del enlace personal del correo de aviso (?r=…); la relación código → persona vive fuera de la BD. */
     outreachRef: text("outreach_ref"),
+    /** Recordatorio automático (24 h) a quien dejó su correo con una serie afectada y no registró caso. */
+    reminderSentAt: timestamp("reminder_sent_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("serial_lookups_created_at_idx").on(t.createdAt), index("serial_lookups_ip_hash_idx").on(t.ipHash)],

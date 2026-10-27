@@ -116,9 +116,12 @@ export default async function AdminLookupsPage({ searchParams }: { searchParams:
                   </td>
                   <td className="px-3 py-2">
                     {r.contactEmail ? (
-                      <a href={`mailto:${r.contactEmail}`} className="break-all underline underline-offset-2">
-                        {r.contactEmail}
-                      </a>
+                      <>
+                        <a href={`mailto:${r.contactEmail}`} className="break-all underline underline-offset-2">
+                          {r.contactEmail}
+                        </a>
+                        {r.reminderSentAt ? <div className="text-xs text-ink-500">{L.reminderSent(fmtDateTime(r.reminderSentAt))}</div> : null}
+                      </>
                     ) : r.result === "AFFECTED" && r.caseId ? (
                       <span className="text-ink-500" title={L.contactInCaseHint}>
                         {L.contactInCase}

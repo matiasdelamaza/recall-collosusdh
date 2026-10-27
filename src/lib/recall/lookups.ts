@@ -107,6 +107,8 @@ export interface LookupRow {
   contactEmail: string | null;
   /** Código del enlace personal por el que llegó. */
   outreachRef: string | null;
+  /** Recordatorio automático enviado (consulta afectada con correo y sin caso). */
+  reminderSentAt: Date | null;
 }
 
 export const LOOKUPS_PAGE_SIZE = 50;
@@ -144,6 +146,7 @@ async function selectLookups(filters: LookupListFilters, limit: number, offset: 
       ipHash: serialLookups.ipHash,
       contactEmail: serialLookups.contactEmail,
       outreachRef: serialLookups.outreachRef,
+      reminderSentAt: serialLookups.reminderSentAt,
       caseId: sql<string | null>`(select ${recallCases.caseId} from ${recallCases} where ${recallCases.serialNumber} = ${serialLookups.serialNormalized} and ${serialLookups.serialNormalized} <> '' order by ${recallCases.createdAt} limit 1)`,
     })
     .from(serialLookups)
@@ -160,6 +163,7 @@ async function selectLookups(filters: LookupListFilters, limit: number, offset: 
     caseId: r.caseId ?? null,
     contactEmail: r.contactEmail ?? null,
     outreachRef: r.outreachRef ?? null,
+    reminderSentAt: r.reminderSentAt ?? null,
   }));
 }
 

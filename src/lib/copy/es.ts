@@ -448,6 +448,18 @@ export const OUTREACH = {
     important: "Te pedimos realizar esta verificación antes de volver a utilizar tu bicicleta.",
     body6: "Si tu unidad resulta afectada, no la utilices hasta completar el proceso de reemplazo coordinado por nuestro equipo.",
   },
+  /**
+   * Recordatorio automático (24 h) a quien consultó una serie afectada, dejó su correo y no registró caso
+   * (27-10-2026, pedido de Cross Mountain). Usa los mismos textos del resultado "afectada" del sitio.
+   */
+  affectedReminder: {
+    subject: "Recordatorio: no utilices tu bicicleta – Polygon Collosus DH",
+    heading: "Tu bicicleta está incluida en la campaña de seguridad",
+    greeting: "Hola,",
+    body1: (serials: string) => `Consultaste en nuestro sitio el número de serie ${serials}, que corresponde a una unidad incluida en la campaña de seguridad Polygon Collosus DH.`,
+    body2: "Aún no recibimos tu registro. Para coordinar el reemplazo del cuadro, ingresa nuevamente el número de serie y completa el formulario:",
+    already: "Si ya completaste el registro, puedes ignorar este mensaje.",
+  },
   /** Recordatorio con enlace personal (?r=código) a clientes que recibieron el aviso. */
   reminder: {
     subject: "Recordatorio: aviso de suspensión de uso – Polygon Collosus DH",

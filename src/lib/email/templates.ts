@@ -567,6 +567,31 @@ export function reminderCustomerEmail(ctx: EmailContext, ref: string): RenderedE
   return { subject: t.subject, text, html };
 }
 
+/** Recordatorio automático a quien consultó una serie afectada, dejó su correo y no registró caso. */
+export function affectedReminderEmail(serials: string[], ctx: EmailContext): RenderedEmail {
+  const t = OUTREACH.affectedReminder;
+  const url = `${publicUrl(ctx)}/`;
+  const help = `Ante cualquier duda, puedes escribirnos a ${contactEmailOf(ctx)}.`;
+  const body1 = t.body1(serials.join(", "));
+  const text = [
+    t.greeting, "", body1, "", `${RESULT_AFFECTED.subtitle}.`, RESULT_AFFECTED.body2, "", RESULT_AFFECTED.body3, "", t.body2, "", url, "", t.already, "", help, "", "Saludos,", "", OUTREACH.signature, "", EMAIL.footer,
+  ].join("\n");
+  const html = wrapHtml(t.subject, [
+    { type: "heading", text: t.heading },
+    { type: "p", text: t.greeting },
+    { type: "p", text: body1 },
+    { type: "alert", text: `${RESULT_AFFECTED.subtitle}. ${RESULT_AFFECTED.body2}` },
+    { type: "p", text: RESULT_AFFECTED.body3 },
+    { type: "p", text: t.body2 },
+    { type: "button", label: RESULT_AFFECTED.cta, href: url },
+    { type: "small", text: url },
+    { type: "caution", text: t.already },
+    { type: "p", text: help },
+    { type: "signature", text: `Saludos,\n${OUTREACH.signature}` },
+  ], { siteUrl: ctx.siteUrl });
+  return { subject: t.subject, text, html };
+}
+
 /** Aviso a distribuidores (ventas de MAYORISTA CROSSPORTS): revisar stock y contactar a sus clientes sin publicar. */
 export function outreachDistributorEmail(ctx: EmailContext): RenderedEmail {
   const t = OUTREACH.distributor;

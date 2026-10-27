@@ -4,6 +4,7 @@ import { getEnv, getInternalNotificationEmails } from "@/lib/config";
 import { CONTACT } from "@/lib/copy/es";
 import { getEmailProvider } from "@/lib/email";
 import {
+  affectedReminderEmail,
   customerConfirmationEmail,
   customerResultAffectedEmail,
   customerResultNotIdentifiedEmail,
@@ -27,7 +28,7 @@ export function getEmailContext(): EmailContext {
   };
 }
 
-type Kind = "CUSTOMER_CONFIRMATION" | "INTERNAL_NEW_CASE" | "INTERNAL_AFFECTED_CONTACT" | "CUSTOMER_RESULT_AFFECTED" | "CUSTOMER_RESULT_REINFORCED" | "CUSTOMER_RESULT_NOT_IDENTIFIED";
+type Kind = "CUSTOMER_CONFIRMATION" | "INTERNAL_NEW_CASE" | "INTERNAL_AFFECTED_CONTACT" | "CUSTOMER_AFFECTED_REMINDER" | "CUSTOMER_RESULT_AFFECTED" | "CUSTOMER_RESULT_REINFORCED" | "CUSTOMER_RESULT_NOT_IDENTIFIED";
 
 /** Tiempo máximo de espera por envío; pasado este plazo se registra el fallo y la petición continúa. */
 const SEND_TIMEOUT_MS = 15_000;
@@ -95,6 +96,11 @@ export async function sendResultNotification(c: RecallCase, result: "AFFECTED" |
 }
 
 /** Alerta interna: consulta de serie afectada con correo, aún sin caso. Nunca lanza. */
+/** Recordatorio a quien dejó su correo con una serie afectada y no registró caso. Nunca lanza. */
+export async function sendAffectedReminder(email: string, serials: string[]): Promise<boolean> {
+  return deliver("CUSTOMER_AFFECTED_REMINDER", email, affectedReminderEmail(serials, getEmailContext()), null, serials.join(", "));
+}
+
 export async function sendAffectedContactNotification(d: AffectedContactEmailData): Promise<boolean> {
   const internalTo = getInternalNotificationEmails();
   if (internalTo.length === 0) {
