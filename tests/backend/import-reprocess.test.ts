@@ -89,7 +89,7 @@ describe("reprocessPendingCases", () => {
 
   it("casos registrados en modo interino se promueven a AFECTADA / NO IDENTIFICADA tras cargar la base", async () => {
     await setSerialDatabaseStatus("PENDING", "test");
-    resetRateLimits();
+    await resetRateLimits();
     const db = await getDb();
 
     // Dos registros en modo interino: uno quedará afectado tras la importación, el otro no.

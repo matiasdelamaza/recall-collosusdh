@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   // El cupo por IP se consume solo cuando el formulario es válido (más abajo); aquí solo se consulta,
   // para que los errores de validación no agoten el límite de un usuario legítimo.
-  if (peekRateLimit("registro", ipHash, RATE_LIMITS.registration) >= RATE_LIMITS.registration.max) {
+  if (await peekRateLimit("registro", ipHash, RATE_LIMITS.registration) >= RATE_LIMITS.registration.max) {
     const retry = String(Math.ceil(RATE_LIMITS.registration.windowMs / 1000));
     return json({ ok: false, error: "RATE_LIMITED", message: FORM_VALIDATION.rateLimited }, 429, { "Retry-After": retry });
   }
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Formulario válido: ahora sí se consume el cupo por IP.
-  const rl = checkRateLimit("registro", ipHash, RATE_LIMITS.registration);
+  const rl = await checkRateLimit("registro", ipHash, RATE_LIMITS.registration);
   if (!rl.allowed) {
     return json({ ok: false, error: "RATE_LIMITED", message: FORM_VALIDATION.rateLimited }, 429, { "Retry-After": String(rl.retryAfterSeconds) });
   }

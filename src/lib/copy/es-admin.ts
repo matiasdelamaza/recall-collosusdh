@@ -171,13 +171,14 @@ export const ADMIN = {
       "CARGADA Y VALIDADA: el sitio devuelve 'no aparece actualmente dentro de las unidades incluidas' a las series sin coincidencia.",
     markComplete: "Marcar base como CARGADA Y VALIDADA",
     markPending: "Volver a modo interino (PENDIENTE)",
+    completeDisabledHint: "Disponible cuando haya al menos una serie afectada cargada.",
     confirmComplete:
       "¿Confirmas que la base oficial de Polygon está completa y validada? Al marcar COMPLETE el sitio devolverá 'no aparece actualmente' a las series sin coincidencia.",
     confirmPending: "¿Volver a modo interino? El sitio dejará de devolver 'no aparece actualmente' y pedirá registro para toda serie sin coincidencia.",
     totalSerials: "Series afectadas cargadas",
     importTitle: "Importar base de series (CSV)",
     importHelp:
-      "Archivo CSV con cabecera. Columna obligatoria: serial_number (alias: serial, frame_number, serie, numero_de_serie). Opcionales: model, size, production_batch, status (RECALL por defecto). Separador coma o punto y coma. Máximo 5 MB.",
+      "Archivo CSV con cabecera. Columna obligatoria: serial_number (alias: serial, frame_number, serie, numero_de_serie). Opcionales: model, size, production_batch, status (RECALL por defecto). Separador coma o punto y coma. Máximo 4 MB (para archivos más grandes, usar la importación por consola: npm run serials:import).",
     importFile: "Archivo CSV",
     importNotes: "Notas (opcional)",
     importDryRun: "Solo validar (sin escribir)",
@@ -198,8 +199,10 @@ export const ADMIN = {
     reprocessCols: { scanned: "Revisados", nowAffected: "Ahora afectadas", nowNotIdentified: "Ahora no identificadas", unchanged: "Sin cambios", notified: "Notificados", errors: "Errores" },
     messages: {
       statusChanged: "Estado de la base actualizado.",
+      completeWithoutSerials:
+        "No se puede marcar la base como cargada y validada: no hay series afectadas cargadas. Importa primero el CSV oficial de Polygon.",
       fileRequired: "Selecciona un archivo CSV.",
-      fileTooLarge: "El archivo supera el máximo de 5 MB.",
+      fileTooLarge: "El archivo supera el máximo de 4 MB. Divídelo en partes o usa la importación por consola (npm run serials:import).",
       fileEmpty: "El archivo está vacío.",
       notImplemented: "Esta función aún no está disponible en esta versión del sistema.",
       error: "Ocurrió un error. Revisa la bitácora del servidor.",

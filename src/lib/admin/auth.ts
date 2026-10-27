@@ -33,7 +33,7 @@ export async function loginAction(formData: FormData): Promise<void> {
     redirect("/admin/login?config=1");
   }
   const ipHash = await clientIpHash();
-  const rl = checkRateLimit("admin-login", ipHash, RATE_LIMITS.adminLogin);
+  const rl = await checkRateLimit("admin-login", ipHash, RATE_LIMITS.adminLogin);
   if (!rl.allowed) {
     await logAudit({ type: "ADMIN_LOGIN_FAILED", actor: "anonymous", payload: { reason: "RATE_LIMITED", ipHash } });
     redirect(`/admin/login?error=rate&next=${encodeURIComponent(next)}`);

@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
   }
 
   if (req.nextUrl.searchParams.get("storage") === "1") {
-    const rl = checkRateLimit("health-storage", hashIp(getClientIp(req)), RATE_LIMITS.analytics);
+    const rl = await checkRateLimit("health-storage", hashIp(getClientIp(req)), RATE_LIMITS.analytics);
     if (!rl.allowed) {
       return NextResponse.json({ ...body, storage: { provider: getEnv().STORAGE_PROVIDER, ok: false, error: "rate_limited" } }, { status: 429, headers: NO_STORE });
     }

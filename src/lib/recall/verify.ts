@@ -9,7 +9,7 @@
  *   todo lo que no sea coincidencia positiva queda como PENDING_DATABASE.
  */
 import "server-only";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { affectedSerials, SETTING_KEYS, settings, type SerialDatabaseStatus, type SerialVerificationStatus } from "@/db/schema";
 import { validateSerial } from "@/lib/serial";
@@ -36,6 +36,13 @@ export async function setSerialDatabaseStatus(status: SerialDatabaseStatus, upda
       target: settings.key,
       set: { value: status, updatedBy, updatedAt: new Date() },
     });
+}
+
+/** Número de series cargadas con estado RECALL (las que el sitio informa como afectadas). */
+export async function countRecallSerials(): Promise<number> {
+  const db = await getDb();
+  const [row] = await db.select({ total: count() }).from(affectedSerials).where(eq(affectedSerials.status, "RECALL"));
+  return Number(row?.total ?? 0);
 }
 
 /** Busca una serie normalizada en la base oficial. Coincidencia exacta. */

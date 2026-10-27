@@ -10,6 +10,7 @@ const { getDb } = await import("@/db/client");
 const { affectedSerials, auditEvents, caseFiles, recallCases } = await import("@/db/schema");
 const { setSerialDatabaseStatus } = await import("@/lib/recall/verify");
 const { resetRateLimits } = await import("@/lib/server/rate-limit");
+const { FORM_VALIDATION } = await import("@/lib/copy/es");
 
 const URL_ = "http://localhost/api/registro";
 const IP = { "x-forwarded-for": "192.0.2.10", "user-agent": "vitest" };
@@ -216,6 +217,18 @@ describe("POST /api/registro", () => {
     const req = postForm(URL_, buildRegistrationForm(), { ...IP, "content-length": String(200 * 1024 * 1024) });
     const res = await POST(req);
     expect(res.status).toBe(413);
+  });
+
+  it("fotos que suman más de 4 MB → 422 sin crear caso (el tope de Vercel es 4,5 MB)", async () => {
+    const big = fakeJpeg(2_500_000);
+    const form = buildRegistrationForm({ serial: "SERIE-PESADA-01", rut: rutFor(45454545), email: "pesada@example.test" }, { serialPhoto: big, bikePhoto: big });
+    const res = await POST(postForm(URL_, form, IP));
+    expect(res.status).toBe(422);
+    const body = await res.json();
+    expect(body.error).toBe("VALIDATION");
+    expect(Object.values(body.fields ?? {})).toContain(FORM_VALIDATION.tooLarge);
+    const db = await getDb();
+    expect(await db.select().from(recallCases).where(eq(recallCases.serialNumber, "SERIE-PESADA-01"))).toHaveLength(0);
   });
 
   it("límite de tasa de registro → 429", async () => {

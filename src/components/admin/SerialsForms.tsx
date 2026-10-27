@@ -1,15 +1,26 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { SerialDatabaseStatus } from "@/db/schema";
 import { importSerialsAction, reprocessAction, setSerialDatabaseStatusAction, type ImportActionState, type ReprocessActionState } from "@/lib/admin/actions";
 import { ADMIN } from "@/lib/copy/es-admin";
+import { SERIALS_CSV_MAX_BYTES } from "@/lib/limits";
 import { buttonDanger, buttonPrimary, buttonSecondary, inputClass, labelClass } from "./ui";
 
 const S = ADMIN.serials;
 
-export function SerialDatabaseToggle({ status }: { status: SerialDatabaseStatus }) {
+export function SerialDatabaseToggle({ status, canComplete }: { status: SerialDatabaseStatus; canComplete: boolean }) {
   const next: SerialDatabaseStatus = status === "COMPLETE" ? "PENDING" : "COMPLETE";
   const confirmText = next === "COMPLETE" ? S.confirmComplete : S.confirmPending;
+  if (next === "COMPLETE" && !canComplete) {
+    return (
+      <div className="grid gap-2">
+        <button type="button" disabled className={buttonDanger}>
+          {S.markComplete}
+        </button>
+        <p className="text-sm text-ink-500">{S.completeDisabledHint}</p>
+      </div>
+    );
+  }
   return (
     <form
       action={setSerialDatabaseStatusAction}
@@ -29,9 +40,20 @@ const importInitial: ImportActionState = { status: "idle" };
 
 export function ImportSerialsForm() {
   const [state, formAction, pending] = useActionState(importSerialsAction, importInitial);
+  const [sizeError, setSizeError] = useState<string | null>(null);
   return (
     <div className="grid gap-4">
-      <form action={formAction} className="grid gap-3">
+      <form
+        action={formAction}
+        className="grid gap-3"
+        onSubmit={(e) => {
+          // Un archivo sobre el límite no llega al servidor (Next/Vercel lo cortan con un error genérico).
+          const file = new FormData(e.currentTarget).get("file");
+          const tooLarge = file instanceof File && file.size > SERIALS_CSV_MAX_BYTES;
+          setSizeError(tooLarge ? S.messages.fileTooLarge : null);
+          if (tooLarge) e.preventDefault();
+        }}
+      >
         <div>
           <label htmlFor="file" className={labelClass}>
             {S.importFile}
@@ -55,13 +77,13 @@ export function ImportSerialsForm() {
         </div>
       </form>
 
-      {state.status === "error" ? (
+      {sizeError || state.status === "error" ? (
         <p role="alert" className="rounded-md border border-alert bg-alert-50 px-3 py-2 text-sm text-alert-700">
-          {state.message}
+          {sizeError ?? (state.status === "error" ? state.message : null)}
         </p>
       ) : null}
 
-      {state.status === "done" ? (
+      {!sizeError && state.status === "done" ? (
         <div role="status" className="rounded-md border border-line bg-paper-100 p-3 text-sm">
           <div className="mb-2 font-bold">
             {S.importResult} — {state.filename} {state.dryRun ? "(solo validación)" : ""}

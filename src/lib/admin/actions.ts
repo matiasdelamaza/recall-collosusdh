@@ -9,14 +9,13 @@ import { getDb } from "@/db/client";
 import { caseNotes, recallCases, CASE_STATUSES, SERIAL_DATABASE_STATUSES, type CaseStatus, type SerialDatabaseStatus } from "@/db/schema";
 import { isValidCaseId, normalizeCaseId } from "@/lib/case-id";
 import { ADMIN } from "@/lib/copy/es-admin";
+import { SERIALS_CSV_MAX_BYTES } from "@/lib/limits";
 import { importSerialsFromCsv, type ImportSerialsResult } from "@/lib/recall/import";
 import { reprocessPendingCases, type ReprocessResult } from "@/lib/recall/reprocess";
-import { getSerialDatabaseStatus, setSerialDatabaseStatus } from "@/lib/recall/verify";
+import { countRecallSerials, getSerialDatabaseStatus, setSerialDatabaseStatus } from "@/lib/recall/verify";
 import { normalizeSerial } from "@/lib/serial";
 import { logAudit } from "@/lib/server/audit";
 import { requireAdmin } from "./session";
-
-const MAX_CSV_BYTES = 5 * 1024 * 1024;
 
 function str(formData: FormData, key: string, max = 500): string {
   const v = formData.get(key);
@@ -121,6 +120,10 @@ export async function setSerialDatabaseStatusAction(formData: FormData): Promise
   if (!(SERIAL_DATABASE_STATUSES as readonly string[]).includes(status)) {
     redirect("/admin/series?msg=error");
   }
+  // Con la base vacía, COMPLETE haría que toda serie (incluidas las afectadas) reciba "no aparece actualmente".
+  if (status === "COMPLETE" && (await countRecallSerials()) === 0) {
+    redirect("/admin/series?msg=completeWithoutSerials");
+  }
   const previous = await getSerialDatabaseStatus();
   await setSerialDatabaseStatus(status, actor);
   await logAudit({ type: "SERIAL_DATABASE_STATUS_CHANGED", actor, payload: { from: previous, to: status } });
@@ -140,7 +143,7 @@ export async function importSerialsAction(_prev: ImportActionState, formData: Fo
   if (!(file instanceof File) || file.size === 0) {
     return { status: "error", message: file instanceof File && file.size === 0 ? ADMIN.serials.messages.fileEmpty : ADMIN.serials.messages.fileRequired };
   }
-  if (file.size > MAX_CSV_BYTES) return { status: "error", message: ADMIN.serials.messages.fileTooLarge };
+  if (file.size > SERIALS_CSV_MAX_BYTES) return { status: "error", message: ADMIN.serials.messages.fileTooLarge };
   const dryRun = isChecked(formData, "dryRun");
   const notes = str(formData, "notes", 500) || undefined;
   const filename = (file.name || "import.csv").replace(/[^\w.\-() ]+/g, "_").slice(0, 120);

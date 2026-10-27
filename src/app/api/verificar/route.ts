@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   const userAgent = getUserAgent(req);
 
   // 1) Límite de tasa general por IP.
-  const rl = checkRateLimit("verificar", ipHash, RATE_LIMITS.serialLookup);
+  const rl = await checkRateLimit("verificar", ipHash, RATE_LIMITS.serialLookup);
   if (!rl.allowed) {
     void recordLookup({ serialNormalized: "", result: "RATE_LIMITED", ipHash, userAgent });
     return json(
@@ -58,8 +58,8 @@ export async function POST(req: NextRequest) {
     // 3) Anti-enumeración: muchas consultas sin coincidencia desde la misma IP.
     const misses = await countRecentMisses(ipHash, RATE_LIMITS.serialLookup.windowMs);
     if (misses >= RATE_LIMITS.serialLookupSuspiciousThreshold) {
-      if (peekRateLimit("verificar-suspicious-audit", ipHash, RATE_LIMITS.serialLookup) === 0) {
-        checkRateLimit("verificar-suspicious-audit", ipHash, RATE_LIMITS.serialLookup);
+      if (await peekRateLimit("verificar-suspicious-audit", ipHash, RATE_LIMITS.serialLookup) === 0) {
+        await checkRateLimit("verificar-suspicious-audit", ipHash, RATE_LIMITS.serialLookup);
         await logAudit({ type: "LOOKUP_SUSPICIOUS", payload: { ipHash, misses, userAgent } });
       }
       if (isTurnstileConfigured()) {

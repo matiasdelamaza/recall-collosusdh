@@ -3,6 +3,7 @@
  * Los valores NEXT_PUBLIC_* se leen directamente con process.env en el cliente.
  */
 import { z } from "zod";
+import { UPLOAD_MAX_TOTAL_BYTES } from "./limits";
 
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
@@ -84,9 +85,10 @@ export function getInternalNotificationEmails(): string[] {
 
 /** Límites de carga de archivos. */
 export const UPLOAD_LIMITS = {
-  maxFileBytes: 10 * 1024 * 1024, // 10 MB por archivo
+  // Vercel corta los cuerpos de más de 4,5 MB (ver src/lib/limits.ts); el navegador comprime las fotos antes de enviarlas.
+  maxFileBytes: UPLOAD_MAX_TOTAL_BYTES,
   maxFilesPerCase: 10,
-  maxTotalBytes: 40 * 1024 * 1024,
+  maxTotalBytes: UPLOAD_MAX_TOTAL_BYTES,
   allowedMimeTypes: ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"] as const,
   allowedExtensions: [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"] as const,
 } as const;

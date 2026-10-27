@@ -18,7 +18,7 @@ const NO_STORE = { "Cache-Control": "no-store" } as const;
  */
 export async function POST(req: NextRequest) {
   const ipHash = hashIp(getClientIp(req));
-  const rl = checkRateLimit("analytics", ipHash, RATE_LIMITS.analytics);
+  const rl = await checkRateLimit("analytics", ipHash, RATE_LIMITS.analytics);
   if (!rl.allowed) return new NextResponse(null, { status: 429, headers: { ...NO_STORE, "Retry-After": String(rl.retryAfterSeconds) } });
 
   let name: unknown;

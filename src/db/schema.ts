@@ -268,6 +268,21 @@ export const analyticsEvents = pgTable(
   (t) => [index("analytics_events_name_idx").on(t.name), index("analytics_events_created_at_idx").on(t.createdAt)],
 );
 
+/**
+ * Hits de los límites de tasa (ventana deslizante). Compartido entre todas las instancias
+ * serverless; `key` es siempre un hash (nunca una IP en claro). Las filas viejas se purgan solas.
+ */
+export const rateLimitHits = pgTable(
+  "rate_limit_hits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    bucket: text("bucket").notNull(),
+    key: text("key").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("rate_limit_hits_lookup_idx").on(t.bucket, t.key, t.createdAt), index("rate_limit_hits_created_at_idx").on(t.createdAt)],
+);
+
 /** Configuración operativa (clave/valor). */
 export const settings = pgTable("settings", {
   key: text("key").primaryKey(),

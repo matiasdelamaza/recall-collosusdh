@@ -34,13 +34,14 @@ export default async function AdminSerialsPage({ searchParams }: { searchParams:
 
       {msg === "statusChanged" ? <Flash>{S.messages.statusChanged}</Flash> : null}
       {msg === "error" ? <Flash kind="error">{S.messages.error}</Flash> : null}
+      {msg === "completeWithoutSerials" ? <Flash kind="error">{S.messages.completeWithoutSerials}</Flash> : null}
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <Card title={S.statusTitle}>
           <p className={`mb-4 rounded-md border px-3 py-2 text-sm ${status === "COMPLETE" ? "border-ink bg-paper-100" : "border-caution bg-caution-50 text-caution"}`}>
             {status === "COMPLETE" ? S.statusComplete : S.statusPending}
           </p>
-          <SerialDatabaseToggle status={status} />
+          <SerialDatabaseToggle status={status} canComplete={Number(total) > 0} />
         </Card>
         <KpiTile label={S.totalSerials} value={fmtNumber(Number(total))} />
       </div>

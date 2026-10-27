@@ -162,7 +162,7 @@ export const FORM = {
     tri: { YES: "Sí", NO: "No", NOT_SURE: "No estoy seguro/a" },
     yesNo: { YES: "Sí", NO: "No" },
   },
-  uploadHint: "Formatos: JPG, PNG, WEBP o HEIC. Máximo 10 MB por archivo.",
+  uploadHint: "Formatos: JPG, PNG, WEBP o HEIC. Las fotos se reducen automáticamente antes de enviarse.",
   required: "Obligatorio",
   optional: "Opcional",
   submit: {
@@ -191,14 +191,14 @@ export const FORM_VALIDATION = {
   serialPhoto: "Adjunta una foto clara del número de serie.",
   bikePhoto: "Adjunta una foto completa de la bicicleta.",
   fileType: "Formato de archivo no permitido. Usa JPG, PNG, WEBP o HEIC.",
-  fileSize: "El archivo supera el tamaño máximo de 10 MB.",
+  fileSize: "La foto es demasiado grande. Usa una foto de menor resolución o tómala nuevamente.",
   tooManyFiles: "Has adjuntado demasiados archivos.",
   acknowledge: "Debes confirmar que has leído la instrucción de no utilizar la bicicleta.",
   privacy: "Debes aceptar el aviso de privacidad para continuar.",
   generic: "Revisa los campos marcados e inténtalo nuevamente.",
   serverError: "No pudimos registrar tu solicitud. Inténtalo nuevamente en unos minutos o contacta a nuestro equipo de Postventa.",
   rateLimited: "Has enviado demasiadas solicitudes en poco tiempo. Espera unos minutos e inténtalo nuevamente.",
-  tooLarge: "Los archivos adjuntos superan el tamaño máximo permitido.",
+  tooLarge: "Las fotos adjuntas superan el tamaño total permitido (4 MB). Adjunta menos fotos o usa fotos de menor resolución.",
   duplicateLimit: "Ya existen solicitudes activas para este número de serie. Nuestro equipo de Postventa revisará la situación y se pondrá en contacto contigo.",
 } as const;
 

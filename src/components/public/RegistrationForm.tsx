@@ -2,6 +2,8 @@
 
 import { useRef, useState, type FormEvent } from "react";
 import { FLOW, FORM, FORM_VALIDATION } from "@/lib/copy/es";
+import { compressFormImages } from "@/lib/image-compress";
+import { UPLOAD_MAX_TOTAL_BYTES } from "@/lib/limits";
 import { CHILE_REGIONS, isChileRegion } from "@/lib/regions";
 import { formatRut, isValidRut } from "@/lib/rut";
 import { validateSerial } from "@/lib/serial";
@@ -10,8 +12,10 @@ import { Button, Field, FieldError, SELECT_ARROW_STYLE, cx, inputClass, selectCl
 
 /**
  * Reglas de archivos (espejo de UPLOAD_LIMITS en src/lib/config.ts; el servidor es la autoridad).
+ * MAX_FILE_BYTES aplica a la foto original: antes de enviarla se reduce (src/lib/image-compress.ts)
+ * y lo que se controla después es el total enviado (UPLOAD_MAX_TOTAL_BYTES).
  */
-const MAX_FILE_BYTES = 10 * 1024 * 1024;
+const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_FILES_TOTAL = 10;
 const ALLOWED_EXT = [".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"];
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"];
@@ -228,6 +232,11 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
 
     setSubmitting(true);
     try {
+      const totalBytes = await compressFormImages(fd);
+      if (totalBytes > UPLOAD_MAX_TOTAL_BYTES) {
+        setGeneralError(FORM_VALIDATION.tooLarge);
+        return;
+      }
       const res = await fetch("/api/registro", { method: "POST", body: fd });
       let data: RegistrationResponse | null = null;
       try {

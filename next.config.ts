@@ -3,6 +3,11 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // El CSV de series se sube por server action (por defecto Next corta en 1 MB). Debe cubrir
+  // SERIALS_CSV_MAX_BYTES (4 MB) + multipart y quedar bajo el tope de 4,5 MB de Vercel.
+  experimental: {
+    serverActions: { bodySizeLimit: "4.2mb" },
+  },
   // PGlite (WASM) y los SDK de servidor no deben empaquetarse con Turbopack/Webpack.
   serverExternalPackages: ["@electric-sql/pglite", "pg", "nodemailer", "@aws-sdk/client-s3"],
   // En despliegues serverless (Vercel) las funciones solo incluyen lo que se traza desde el código.

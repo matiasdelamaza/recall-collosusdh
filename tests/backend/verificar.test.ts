@@ -84,7 +84,7 @@ describe("POST /api/verificar", () => {
   it("anti-enumeración: tras muchas consultas sin coincidencia y sin Turnstile → 429", async () => {
     let last: Response | undefined;
     for (let i = 0; i < 8; i++) {
-      resetRateLimits();
+      await resetRateLimits();
       last = await POST(postJson(URL_, { serial: `ENUM-INTENTO-${i}` }, { "x-forwarded-for": "10.0.0.8" }));
     }
     expect(last!.status).toBe(429);
@@ -97,7 +97,7 @@ describe("POST /api/verificar", () => {
     try {
       let last: Response | undefined;
       for (let i = 0; i < 8; i++) {
-        resetRateLimits();
+        await resetRateLimits();
         last = await POST(postJson(URL_, { serial: `ENUM-TS-${i}` }, { "x-forwarded-for": "10.0.0.10" }));
       }
       expect(last!.status).toBe(403);
