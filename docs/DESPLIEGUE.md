@@ -11,9 +11,22 @@ Guía paso a paso para publicar `recallcollosusdh.cl`. El sitio puede publicarse
 
 ## 2. Opción A — Vercel + Supabase (recomendada por simplicidad)
 
-### Camino rápido: integración Supabase desde Vercel (recomendado)
-1. En el proyecto de Vercel: **Storage → Create Database → Supabase** (o Marketplace → Supabase). Elegir región `sa-east-1` (São Paulo) y conectarla al proyecto.
-2. Vercel inyecta automáticamente `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y otras. La aplicación las usa sin configuración adicional:
+### Estado actual (27-10-2026): proyecto Supabase ya creado
+
+| Dato | Valor |
+|---|---|
+| Proyecto Supabase | `recall-collosusdh` (ref `wljelbdpazhprpirbibd`), organización de matiasdelamaza |
+| Región | `sa-east-1` (São Paulo) |
+| URL del proyecto | `https://wljelbdpazhprpirbibd.supabase.co` |
+| Esquema | aplicado (migración `0000_init` de Drizzle, registrada en `drizzle.__drizzle_migrations`) |
+| RLS | activado en todas las tablas, sin políticas: la API REST (anon/authenticated) no puede leer datos; la app usa el rol `postgres` (bypass RLS) |
+| Bucket de fotos | `recall-files`, privado, creado |
+
+Para conectar este proyecto con Vercel sin copiar contraseñas: en Supabase, **Project Settings → Integrations → Vercel** → conectar al proyecto de Vercel `recall-collosusdh`. La integración sincroniza `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y el resto de variables en Vercel. Luego, en Vercel, añadir `STORAGE_PROVIDER=supabase`.
+
+### Camino rápido: integración Supabase desde Vercel
+1. Si el proyecto Supabase no existiera: en Vercel, **Storage → Create Database → Supabase** (o Marketplace → Supabase), región `sa-east-1` (São Paulo). Si ya existe (caso actual), usar la integración desde el lado de Supabase descrita arriba.
+2. Vercel recibe automáticamente `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y otras. La aplicación las usa sin configuración adicional:
    - Base de datos: `POSTGRES_URL` para la app y `POSTGRES_URL_NON_POOLING` para las migraciones (si defines `DATABASE_URL`, esta tiene prioridad).
    - Migraciones: el script `vercel-build` las aplica en cada build (`tsx scripts/migrate.ts --if-configured && next build`); no hace falta ejecutarlas a mano.
    - Fotos: define `STORAGE_PROVIDER=supabase`. El bucket privado `recall-files` (o `SUPABASE_STORAGE_BUCKET`) se crea solo en la primera subida; no se necesitan claves S3.
