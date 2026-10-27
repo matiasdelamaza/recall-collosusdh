@@ -4,7 +4,8 @@
  *   sin URL                                            → PGlite local (./.data/pglite)
  *
  * Uso: npm run db:migrate
- *      tsx scripts/migrate.ts --if-configured   (en el build de Vercel: si no hay URL de PostgreSQL, no hace nada)
+ *      tsx scripts/migrate.ts --if-configured   (en el build de Vercel: si no hay URL de PostgreSQL, no hace nada;
+ *                                                con SKIP_DB_MIGRATIONS=true tampoco, para esquemas gestionados fuera)
  */
 import fs from "node:fs";
 import path from "node:path";
@@ -14,6 +15,10 @@ import { pgPoolConfig, resolveDatabaseUrl } from "../src/lib/db-url";
 async function main() {
   const migrationsFolder = path.join(process.cwd(), "drizzle");
   const ifConfigured = process.argv.includes("--if-configured");
+  if (ifConfigured && (process.env.SKIP_DB_MIGRATIONS ?? "").trim().toLowerCase() === "true") {
+    console.log("SKIP_DB_MIGRATIONS=true: se omiten las migraciones en el build (el esquema se gestiona desde Supabase).");
+    return;
+  }
   const url = resolveDatabaseUrl({ forMigrations: true });
   if (url) {
     const { Pool } = await import("pg");
