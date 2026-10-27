@@ -456,3 +456,27 @@ export const FLOW = {
     MANUAL_REVIEW: "Revisión manual",
   },
 } as const;
+
+/** Modelos incluidos en la campaña (confirmados por Cross Mountain el 27-10-2026: Collosus DH7 y Collosus DH9). */
+export const MODELS = {
+  title: "MODELOS INCLUIDOS EN LA CAMPAÑA",
+  intro: "La campaña abarca los modelos Polygon Collosus DH7 y Collosus DH9. La inclusión de cada unidad se confirma mediante su número de serie.",
+  note: "Verifica el número de serie aunque tu bicicleta no presente daños visibles.",
+  items: [
+    {
+      key: "dh7",
+      name: "Collosus DH7",
+      description: "Cuadro negro con logotipo dorado.",
+      image: "/modelos/collosus-dh7.jpg",
+      alt: "Polygon Collosus DH7, bicicleta de descenso con cuadro negro y logotipo dorado",
+    },
+    {
+      key: "dh9",
+      name: "Collosus DH9",
+      description: "Cuadro azul con logotipo dorado.",
+      image: "/modelos/collosus-dh9.jpg",
+      alt: "Polygon Collosus DH9, bicicleta de descenso con cuadro azul y logotipo dorado",
+    },
+  ],
+  photoPending: "Fotografía oficial pendiente",
+} as const;

@@ -48,3 +48,8 @@ Conversaciones privadas con Polygon; declaraciones de responsabilidad legal; ide
 ## E. Fase 2 (no bloquea el lanzamiento, brief §42)
 
 Consulta de estado de caso por el cliente; portal de dealers; asignación automática de cuadros; notificaciones automáticas por correo/WhatsApp en cada cambio de estado; integración con Monday.com; integración con registros de compra de Shopify; cruce automático con compradores conocidos; dashboard de avance; reporte para Polygon; soporte multilingüe.
+
+## Actualización 27-10-2026 — modelos y fotografías
+
+- **Modelos afectados confirmados por Cross Mountain:** Collosus DH7 y Collosus DH9. Reflejado en la sección "Modelos incluidos en la campaña" (`MODELS` en `src/lib/copy/es.ts`, componente `src/components/public/ModelsSection.tsx`). La inclusión de cada unidad sigue determinándose por número de serie.
+- **Fotografías oficiales de producto:** copiar las imágenes entregadas por Cross Mountain a `public/modelos/collosus-dh7.jpg` (cuadro negro) y `public/modelos/collosus-dh9.jpg` (cuadro azul). La sección las muestra automáticamente cuando los archivos existen; mientras tanto muestra "Fotografía oficial pendiente". Formato recomendado: JPG o WEBP, ~1440×1080, fondo blanco, < 300 KB.

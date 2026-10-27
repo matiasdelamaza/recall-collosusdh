@@ -1,5 +1,8 @@
+import fs from "node:fs";
+import path from "node:path";
 import { ContactSection } from "@/components/public/ContactSection";
 import { FaqSection } from "@/components/public/FaqSection";
+import { ModelsSection } from "@/components/public/ModelsSection";
 import { PageViewTracker } from "@/components/public/PageViewTracker";
 import { RecallFlow } from "@/components/public/RecallFlow";
 import { SafetySection } from "@/components/public/SafetySection";
@@ -8,6 +11,7 @@ import { SiteHeader } from "@/components/public/SiteHeader";
 import { StepsSection } from "@/components/public/StepsSection";
 import { WhereSerialSection } from "@/components/public/WhereSerialSection";
 import type { SerialDatabaseStatus } from "@/db/schema";
+import { MODELS } from "@/lib/copy/es";
 import { getSerialDatabaseStatus } from "@/lib/recall/verify";
 
 // El estado de la base de series se lee en cada petición (no debe quedar congelado en el build).
@@ -39,6 +43,11 @@ export default async function Page() {
   };
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() || undefined;
 
+  // Fotografías oficiales de los modelos: se muestran solo si el archivo existe en /public.
+  const availableImages = Object.fromEntries(
+    MODELS.items.map((m) => [m.key, fs.existsSync(path.join(process.cwd(), "public", m.image))]),
+  );
+
   return (
     <>
       <PageViewTracker />
@@ -47,6 +56,7 @@ export default async function Page() {
         <RecallFlow serialDbStatus={serialDbStatus} turnstileSiteKey={turnstileSiteKey} />
         <StepsSection />
         <SafetySection />
+        <ModelsSection availableImages={availableImages} />
         <WhereSerialSection />
         <FaqSection />
         <ContactSection contact={contact} />
