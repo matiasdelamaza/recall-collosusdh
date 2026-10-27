@@ -53,3 +53,22 @@ Consulta de estado de caso por el cliente; portal de dealers; asignación autom�
 
 - **Modelos afectados confirmados por Cross Mountain:** Collosus DH7 y Collosus DH9. Reflejado en la sección "Modelos incluidos en la campaña" (`MODELS` en `src/lib/copy/es.ts`, componente `src/components/public/ModelsSection.tsx`). La inclusión de cada unidad sigue determinándose por número de serie.
 - **Fotografías oficiales de producto:** copiar las imágenes entregadas por Cross Mountain a `public/modelos/collosus-dh7.jpg` (cuadro negro) y `public/modelos/collosus-dh9.jpg` (cuadro azul). La sección las muestra automáticamente cuando los archivos existen; mientras tanto muestra "Fotografía oficial pendiente". Formato recomendado: JPG o WEBP, ~1440×1080, fondo blanco, < 300 KB.
+
+## Estado al 27-10-2026 (madrugada) — qué falta para ver el sitio publicado
+
+Hecho sin intervención: código en GitHub (`matiasdelamaza/recall-collosusdh`), proyecto Supabase `recall-collosusdh` con esquema, RLS y bucket privado.
+
+Pendiente y **solo puede hacerlo Cross Mountain** (por permisos o por tratarse de credenciales que no deben pasar por el asistente):
+
+1. **Autorizar el conector de Vercel para el equipo `cross-mountain`** (enlace de consentimiento que entrega el asistente, o reautorizar el conector en claude.ai eligiendo ese equipo). Sin esto no se puede crear el proyecto en Vercel desde la sesión. Alternativa manual: en Vercel, *Add New → Project → Import* `matiasdelamaza/recall-collosusdh`.
+2. **Conectar Supabase con Vercel** desde Supabase: *Project Settings → Integrations → Vercel → Connect project* `recall-collosusdh`. Esto inyecta en Vercel `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`, que la app usa directamente. Así ninguna contraseña pasa por el chat.
+3. **Variables en Vercel** (Settings → Environment Variables, Production y Preview):
+   - `STORAGE_PROVIDER=supabase`
+   - `ADMIN_PASSWORD` (mínimo 8 caracteres; la elige Cross Mountain)
+   - `ADMIN_SESSION_SECRET` (cadena aleatoria ≥ 32 caracteres; p. ej. `openssl rand -base64 48`)
+   - `IP_HASH_SALT` (otra cadena aleatoria)
+   - `NEXT_PUBLIC_SITE_URL` (la URL de Vercel mientras no haya dominio; luego `https://recallcollosusdh.cl`)
+   - `NEXT_PUBLIC_NOINDEX=true` hasta el lanzamiento oficial
+   - `TRUSTED_PROXY=standard`, `EMAIL_PROVIDER=console` (hasta configurar Resend/SMTP), `NEXT_PUBLIC_LAST_UPDATED=2026-10-27`
+4. **Redesplegar** (Deployments → Redeploy) para que el build aplique las migraciones (ya están aplicadas; el paso será un no-op) y arranque con la base real.
+5. Comprobar: `/api/health` → `{"ok":true,"db":"ok"}`; `/` muestra el aviso de modo interino; `/admin` pide contraseña.
