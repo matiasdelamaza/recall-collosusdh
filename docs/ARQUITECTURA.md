@@ -60,7 +60,7 @@ Dialecto PostgreSQL vía Drizzle ORM. Idéntico en producción (PostgreSQL/Supab
 |---|---|---|
 | `AFFECTED` | Coincidencia exacta con la base oficial y `status = RECALL`. | "Tu bicicleta está incluida en este recall — NO UTILICES LA BICICLETA" (rojo). |
 | `NOT_IDENTIFIED` | Serie válida sin coincidencia **y** base marcada `COMPLETE`. | "Tu número de serie no aparece actualmente…" + "esto no constituye una inspección técnica…". Nunca "es segura". |
-| `PENDING_DATABASE` | Serie válida sin coincidencia **y** base `PENDING` (modo interino). | "Pendiente de verificación: registra tu bicicleta… recomendamos suspender el uso". |
+| `PENDING_DATABASE` | Serie válida sin coincidencia **y** base `PENDING` (modo interino). | "Pendiente de verificación: aún no podemos confirmar esta serie; registra tu bicicleta… mientras no confirmemos su estado, recomendamos no usarla". El aviso del inicio ya no pide a todos suspender el uso. |
 | `UNVERIFIED` | Formato inválido (vacía, corta, larga, caracteres no permitidos). | "No pudimos verificar tu número de serie" + revisión manual. |
 
 Regla central (`decideNonMatch` en `src/lib/recall/verify.ts`): mientras la base no esté `COMPLETE`, **nunca** se entrega un resultado "no identificada".

@@ -45,7 +45,7 @@ export const HERO = {
   ctaLoading: "Verificando…",
   whereIsSerial: "¿Dónde encuentro mi número de serie?",
   interimNotice:
-    "Estamos validando los números de serie correspondientes a las unidades incluidas en esta campaña. Como medida preventiva, recomendamos suspender temporalmente el uso de la bicicleta hasta recibir confirmación.",
+    "Ingresa el número de serie de tu bicicleta para saber si está incluida en esta campaña. Si lo está, te indicaremos cómo seguir.",
 } as const;
 
 /** Mensajes de validación del campo de serie (cliente y servidor). */
@@ -112,9 +112,9 @@ export const RESULT_NOT_FOUND = {
 export const RESULT_PENDING_DATABASE = {
   badge: "Verificación pendiente",
   title: "NÚMERO DE SERIE PENDIENTE DE VERIFICACIÓN",
-  body1: "Estamos validando los números de serie correspondientes a las unidades incluidas en esta campaña.",
-  body2: "Registra tu bicicleta y te notificaremos una vez completada la verificación.",
-  safety: "Como medida preventiva, recomendamos suspender temporalmente el uso de la bicicleta hasta recibir confirmación.",
+  body1: "Todavía no podemos confirmar si este número de serie está incluido en la campaña: la lista oficial de unidades aún está en validación.",
+  body2: "Registra tu bicicleta y te avisaremos apenas tengamos la confirmación.",
+  safety: "Mientras no confirmemos el estado de tu bicicleta, como precaución te recomendamos no usarla.",
   cta: "REGISTRAR MI BICICLETA",
   ctaAnother: "VERIFICAR OTRO NÚMERO",
 } as const;
@@ -126,7 +126,7 @@ export const RESULT_RATE_LIMITED = {
 
 export const RESULT_ERROR = {
   title: "NO PUDIMOS PROCESAR TU CONSULTA",
-  body: "Ocurrió un problema temporal. Inténtalo nuevamente en unos minutos. Mientras tanto, como medida preventiva, recomendamos no utilizar la bicicleta.",
+  body: "Ocurrió un problema temporal. Inténtalo nuevamente en unos minutos.",
   retry: "REINTENTAR",
 } as const;
 
