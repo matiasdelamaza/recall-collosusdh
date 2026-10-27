@@ -78,24 +78,28 @@ export function VerificationResult({ result, headingRef, failedAttempts, onStart
 
   if (result.state === "REINFORCED") {
     return (
-      <article aria-labelledby="resultado-titulo" className="rounded-md border-2 border-ink bg-paper px-5 py-6 sm:px-8 sm:py-8">
-        <Badge tone="neutral">{RESULT_REINFORCED.badge}</Badge>
-        <h2 id="resultado-titulo" {...headingProps} className="headline mt-4 text-[24px] text-ink outline-none sm:text-[30px]">
-          <span aria-hidden="true" className="mr-2">
-            ✓
-          </span>
-          {RESULT_REINFORCED.title}
-        </h2>
-        <div className="mt-4 space-y-3 text-[16px] leading-relaxed text-ink-700">
-          <p>{RESULT_REINFORCED.body1}</p>
-          <p className="font-semibold text-ink">{RESULT_REINFORCED.body2}</p>
-          <p>{RESULT_REINFORCED.body3}</p>
+      <article aria-labelledby="resultado-titulo" className="overflow-hidden rounded-md border-2 border-ok bg-paper">
+        <div className="bg-ok px-5 py-6 text-white sm:px-8 sm:py-7">
+          <Badge tone="ok">{RESULT_REINFORCED.badge}</Badge>
+          <h2 id="resultado-titulo" {...headingProps} className="headline mt-4 text-[24px] text-white outline-none sm:text-[30px]">
+            <span aria-hidden="true" className="mr-2">
+              ✓
+            </span>
+            {RESULT_REINFORCED.title}
+          </h2>
         </div>
-        <SerialLine label={RESULT_REINFORCED.serialLabel} serial={result.serial} model={result.model} size={result.size} />
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Button variant="secondary" onClick={onVerifyAnother}>
-            {RESULT_REINFORCED.ctaAnother}
-          </Button>
+        <div className="px-5 py-6 sm:px-8 sm:py-8">
+          <div className="space-y-3 text-[16px] leading-relaxed text-ink-700">
+            <p>{RESULT_REINFORCED.body1}</p>
+            <p className="font-semibold text-ok-700">{RESULT_REINFORCED.body2}</p>
+            <p className="text-[15px] text-ink-500">{RESULT_REINFORCED.body3}</p>
+          </div>
+          <SerialLine label={RESULT_REINFORCED.serialLabel} serial={result.serial} model={result.model} size={result.size} />
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <Button variant="secondary" onClick={onVerifyAnother}>
+              {RESULT_REINFORCED.ctaAnother}
+            </Button>
+          </div>
         </div>
       </article>
     );

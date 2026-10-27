@@ -85,10 +85,10 @@ export const RESULT_NOT_IDENTIFIED = {
  */
 export const RESULT_REINFORCED = {
   badge: "No afectada",
-  title: "TU BICICLETA NO ESTÁ INCLUIDA EN ESTE RECALL",
-  body1: "El número de serie ingresado corresponde a una unidad fabricada con la versión actualizada del cuadro, que no forma parte de esta campaña.",
+  title: "TU BICICLETA NO PERTENECE A LA TANDA AFECTADA",
+  body1: "El número de serie ingresado no forma parte de las unidades incluidas en esta campaña.",
   body2: "No necesitas registrar tu bicicleta ni realizar ningún trámite.",
-  body3: "Como con cualquier bicicleta, si observas una fisura, separación, deformación o daño en el cuadro, suspende su uso y comunícate con nuestro equipo de Postventa.",
+  body3: "Como con cualquier bicicleta, si notas algún daño en el cuadro, comunícate con nuestro equipo de Postventa.",
   serialLabel: "Número de serie verificado",
   ctaAnother: "VERIFICAR OTRO NÚMERO",
 } as const;

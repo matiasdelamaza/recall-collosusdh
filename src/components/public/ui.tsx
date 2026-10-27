@@ -34,11 +34,12 @@ export function Button({
   );
 }
 
-export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "alert" | "caution"; children: ReactNode }) {
+export function Badge({ tone = "neutral", children }: { tone?: "neutral" | "alert" | "caution" | "ok"; children: ReactNode }) {
   const tones = {
     neutral: "bg-paper-200 text-ink-700",
     alert: "bg-alert text-white",
     caution: "bg-caution-50 text-caution",
+    ok: "bg-ok-50 text-ok-700",
   } as const;
   return (
     <span className={cx("inline-block rounded-sm px-2 py-1 text-[11px] font-bold uppercase tracking-[0.12em]", tones[tone])}>
