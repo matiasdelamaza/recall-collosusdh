@@ -24,11 +24,11 @@ export function WhereSerialSection() {
           <figure className="rounded-md bg-paper p-4 sm:p-6">
             <div className="relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/modelos/collosus-dh7.webp" alt={WHERE_SERIAL.figureAlt} width={720} height={420} loading="lazy" className="h-auto w-full" />
-              {/* Marcador sobre la caja del pedalier (posición en % de la foto de 720×420). */}
+              <img src="/modelos/collosus-dh9-tres-cuartos.webp" alt={WHERE_SERIAL.figureAlt} width={720} height={540} loading="lazy" className="h-auto w-full" />
+              {/* Marcador sobre la caja del pedalier (posición en % de la foto de 720×540). */}
               <span
                 aria-hidden="true"
-                style={{ left: "41.7%", top: "70%" }}
+                style={{ left: "63.2%", top: "59.8%" }}
                 className="absolute h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-[3px] border-alert bg-alert/10 sm:h-16 sm:w-16"
               />
             </div>

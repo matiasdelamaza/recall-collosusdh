@@ -262,7 +262,7 @@ export const WHERE_SERIAL = {
   body1: "El número de serie está grabado en la parte inferior del cuadro, bajo la caja del pedalier (donde se unen las bielas).",
   body2: "Gira la bicicleta o inclínala con cuidado para leerlo. Ingresa todos los caracteres tal como aparecen, sin espacios.",
   body3: "Si el número está parcialmente ilegible, ingresa lo que puedas leer y solicita una revisión manual adjuntando una foto.",
-  figureAlt: "Polygon Collosus DH7 vista de lado. Un círculo rojo marca la parte inferior del cuadro, bajo la caja del pedalier, donde está grabado el número de serie.",
+  figureAlt: "Polygon Collosus DH9 azul vista en tres cuartos. Un círculo rojo marca la parte inferior del cuadro, bajo la caja del pedalier, donde está grabado el número de serie.",
   markerLabel: "Número de serie: bajo la caja del pedalier",
   /** Serie ficticia con el formato de la lista de Polygon (una letra + 8 dígitos); no corresponde a ninguna bicicleta. */
   exampleLabel: "Ejemplo de número de serie",
