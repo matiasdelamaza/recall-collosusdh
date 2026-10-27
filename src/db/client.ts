@@ -12,7 +12,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { drizzle as drizzlePg, type NodePgDatabase } from "drizzle-orm/node-postgres";
 import { drizzle as drizzlePglite, type PgliteDatabase } from "drizzle-orm/pglite";
-import { resolveDatabaseSsl, resolveDatabaseUrl } from "@/lib/db-url";
+import { pgPoolConfig, resolveDatabaseUrl } from "@/lib/db-url";
 import * as schema from "./schema";
 
 export type Database = NodePgDatabase<typeof schema> | PgliteDatabase<typeof schema>;
@@ -28,7 +28,7 @@ async function createDb(): Promise<Database> {
   const url = resolveDatabaseUrl();
   if (url) {
     const { Pool } = await import("pg");
-    const pool = new Pool({ connectionString: url, max: 10, ssl: resolveDatabaseSsl(url) });
+    const pool = new Pool(pgPoolConfig(url, 10));
     return drizzlePg(pool, { schema });
   }
 

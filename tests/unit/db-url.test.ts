@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { isSupabaseHost, resolveDatabaseSsl, resolveDatabaseUrl } from "@/lib/db-url";
+import { isSupabaseHost, pgPoolConfig, resolveDatabaseSsl, resolveDatabaseUrl, sanitizeDatabaseUrl } from "@/lib/db-url";
 
 const KEYS = ["DATABASE_URL", "POSTGRES_URL", "POSTGRES_URL_NON_POOLING", "DATABASE_SSL", "DATABASE_SSL_CA"] as const;
 const saved: Record<string, string | undefined> = {};
@@ -62,5 +62,22 @@ describe("resolveDatabaseSsl", () => {
   it("DATABASE_SSL=no-verify es explícito", () => {
     process.env.DATABASE_SSL = "no-verify";
     expect(resolveDatabaseSsl("postgresql://u:p@db.example.com/db")).toEqual({ rejectUnauthorized: false });
+  });
+});
+
+describe("sanitizeDatabaseUrl / pgPoolConfig", () => {
+  it("quita sslmode y parámetros TLS de la URL pero conserva el resto", () => {
+    const url = "postgresql://u:p@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?sslmode=require&application_name=recall";
+    expect(sanitizeDatabaseUrl(url)).toBe("postgresql://u:p@aws-0-sa-east-1.pooler.supabase.com:6543/postgres?application_name=recall");
+  });
+  it("pgPoolConfig: Supabase con sslmode=require → cadena sin sslmode y TLS sin verificación (pg no la sobrescribe)", () => {
+    const url = "postgresql://recall_app.ref:p@aws-0-sa-east-1.pooler.supabase.com:5432/postgres?sslmode=require";
+    const cfg = pgPoolConfig(url, 1);
+    expect(cfg.connectionString).not.toMatch(/sslmode/);
+    expect(cfg.ssl).toEqual({ rejectUnauthorized: false });
+    expect(cfg.max).toBe(1);
+  });
+  it("pgPoolConfig: localhost sin TLS no incluye ssl", () => {
+    expect(pgPoolConfig("postgresql://u:p@localhost:5432/db", 10)).toEqual({ connectionString: "postgresql://u:p@localhost:5432/db", max: 10 });
   });
 });

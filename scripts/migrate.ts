@@ -9,7 +9,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import * as schema from "../src/db/schema";
-import { resolveDatabaseSsl, resolveDatabaseUrl } from "../src/lib/db-url";
+import { pgPoolConfig, resolveDatabaseUrl } from "../src/lib/db-url";
 
 async function main() {
   const migrationsFolder = path.join(process.cwd(), "drizzle");
@@ -19,7 +19,7 @@ async function main() {
     const { Pool } = await import("pg");
     const { drizzle } = await import("drizzle-orm/node-postgres");
     const { migrate } = await import("drizzle-orm/node-postgres/migrator");
-    const pool = new Pool({ connectionString: url, max: 1, ssl: resolveDatabaseSsl(url) });
+    const pool = new Pool(pgPoolConfig(url, 1));
     const db = drizzle(pool, { schema });
     await migrate(db, { migrationsFolder });
     await pool.end();

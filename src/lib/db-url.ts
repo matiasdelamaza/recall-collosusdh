@@ -67,3 +67,25 @@ export function resolveDatabaseSsl(url: string): PgSslOption | undefined {
   }
   return { rejectUnauthorized: true };
 }
+
+/**
+ * Quita de la URL los parámetros de TLS (`sslmode`, `sslrootcert`, `uselibpqcompat`…).
+ * Motivo: `pg` fusiona lo que parsea de la cadena de conexión POR ENCIMA de la opción `ssl`
+ * explícita, así que `sslmode=require` acabaría exigiendo verificación completa del certificado
+ * aunque se haya decidido otra cosa en `resolveDatabaseSsl`.
+ */
+export function sanitizeDatabaseUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    for (const k of ["sslmode", "ssl", "sslrootcert", "sslcert", "sslkey", "uselibpqcompat"]) u.searchParams.delete(k);
+    return u.toString();
+  } catch {
+    return url;
+  }
+}
+
+/** Configuración lista para `new Pool(...)`: cadena saneada + TLS resuelto. */
+export function pgPoolConfig(url: string, max: number): { connectionString: string; max: number; ssl?: PgSslOption } {
+  const ssl = resolveDatabaseSsl(url);
+  return { connectionString: sanitizeDatabaseUrl(url), max, ...(ssl ? { ssl } : {}) };
+}
