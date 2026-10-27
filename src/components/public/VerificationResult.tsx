@@ -84,11 +84,9 @@ export function VerificationResult({ result, headingRef, onStartRegistration, on
           <p className="font-semibold text-ink">{RESULT_NOT_IDENTIFIED.body3}</p>
         </div>
         <SerialLine label={FLOW.verifiedSerialLabel} serial={result.serial} />
+        {/* Decisión de Cross Mountain (27-10-2026): sin botón de revisión manual; solo verificar otro número. */}
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-          <Button variant="primary" onClick={() => onStartRegistration("MANUAL_REVIEW")}>
-            {RESULT_NOT_IDENTIFIED.ctaReview}
-          </Button>
-          <Button variant="secondary" onClick={onVerifyAnother}>
+          <Button variant="primary" onClick={onVerifyAnother}>
             {RESULT_NOT_IDENTIFIED.ctaAnother}
           </Button>
         </div>
