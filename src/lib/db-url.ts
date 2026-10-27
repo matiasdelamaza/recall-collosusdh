@@ -3,9 +3,8 @@
  * Sin `server-only` para poder usarse también desde los scripts CLI.
  *
  * Orden de prioridad:
- *   1. DATABASE_URL (configuración manual).
- *   2. Variables que inyecta la integración de Supabase (o Neon) en Vercel:
- *      POSTGRES_URL (pooler, para la aplicación) y POSTGRES_URL_NON_POOLING (conexión directa, para migraciones).
+ *   - Aplicación: DATABASE_URL, luego POSTGRES_URL (pooler inyectado por la integración Supabase/Neon en Vercel).
+ *   - Migraciones: POSTGRES_URL_NON_POOLING (conexión directa o pooler en modo sesión), luego DATABASE_URL, luego POSTGRES_URL.
  */
 
 export interface PgSslOption {
@@ -21,11 +20,12 @@ function clean(v: string | undefined): string | undefined {
 /** URL de conexión para la aplicación (pooler si existe) o para migraciones (conexión directa si existe). */
 export function resolveDatabaseUrl(opts: { forMigrations?: boolean } = {}): string | undefined {
   const manual = clean(process.env.DATABASE_URL);
-  if (manual) return manual;
   if (opts.forMigrations) {
-    return clean(process.env.POSTGRES_URL_NON_POOLING) ?? clean(process.env.POSTGRES_URL);
+    // Las migraciones necesitan una conexión en modo sesión (directa o pooler 5432),
+    // por eso POSTGRES_URL_NON_POOLING tiene prioridad incluso sobre DATABASE_URL.
+    return clean(process.env.POSTGRES_URL_NON_POOLING) ?? manual ?? clean(process.env.POSTGRES_URL);
   }
-  return clean(process.env.POSTGRES_URL);
+  return manual ?? clean(process.env.POSTGRES_URL);
 }
 
 /** true si el host corresponde a Supabase (su CA no está en el almacén de confianza de Node). */
