@@ -108,6 +108,8 @@ export interface RegisterContext {
   serialRaw: string;
   ipHash: string | null;
   userAgent: string | null;
+  /** Código del enlace personal del correo de aviso (?r=…), si llegó por él. */
+  outreachRef?: string | null;
 }
 
 export type RegisterOutcome =
@@ -218,6 +220,7 @@ export async function registerCase(input: RegistrationInput, uploads: ValidatedU
             incidentDescription: input.accidentReported === "YES" ? input.incidentDescription || null : null,
             acknowledgedStopRiding: true,
             source: "WEB",
+            outreachRef: ctx.outreachRef ?? null,
             ipHash: ctx.ipHash,
             userAgent: ctx.userAgent,
           })

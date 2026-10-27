@@ -26,13 +26,17 @@ export interface RegistrationFormProps {
   requestType: RequestType;
   verification: SerialVerificationStatus;
   headingRef?: React.RefObject<HTMLHeadingElement | null>;
+  /** Correo dejado antes de ver el resultado (serie afectada): se precarga. */
+  defaultEmail?: string;
+  /** Código del enlace personal del correo de aviso, si llegó por él. */
+  outreachRef?: string | null;
   onSuccess: (response: Extract<RegistrationResponse, { ok: true }>) => void;
   onBack: () => void;
 }
 
 type Errors = Record<string, string>;
 
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+export const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 function fileOk(file: File): string | null {
   if (!file || file.size === 0) return null;
@@ -191,7 +195,7 @@ function RadioGroup({
 }
 
 /** Formulario de registro del propietario (brief §11–§13). Un solo paso con secciones. */
-export function RegistrationForm({ serial, requestType, verification, headingRef, onSuccess, onBack }: RegistrationFormProps) {
+export function RegistrationForm({ serial, requestType, verification, headingRef, defaultEmail, outreachRef, onSuccess, onBack }: RegistrationFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
@@ -217,6 +221,7 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
     const form = e.currentTarget;
     const fd = new FormData(form);
     fd.set("requestType", requestType);
+    if (outreachRef) fd.set("ref", outreachRef);
     if (!serialEditable) fd.set("serial", serial);
 
     const errs = validate(fd, requestType, serialEditable);
@@ -389,7 +394,7 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
         </div>
 
         <Field id="email" label={FORM.fields.email} error={err("email")} required requiredLabel={FORM.required}>
-          <input id="email" name="email" type="email" inputMode="email" autoComplete="email" maxLength={160} className={inputClass} {...aria("email")} />
+          <input id="email" name="email" type="email" inputMode="email" autoComplete="email" maxLength={160} defaultValue={defaultEmail} className={inputClass} {...aria("email")} />
         </Field>
 
         <div className="grid gap-x-4 sm:grid-cols-2">

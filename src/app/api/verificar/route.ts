@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { RATE_LIMITS } from "@/lib/config";
 import { RESULT_ERROR, RESULT_RATE_LIMITED } from "@/lib/copy/es";
 import { countRecentMisses, recordLookup } from "@/lib/recall/lookups";
+import { normalizeOutreachRef } from "@/lib/outreach-ref";
 import { verifySerial } from "@/lib/recall/verify";
 import { logAudit } from "@/lib/server/audit";
 import { checkRateLimit, peekRateLimit } from "@/lib/server/rate-limit";
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
   }
 
   // 2) Cuerpo JSON acotado.
-  let payload: { serial?: unknown; turnstileToken?: unknown };
+  let payload: { serial?: unknown; turnstileToken?: unknown; ref?: unknown };
   try {
     const text = await req.text();
     if (text.length > MAX_BODY_BYTES) return json({ ok: false, error: "INVALID_REQUEST", message: INVALID_REQUEST_MESSAGE }, 400);
@@ -53,6 +54,7 @@ export async function POST(req: NextRequest) {
   }
   const serialInput = payload.serial.slice(0, 80);
   const turnstileToken = typeof payload.turnstileToken === "string" ? payload.turnstileToken : "";
+  const outreachRef = normalizeOutreachRef(payload.ref);
 
   try {
     // 3) Anti-enumeración: muchas consultas sin coincidencia desde la misma IP.
@@ -80,21 +82,23 @@ export async function POST(req: NextRequest) {
     const outcome = await verifySerial(serialInput);
 
     switch (outcome.state) {
-      case "AFFECTED":
-        await recordLookup({ serialNormalized: outcome.serial, result: "AFFECTED", ipHash, userAgent });
-        return json({ ok: true, state: "AFFECTED", serial: outcome.serial, model: outcome.model, size: outcome.size });
+      case "AFFECTED": {
+        // El id permite asociar el correo que se pide antes de mostrar el resultado (/api/verificar/correo).
+        const lookupId = await recordLookup({ serialNormalized: outcome.serial, result: "AFFECTED", ipHash, userAgent, outreachRef });
+        return json({ ok: true, state: "AFFECTED", serial: outcome.serial, model: outcome.model, size: outcome.size, lookupId });
+      }
       case "REINFORCED":
-        await recordLookup({ serialNormalized: outcome.serial, result: "REINFORCED", ipHash, userAgent });
+        await recordLookup({ serialNormalized: outcome.serial, result: "REINFORCED", ipHash, userAgent, outreachRef });
         return json({ ok: true, state: "REINFORCED", serial: outcome.serial, model: outcome.model, size: outcome.size });
       case "NOT_IDENTIFIED":
-        await recordLookup({ serialNormalized: outcome.serial, result: "NOT_IDENTIFIED", ipHash, userAgent });
+        await recordLookup({ serialNormalized: outcome.serial, result: "NOT_IDENTIFIED", ipHash, userAgent, outreachRef });
         return json({ ok: true, state: "NOT_IDENTIFIED", serial: outcome.serial });
       case "PENDING_DATABASE":
-        await recordLookup({ serialNormalized: outcome.serial, result: "PENDING_DATABASE", ipHash, userAgent });
+        await recordLookup({ serialNormalized: outcome.serial, result: "PENDING_DATABASE", ipHash, userAgent, outreachRef });
         return json({ ok: true, state: "PENDING_DATABASE", serial: outcome.serial });
       case "UNVERIFIED":
       default:
-        await recordLookup({ serialNormalized: serialInput.trim().slice(0, 64), result: "INVALID", ipHash, userAgent });
+        await recordLookup({ serialNormalized: serialInput.trim().slice(0, 64), result: "INVALID", ipHash, userAgent, outreachRef });
         return json({ ok: true, state: "UNVERIFIED", serial: serialInput.trim().toUpperCase().slice(0, 64), reason: outcome.reason });
     }
   } catch (err) {

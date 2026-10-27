@@ -303,6 +303,35 @@ export function internalNotificationEmail(c: CaseEmailData, ctx: EmailContext): 
   return { subject, text, html };
 }
 
+/** Datos de una consulta afectada con correo (aún sin caso registrado). */
+export interface AffectedContactEmailData {
+  serial: string;
+  email: string;
+  outreachRef: string | null;
+  createdAt: Date;
+}
+
+/** Alerta interna: alguien consultó una serie afectada y dejó su correo antes de ver el resultado. */
+export function internalAffectedContactEmail(d: AffectedContactEmailData, ctx: EmailContext): RenderedEmail {
+  const subject = `Serie afectada consultada · ${d.serial}`;
+  const intro = "Una persona consultó una serie afectada y dejó su correo antes de ver el resultado. Aún no completa el registro: si no lo hace, contáctala a este correo.";
+  const link = `${ctx.siteUrl.replace(/\/$/, "")}/admin/consultas?result=AFFECTED&q=${encodeURIComponent(d.serial)}`;
+  const rows: [string, string][] = [
+    ["Número de serie", d.serial],
+    ["Correo", d.email],
+    ["Código de enlace", d.outreachRef ?? "Sin código (no llegó por un enlace personal)"],
+    ["Fecha de la consulta", d.createdAt.toLocaleString("es-CL", { timeZone: "America/Santiago", dateStyle: "short", timeStyle: "short" })],
+  ];
+  const text = [intro, "", ...rows.map(([k, v]) => `${k}: ${v}`), "", `Ver consultas: ${link}`, "", EMAIL.footer].join("\n");
+  const html = wrapHtml(subject, [
+    { type: "heading", text: `Serie afectada ${d.serial}` },
+    { type: "alert", text: intro },
+    { type: "kv", rows },
+    { type: "button", label: "Ver consultas", href: link },
+  ], { siteUrl: ctx.siteUrl, tone: "alert" });
+  return { subject, text, html };
+}
+
 /** Resultado tras reproceso: la unidad SÍ está incluida en la campaña de seguridad. */
 export function customerResultAffectedEmail(c: CaseEmailData, ctx: EmailContext): RenderedEmail {
   const subject = EMAIL.resultAffectedSubject;
@@ -510,6 +539,28 @@ export function outreachCustomerEmail(ctx: EmailContext): RenderedEmail {
     { type: "p", text: t.body5 },
     { type: "caution", text: t.important },
     { type: "p", text: t.body6 },
+    { type: "p", text: help },
+    { type: "signature", text: `Saludos,\n${OUTREACH.signature}` },
+  ], { siteUrl: ctx.siteUrl });
+  return { subject: t.subject, text, html };
+}
+
+/** Recordatorio a un cliente, con su enlace personal (?r=código) para saber si llegó a verificar. */
+export function reminderCustomerEmail(ctx: EmailContext, ref: string): RenderedEmail {
+  const t = OUTREACH.reminder;
+  const url = `${publicUrl(ctx)}/?r=${encodeURIComponent(ref)}`;
+  const help = `Ante cualquier duda, puedes escribirnos a ${contactEmailOf(ctx)}.`;
+  const text = [t.greeting, "", t.body1, "", t.body2, "", url, "", t.body3, "", t.already, "", help, "", "Saludos,", "", OUTREACH.signature, "", EMAIL.footer].join("\n");
+  const html = wrapHtml(t.subject, [
+    { type: "heading", text: t.heading },
+    { type: "p", text: t.greeting },
+    { type: "p", text: t.body1 },
+    modelsBlock(ctx),
+    { type: "p", text: t.body2 },
+    { type: "button", label: HERO.cta, href: url },
+    { type: "small", text: url },
+    { type: "p", text: t.body3 },
+    { type: "caution", text: t.already },
     { type: "p", text: help },
     { type: "signature", text: `Saludos,\n${OUTREACH.signature}` },
   ], { siteUrl: ctx.siteUrl });

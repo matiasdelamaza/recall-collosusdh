@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from "react"
 import { track } from "@/lib/analytics-client";
 import { FLOW, HERO, MODELS, RESULT_ERROR, RESULT_RATE_LIMITED, RESULT_TURNSTILE, SERIAL_VALIDATION } from "@/lib/copy/es";
 import { MANUAL_REVIEW_AFTER_ATTEMPTS } from "@/lib/limits";
+import { readOutreachRef } from "@/lib/outreach-ref";
 import { normalizeSerial, validateSerial } from "@/lib/serial";
 import { requestTypeForState, type RegistrationResponse, type RequestType, type SerialVerificationStatus, type VerifyResponse } from "@/lib/types";
 import { RegistrationForm } from "./RegistrationForm";
@@ -16,8 +17,8 @@ type RegistrationOk = Extract<RegistrationResponse, { ok: true }>;
 
 type Step =
   | { kind: "idle" }
-  | { kind: "result"; result: VerifyOk }
-  | { kind: "form"; result: VerifyOk; requestType: RequestType; verification: SerialVerificationStatus; serial: string }
+  | { kind: "result"; result: VerifyOk; contactEmail?: string }
+  | { kind: "form"; result: VerifyOk; requestType: RequestType; verification: SerialVerificationStatus; serial: string; contactEmail?: string }
   | { kind: "success"; response: RegistrationOk };
 
 type Notice =
@@ -59,6 +60,11 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
   /** Intentos fallidos seguidos (no encontrada / formato inválido); a partir de 3 se ofrece revisión manual. */
   const [failedAttempts, setFailedAttempts] = useState(0);
   const lastSerial = useRef("");
+  /** Código del enlace personal (?r=…) con el que llegó, si lo hay. */
+  const outreachRef = useRef<string | null>(null);
+  useEffect(() => {
+    outreachRef.current = readOutreachRef();
+  }, []);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const resultHeadingRef = useRef<HTMLHeadingElement>(null);
@@ -87,7 +93,7 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
       const res = await fetch("/api/verificar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ serial: raw, ...(turnstileToken ? { turnstileToken } : {}) }),
+        body: JSON.stringify({ serial: raw, ...(turnstileToken ? { turnstileToken } : {}), ...(outreachRef.current ? { ref: outreachRef.current } : {}) }),
       });
       let data: VerifyResponse | null = null;
       try {
@@ -144,7 +150,7 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
   function startRegistration(requestType: RequestType) {
     if (step.kind !== "result") return;
     const r = step.result;
-    setStep({ kind: "form", result: r, requestType, verification: r.state, serial: r.serial });
+    setStep({ kind: "form", result: r, requestType, verification: r.state, serial: r.serial, contactEmail: step.contactEmail });
     track("registration_started");
   }
 
@@ -281,6 +287,8 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
                 onStartRegistration={startRegistration}
                 onRetry={retrySerial}
                 onVerifyAnother={verifyAnother}
+                contactEmail={step.contactEmail}
+                onContactSaved={(email) => setStep({ kind: "result", result: step.result, contactEmail: email })}
               />
             ) : null}
 
@@ -292,8 +300,10 @@ export function RecallFlow({ serialDbStatus, turnstileSiteKey }: RecallFlowProps
                   requestType={step.requestType}
                   verification={step.verification}
                   headingRef={formHeadingRef}
+                  defaultEmail={step.contactEmail}
+                  outreachRef={outreachRef.current}
                   onSuccess={handleRegistered}
-                  onBack={() => setStep({ kind: "result", result: step.result })}
+                  onBack={() => setStep({ kind: "result", result: step.result, contactEmail: step.contactEmail })}
                 />
               </>
             ) : null}

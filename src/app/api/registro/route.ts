@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { RATE_LIMITS, UPLOAD_LIMITS } from "@/lib/config";
 import { FORM_VALIDATION } from "@/lib/copy/es";
+import { normalizeOutreachRef } from "@/lib/outreach-ref";
 import { registerCase, validateRegistrationFields } from "@/lib/recall/register";
 import { checkRateLimit, peekRateLimit } from "@/lib/server/rate-limit";
 import { getClientIp, getUserAgent, hashIp } from "@/lib/server/request";
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
       serialRaw: typeof raw.serial === "string" ? raw.serial : "",
       ipHash,
       userAgent,
+      outreachRef: normalizeOutreachRef(form.get("ref")),
     });
 
     switch (outcome.kind) {

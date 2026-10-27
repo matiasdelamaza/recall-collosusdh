@@ -68,6 +68,22 @@ export const RESULT_AFFECTED = {
   serialLabel: "Número de serie verificado",
 } as const;
 
+/**
+ * Paso previo al resultado de una serie afectada: se pide el correo antes de mostrar el aviso
+ * (pedido de Cross Mountain, 27-10-2026). No adelanta el resultado.
+ */
+export const AFFECTED_GATE = {
+  badge: "Un paso más",
+  title: "INGRESA TU CORREO PARA VER EL RESULTADO",
+  body: "Antes de mostrarte el resultado de esta serie necesitamos un correo electrónico de contacto, para que nuestro equipo de Postventa pueda comunicarse contigo.",
+  emailLabel: "Correo electrónico",
+  emailPlaceholder: "nombre@correo.cl",
+  cta: "VER RESULTADO",
+  ctaLoading: "ENVIANDO…",
+  privacy: "Usaremos tu correo exclusivamente para la gestión de esta campaña de seguridad.",
+  rateLimited: "Has realizado demasiados intentos en poco tiempo. Espera unos minutos e inténtalo nuevamente.",
+} as const;
+
 export const RESULT_NOT_IDENTIFIED = {
   badge: "No identificada actualmente",
   title: "TU NÚMERO DE SERIE NO APARECE ACTUALMENTE DENTRO DE LAS UNIDADES INCLUIDAS EN ESTA CAMPAÑA",
@@ -425,6 +441,16 @@ export const OUTREACH = {
     body5: "Si tu bicicleta corresponde a una de las unidades incluidas en esta campaña de seguridad, recibirás inmediatamente la instrucción de suspender su uso y se te solicitarán tus datos para que nuestro equipo de Postventa pueda contactarte y coordinar el reemplazo del cuadro sin costo.",
     important: "Te pedimos realizar esta verificación antes de volver a utilizar tu bicicleta.",
     body6: "Si tu unidad resulta afectada, no la utilices hasta completar el proceso de reemplazo coordinado por nuestro equipo.",
+  },
+  /** Recordatorio con enlace personal (?r=código) a clientes que recibieron el aviso. */
+  reminder: {
+    subject: "Recordatorio: aviso de suspensión de uso – Polygon Collosus DH",
+    heading: "Recordatorio: verifica el número de serie de tu bicicleta",
+    greeting: "Hola,",
+    body1: "Hace unos días te escribimos por la campaña de seguridad que Polygon Bikes y Cross Mountain iniciaron para determinadas unidades Polygon Collosus DH.",
+    body2: "Si aún no lo has hecho, verifica el número de serie de tu bicicleta antes de volver a utilizarla. Este es tu enlace:",
+    body3: "Si tu bicicleta corresponde a una de las unidades incluidas, el sistema te pedirá un correo de contacto, te indicará suspender su uso y te guiará para coordinar con nuestro equipo de Postventa el reemplazo del cuadro sin costo.",
+    already: "Si ya verificaste tu número de serie y completaste el registro, o tu serie no está incluida, puedes ignorar este mensaje.",
   },
   distributor: {
     subject: "Aviso de suspensión de uso – Polygon Collosus DH",

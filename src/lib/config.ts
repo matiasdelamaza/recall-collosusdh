@@ -99,6 +99,8 @@ export const RATE_LIMITS = {
   /** A partir de este número de resultados no afectados en la ventana se exige Turnstile (si está configurado) o se bloquea. */
   serialLookupSuspiciousThreshold: 6,
   registration: { windowMs: 60 * 60 * 1000, max: 5 },
+  /** Correo pedido antes de mostrar una serie afectada (/api/verificar/correo). */
+  affectedContact: { windowMs: 10 * 60 * 1000, max: 10 },
   analytics: { windowMs: 60 * 1000, max: 60 },
   adminLogin: { windowMs: 15 * 60 * 1000, max: 8 },
   /** Prueba de correo de /api/health: límite global (no por IP), solo a los correos internos. */
