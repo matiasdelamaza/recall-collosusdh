@@ -59,8 +59,9 @@ function contactLines(ctx: EmailContext): string[] {
   return lines;
 }
 
+/** Enlace visible para el cliente: con "www." (pedido de Cross Mountain); www redirige al dominio principal. */
 function siteLine(ctx: EmailContext): string {
-  return `${EMAIL.siteLink} ${ctx.siteUrl}`;
+  return `${EMAIL.siteLink} ${ctx.siteUrl.replace(/\/$/, "").replace(/^https:\/\/(?!www\.)/, "https://www.")}`;
 }
 
 // Colores del sitio (src/app/globals.css). Los correos no leen CSS externo: todo va en línea.
