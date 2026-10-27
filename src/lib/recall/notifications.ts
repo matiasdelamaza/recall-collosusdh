@@ -25,10 +25,29 @@ export function getEmailContext(): EmailContext {
 
 type Kind = "CUSTOMER_CONFIRMATION" | "INTERNAL_NEW_CASE" | "CUSTOMER_RESULT_AFFECTED" | "CUSTOMER_RESULT_NOT_IDENTIFIED";
 
+/** Tiempo máximo de espera por envío; pasado este plazo se registra el fallo y la petición continúa. */
+const SEND_TIMEOUT_MS = 15_000;
+
+function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`tiempo de espera agotado (${ms} ms)`)), ms);
+    p.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
+}
+
 async function deliver(kind: Kind, to: string | string[], rendered: RenderedEmail, c: Pick<RecallCase, "id" | "caseId">): Promise<boolean> {
   try {
     const provider = getEmailProvider();
-    const res = await provider.send({ to, subject: rendered.subject, text: rendered.text, html: rendered.html });
+    const res = await withTimeout(provider.send({ to, subject: rendered.subject, text: rendered.text, html: rendered.html }), SEND_TIMEOUT_MS);
     if (res.ok) {
       await logAudit({ type: "EMAIL_SENT", caseId: c.id, payload: { kind, provider: res.provider, id: res.id, caseId: c.caseId } });
       return true;

@@ -21,6 +21,7 @@ import { FORM_VALIDATION, SERIAL_VALIDATION } from "@/lib/copy/es";
 import { generateCaseId } from "@/lib/case-id";
 import { CHILE_REGIONS } from "@/lib/regions";
 import { isValidRut, normalizeRut } from "@/lib/rut";
+import { normalizeSerial } from "@/lib/serial";
 import { logAudit } from "@/lib/server/audit";
 import { buildStorageKey, type ValidatedUpload } from "@/lib/server/uploads";
 import { getStorage } from "@/lib/storage";
@@ -120,11 +121,19 @@ export type RegisterOutcome =
  */
 export async function registerCase(input: RegistrationInput, uploads: ValidatedUpload[], ctx: RegisterContext): Promise<RegisterOutcome> {
   const verification = await verifySerial(input.serial);
+  let serial: string;
+  let requestType: RequestType;
   if (verification.state === "UNVERIFIED") {
-    return { kind: "SERIAL_INVALID", message: SERIAL_VALIDATION[verification.reason] };
+    // Serie ilegible, parcial o con formato desconocido (brief §10, estado C): se acepta
+    // SOLO como solicitud de revisión manual, nunca como unidad afectada.
+    const partial = normalizeSerial(input.serial).replace(/[^A-Z0-9-]/g, "").slice(0, 64);
+    if (!partial) return { kind: "SERIAL_INVALID", message: SERIAL_VALIDATION.EMPTY };
+    serial = partial;
+    requestType = "MANUAL_REVIEW";
+  } else {
+    serial = verification.serial;
+    requestType = requestTypeForState(verification.state);
   }
-  const serial = verification.serial;
-  const requestType: RequestType = requestTypeForState(verification.state);
 
   const db = await getDb();
   const active = await findActiveCasesBySerial(db, serial);

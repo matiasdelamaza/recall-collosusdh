@@ -175,10 +175,23 @@ describe("POST /api/registro", () => {
     for (const msg of Object.values(fields) as string[]) expect(msg).not.toMatch(/\b(required|invalid|expected|string)\b/i);
   });
 
-  it("serie con formato inválido → 422 fields.serial", async () => {
-    const res = await POST(postForm(URL_, buildRegistrationForm({ serial: "AB", rut: rutFor(12121213), email: "serie@example.test" }), IP));
+  it("serie ilegible o parcial → se acepta SOLO como revisión manual (nunca como afectada)", async () => {
+    const res = await POST(postForm(URL_, buildRegistrationForm({ serial: "ab 1", rut: rutFor(12121213), email: "serie@example.test" }), IP));
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.outcome).toBe("CREATED");
+    expect(body.verification).toBe("UNVERIFIED");
+    expect(body.requestType).toBe("MANUAL_REVIEW");
+    const db = await getDb();
+    const [row] = await db.select().from(recallCases).where(eq(recallCases.caseId, body.caseId));
+    expect(row?.serialNumber).toBe("AB1");
+    expect(row?.caseStatus).toBe("MANUAL_REVIEW");
+  });
+
+  it("serie vacía o sin caracteres válidos → 422 fields.serial", async () => {
+    const res = await POST(postForm(URL_, buildRegistrationForm({ serial: "???", rut: rutFor(12121214), email: "serie2@example.test" }), IP));
     expect(res.status).toBe(422);
-    expect((await res.json()).fields.serial).toMatch(/incompleto/i);
+    expect((await res.json()).fields.serial).toBeTruthy();
   });
 
   it("honeypot relleno → 400 genérico sin crear caso", async () => {

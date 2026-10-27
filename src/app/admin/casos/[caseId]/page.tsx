@@ -130,7 +130,7 @@ export default async function AdminCaseDetailPage({ params, searchParams }: { pa
                   <li key={f.id} className="rounded-md border border-line p-2">
                     <a href={`/api/admin/archivos/${f.id}`} target="_blank" rel="noopener noreferrer" title={D.actions.openFile}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={`/api/admin/archivos/${f.id}`} alt={labelFileKind(f.kind)} className="aspect-square w-full rounded-sm bg-paper-100 object-cover" loading="lazy" />
+                      <img src={`/api/admin/archivos/${f.id}?miniatura=1`} alt={labelFileKind(f.kind)} className="aspect-square w-full rounded-sm bg-paper-100 object-cover" loading="lazy" />
                     </a>
                     <div className="mt-1 text-xs font-semibold">{labelFileKind(f.kind)}</div>
                     <div className="truncate text-[11px] text-ink-500" title={f.originalName}>

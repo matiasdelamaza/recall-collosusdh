@@ -7,14 +7,12 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { RATE_LIMITS } from "@/lib/config";
 import { logAudit } from "@/lib/server/audit";
-import { hashIp } from "@/lib/server/request";
+import { getClientIp, hashIp } from "@/lib/server/request";
 import { checkRateLimit } from "@/lib/server/rate-limit";
 import { createSession, destroySession, isAdminConfigured } from "./session";
 
 async function clientIpHash(): Promise<string> {
-  const h = await headers();
-  const ip = h.get("cf-connecting-ip")?.trim() || h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip")?.trim() || "0.0.0.0";
-  return hashIp(ip);
+  return hashIp(getClientIp(await headers()));
 }
 
 function safeNext(value: FormDataEntryValue | null): string {

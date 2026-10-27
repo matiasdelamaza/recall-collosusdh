@@ -1,5 +1,5 @@
 import "server-only";
-import { and, eq, gt, ne, sql } from "drizzle-orm";
+import { and, eq, gt, inArray, sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { serialLookups, type LookupResult } from "@/db/schema";
 
@@ -25,13 +25,23 @@ export async function recordLookup(input: RecordLookupInput): Promise<void> {
   }
 }
 
-/** Consultas recientes de una IP (hasheada) que NO resultaron en coincidencia positiva. */
+/**
+ * Consultas recientes de una IP (hasheada) que NO resultaron en coincidencia positiva.
+ * Las respuestas RATE_LIMITED no cuentan: de lo contrario cada reintento bloqueado
+ * renovaría el bloqueo y este nunca expiraría.
+ */
 export async function countRecentMisses(ipHash: string, windowMs: number): Promise<number> {
   const db = await getDb();
   const since = new Date(Date.now() - windowMs);
   const rows = await db
     .select({ n: sql<number>`count(*)` })
     .from(serialLookups)
-    .where(and(eq(serialLookups.ipHash, ipHash), ne(serialLookups.result, "AFFECTED"), gt(serialLookups.createdAt, since)));
+    .where(
+      and(
+        eq(serialLookups.ipHash, ipHash),
+        inArray(serialLookups.result, ["NOT_IDENTIFIED", "INVALID", "PENDING_DATABASE"]),
+        gt(serialLookups.createdAt, since),
+      ),
+    );
   return Number(rows[0]?.n ?? 0);
 }

@@ -26,11 +26,19 @@ async function createDb(): Promise<Database> {
   const url = process.env.DATABASE_URL?.trim();
   if (url) {
     const { Pool } = await import("pg");
-    const pool = new Pool({
-      connectionString: url,
-      max: 10,
-      ssl: url.includes("sslmode=require") || process.env.DATABASE_SSL === "true" ? { rejectUnauthorized: false } : undefined,
-    });
+    // TLS: por defecto se verifica el certificado del servidor. `DATABASE_SSL=no-verify` desactiva la
+    // verificación de forma explícita (p. ej. Supabase sin CA instalada); `DATABASE_SSL_CA` permite
+    // indicar el certificado de la CA en PEM.
+    const sslMode = (process.env.DATABASE_SSL ?? "").trim().toLowerCase();
+    const wantsSsl = sslMode !== "" && sslMode !== "false" && sslMode !== "disable";
+    const urlWantsSsl = /sslmode=(require|verify-ca|verify-full)/i.test(url);
+    const ssl =
+      sslMode === "no-verify"
+        ? { rejectUnauthorized: false }
+        : wantsSsl || urlWantsSsl
+          ? { rejectUnauthorized: true, ca: process.env.DATABASE_SSL_CA?.trim() || undefined }
+          : undefined;
+    const pool = new Pool({ connectionString: url, max: 10, ssl });
     return drizzlePg(pool, { schema });
   }
 

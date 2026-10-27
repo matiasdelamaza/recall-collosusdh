@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 const SAFE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
 
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ fileId: string }> }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ fileId: string }> }) {
   const auth = await requireAdminApi();
   if (!auth.ok) return auth.response;
 
@@ -20,7 +20,11 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ fileId: st
   const stored = await getStorage().get(file.storageKey);
   if (!stored) return NextResponse.json({ ok: false, error: "Archivo no disponible." }, { status: 404, headers: { "Cache-Control": "no-store" } });
 
-  await logAudit({ type: "FILE_VIEWED", actor: auth.identity.actor, caseId: file.caseId, payload: { fileId: file.id, kind: file.kind } });
+  // Las miniaturas de la ficha (?miniatura=1) no generan evento de auditoría; la apertura explícita sí.
+  const isThumbnail = req.nextUrl.searchParams.get("miniatura") === "1";
+  if (!isThumbnail) {
+    await logAudit({ type: "FILE_VIEWED", actor: auth.identity.actor, caseId: file.caseId, payload: { fileId: file.id, kind: file.kind } });
+  }
 
   const contentType = SAFE_TYPES.has(file.mimeType) ? file.mimeType : "application/octet-stream";
   const safeName = file.originalName.replace(/[^\w.\-]+/g, "_").slice(0, 100) || "archivo";

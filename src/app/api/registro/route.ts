@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { RATE_LIMITS, UPLOAD_LIMITS } from "@/lib/config";
 import { FORM_VALIDATION } from "@/lib/copy/es";
 import { registerCase, validateRegistrationFields } from "@/lib/recall/register";
-import { checkRateLimit } from "@/lib/server/rate-limit";
+import { checkRateLimit, peekRateLimit } from "@/lib/server/rate-limit";
 import { getClientIp, getUserAgent, hashIp } from "@/lib/server/request";
 import { UploadValidationError, collectRegistrationUploads } from "@/lib/server/uploads";
 import type { RegistrationResponse } from "@/lib/types";
@@ -43,9 +43,11 @@ export async function POST(req: NextRequest) {
   const ipHash = hashIp(getClientIp(req));
   const userAgent = getUserAgent(req);
 
-  const rl = checkRateLimit("registro", ipHash, RATE_LIMITS.registration);
-  if (!rl.allowed) {
-    return json({ ok: false, error: "RATE_LIMITED", message: FORM_VALIDATION.rateLimited }, 429, { "Retry-After": String(rl.retryAfterSeconds) });
+  // El cupo por IP se consume solo cuando el formulario es válido (más abajo); aquí solo se consulta,
+  // para que los errores de validación no agoten el límite de un usuario legítimo.
+  if (peekRateLimit("registro", ipHash, RATE_LIMITS.registration) >= RATE_LIMITS.registration.max) {
+    const retry = String(Math.ceil(RATE_LIMITS.registration.windowMs / 1000));
+    return json({ ok: false, error: "RATE_LIMITED", message: FORM_VALIDATION.rateLimited }, 429, { "Retry-After": retry });
   }
 
   // Tamaño declarado antes de parsear el cuerpo.
@@ -91,6 +93,12 @@ export async function POST(req: NextRequest) {
 
   if (!fieldsResult.ok || Object.keys(fieldErrors).length > 0) {
     return json({ ok: false, error: "VALIDATION", message: FORM_VALIDATION.generic, fields: fieldErrors }, 422);
+  }
+
+  // Formulario válido: ahora sí se consume el cupo por IP.
+  const rl = checkRateLimit("registro", ipHash, RATE_LIMITS.registration);
+  if (!rl.allowed) {
+    return json({ ok: false, error: "RATE_LIMITED", message: FORM_VALIDATION.rateLimited }, 429, { "Retry-After": String(rl.retryAfterSeconds) });
   }
 
   try {

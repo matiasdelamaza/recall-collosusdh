@@ -10,11 +10,14 @@ export const dynamic = "force-dynamic";
 
 const SEP = ";";
 
-/** Escapa un valor para CSV; neutraliza fórmulas (=, +, -, @) para hojas de cálculo. */
+/**
+ * Escapa un valor para CSV; neutraliza fórmulas (=, +, -, @) para hojas de cálculo
+ * anteponiendo un espacio (invisible en la celda; el apóstrofo clásico se muestra en Excel/LibreOffice).
+ */
 function cell(v: unknown): string {
   if (v === null || v === undefined) return "";
   let s = v instanceof Date ? v.toISOString() : String(v);
-  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  if (/^[=+\-@\t\r]/.test(s)) s = ` ${s}`;
   if (/[";\n\r]/.test(s)) s = `"${s.replace(/"/g, '""')}"`;
   return s;
 }

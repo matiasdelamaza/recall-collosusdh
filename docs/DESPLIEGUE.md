@@ -13,7 +13,7 @@ Guía paso a paso para publicar `recallcollosusdh.cl`. El sitio puede publicarse
 
 ### Base de datos (Supabase)
 1. Crear un proyecto en Supabase (región más cercana: `sa-east-1`, São Paulo).
-2. Copiar la cadena de conexión **directa o con pooler en modo sesión** (Project Settings → Database). Usar la versión con `sslmode=require` como `DATABASE_URL`.
+2. Copiar la cadena de conexión **directa o con pooler en modo sesión** (Project Settings → Database). Usar la versión con `sslmode=require` como `DATABASE_URL`. La aplicación verifica el certificado TLS por defecto: descargar el certificado de CA de Supabase (Project Settings → Database → SSL) y entregarlo en `DATABASE_SSL_CA` (contenido PEM). Solo si no es posible, usar `DATABASE_SSL=no-verify` (TLS sin verificación de certificado), dejando constancia en el checklist.
 3. Desactivar la exposición de tablas vía API REST (el portal no la usa) o dejar RLS activado sin políticas públicas.
 4. Activar backups automáticos.
 
@@ -46,7 +46,11 @@ Guía paso a paso para publicar `recallcollosusdh.cl`. El sitio puede publicarse
    npm run start            # puerto 3000; usar PM2 o systemd para mantenerlo activo
    ```
    Con PM2: `pm2 start npm --name recall -- start` y `pm2 save`.
-6. Proxy inverso hacia `http://127.0.0.1:3000`, pasando `X-Forwarded-For` (necesario para el rate limiting y la auditoría por IP hasheada) y con `client_max_body_size 45m` (nginx) para las fotos.
+6. Proxy inverso hacia `http://127.0.0.1:3000` con `client_max_body_size 45m` (nginx) para las fotos. **Nunca exponer el puerto 3000 directamente a internet**: la IP del cliente (límites de tasa, anti-enumeración y auditoría) se toma de las cabeceras del proxy según `TRUSTED_PROXY`:
+   - nginx: `proxy_set_header X-Real-IP $remote_addr;` y `TRUSTED_PROXY=nginx`.
+   - Caddy / balanceadores que añaden `X-Forwarded-For`: `TRUSTED_PROXY=standard` (se usa el último elemento, el que añade el proxy; el primero puede falsificarlo el cliente).
+   - Cloudflare delante del servidor (todo el tráfico forzado por Cloudflare): `TRUSTED_PROXY=cloudflare`.
+   En Vercel basta `TRUSTED_PROXY=standard` (valor por defecto).
 
 Docker (opcional): imagen `node:22-alpine`, `npm ci && npm run build`, comando `npm run start`; montar un volumen para `LOCAL_STORAGE_DIR` si se usa almacenamiento local.
 

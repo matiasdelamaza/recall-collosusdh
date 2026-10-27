@@ -52,16 +52,26 @@ export async function reprocessPendingCases(options: ReprocessOptions): Promise<
         result.nowAffected++;
         if (options.dryRun) continue;
         const now = new Date();
+        // Un caso estacionado en revisión manual entra al flujo de reemplazo; los demás estados se conservan.
+        const nextCaseStatus = c.caseStatus === "MANUAL_REVIEW" ? "REGISTERED" : c.caseStatus;
         const [updated] = await db
           .update(recallCases)
-          .set({ serialVerificationStatus: "AFFECTED", requestType: "REPLACEMENT", updatedAt: now })
+          .set({ serialVerificationStatus: "AFFECTED", requestType: "REPLACEMENT", caseStatus: nextCaseStatus, updatedAt: now })
           .where(eq(recallCases.id, c.id))
           .returning();
         await logAudit({
           type: "STATUS_CHANGED",
           actor: options.actor,
           caseId: c.id,
-          payload: { caseId: c.caseId, field: "serialVerificationStatus", from: c.serialVerificationStatus, to: "AFFECTED", reason: "reprocess" },
+          payload: {
+            caseId: c.caseId,
+            field: "serialVerificationStatus",
+            from: c.serialVerificationStatus,
+            to: "AFFECTED",
+            caseStatusFrom: c.caseStatus,
+            caseStatusTo: nextCaseStatus,
+            reason: "reprocess",
+          },
         });
         if (options.notifyCustomers && updated) {
           const ok = await sendResultNotification(updated, "AFFECTED");

@@ -17,6 +17,10 @@ export function createSmtpEmailProvider(opts: SmtpOptions): EmailProvider {
     port: opts.port,
     secure: opts.secure,
     auth: opts.user ? { user: opts.user, pass: opts.pass } : undefined,
+    // Tiempos acotados: un SMTP lento no debe retener la respuesta del registro.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
   return {
     name: "smtp",

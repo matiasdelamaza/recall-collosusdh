@@ -2,15 +2,46 @@ import "server-only";
 import { createHash } from "node:crypto";
 import type { NextRequest } from "next/server";
 
-/** IP del cliente considerando proxies habituales (Vercel, Cloudflare, nginx). */
-export function getClientIp(req: NextRequest | Request): string {
-  const h = req.headers;
-  const cf = h.get("cf-connecting-ip");
-  if (cf) return cf.trim();
+type HeaderSource = NextRequest | Request | Headers;
+
+function headersOf(src: HeaderSource): Headers {
+  return src instanceof Headers ? src : src.headers;
+}
+
+/** Último elemento de X-Forwarded-For: el que añadió el proxy de confianza más cercano. */
+function lastForwardedFor(h: Headers): string | null {
   const xff = h.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0]!.trim();
-  const real = h.get("x-real-ip");
-  if (real) return real.trim();
+  if (!xff) return null;
+  const parts = xff
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return parts.length ? parts[parts.length - 1]! : null;
+}
+
+/**
+ * IP del cliente según el proxy de confianza configurado (`TRUSTED_PROXY`):
+ *   - "cloudflare": `cf-connecting-ip` (solo si TODO el tráfico entra por Cloudflare).
+ *   - "nginx":      `x-real-ip` (nginx con `proxy_set_header X-Real-IP $remote_addr`).
+ *   - "standard" (por defecto; Vercel, Caddy, balanceadores): ÚLTIMO elemento de `x-forwarded-for`.
+ * Nunca se usa el primer elemento de X-Forwarded-For, que puede fijarlo el propio cliente.
+ * Si no hay cabeceras de proxy se devuelve "0.0.0.0" (sin proxy no hay IP fiable).
+ */
+export function getClientIp(src: HeaderSource): string {
+  const h = headersOf(src);
+  const mode = (process.env.TRUSTED_PROXY ?? "standard").trim().toLowerCase();
+  if (mode === "cloudflare") {
+    const cf = h.get("cf-connecting-ip")?.trim();
+    if (cf) return cf;
+  }
+  if (mode === "nginx") {
+    const real = h.get("x-real-ip")?.trim();
+    if (real) return real;
+  }
+  const last = lastForwardedFor(h);
+  if (last) return last;
+  const real = h.get("x-real-ip")?.trim();
+  if (real) return real;
   return "0.0.0.0";
 }
 
@@ -20,8 +51,8 @@ export function hashIp(ip: string): string {
   return createHash("sha256").update(`${salt}:${ip}`).digest("hex").slice(0, 32);
 }
 
-export function getUserAgent(req: NextRequest | Request): string | null {
-  const ua = req.headers.get("user-agent");
+export function getUserAgent(src: HeaderSource): string | null {
+  const ua = headersOf(src).get("user-agent");
   if (!ua) return null;
   return ua.slice(0, 300);
 }

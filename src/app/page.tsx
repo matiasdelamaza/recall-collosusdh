@@ -19,8 +19,9 @@ export const dynamic = "force-dynamic";
 
 /** Fecha de "última actualización": NEXT_PUBLIC_LAST_UPDATED (ISO) o el arranque del servidor. */
 const LAST_UPDATED = (() => {
-  const raw = process.env.NEXT_PUBLIC_LAST_UPDATED;
-  const d = raw ? new Date(raw) : new Date();
+  const raw = process.env.NEXT_PUBLIC_LAST_UPDATED?.trim();
+  // Una fecha sin hora (2026-10-27) se interpreta al mediodía UTC para que no cambie de día en America/Santiago.
+  const d = raw ? new Date(/^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T12:00:00Z` : raw) : new Date();
   return Number.isNaN(d.getTime()) ? new Date() : d;
 })();
 

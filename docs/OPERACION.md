@@ -33,7 +33,7 @@ Cada cambio de estado, nota y asignación queda en la bitácora del caso.
 | Servicio agendado | Hay fecha para el cambio de cuadro. |
 | Reemplazado | El cambio se hizo y el cliente tiene su bicicleta. |
 | Cerrado | No queda nada pendiente. |
-| Revisión manual | La serie no apareció en la base, no se pudo verificar, o llegó en modo interino y sigue sin coincidencia. Requiere decisión humana. |
+| Revisión manual | La serie no apareció en la base, no se pudo verificar (ilegible o parcial: verificación "No verificable"), o llegó en modo interino y sigue sin coincidencia. Requiere decisión humana: comparar la foto del número de serie con la base de Polygon y, si corresponde, cambiar el caso a *Registrado* como reemplazo o a *Serie inválida*. |
 | Serie inválida | La serie no corresponde (error de tipeo confirmado, otro modelo, etc.). Deja nota. |
 | Caso duplicado | Otra persona ya registró la misma serie. Verifica identidad/propiedad antes de continuar (§5). |
 | Cliente no contactable | Tres o más intentos documentados sin respuesta. Reintentar periódicamente. |

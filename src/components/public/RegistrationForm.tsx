@@ -49,8 +49,9 @@ function validate(fd: FormData, requestType: RequestType, serialEditable: boolea
   const str = (k: string) => String(fd.get(k) ?? "").trim();
 
   if (serialEditable) {
+    // Serie ilegible o parcial: el servidor la acepta solo como revisión manual; aquí basta con que no esté vacía.
     const v = validateSerial(str("serial"));
-    if (!v.valid) errors.serial = FORM_VALIDATION.required;
+    if (!v.valid && v.reason === "EMPTY") errors.serial = FORM_VALIDATION.required;
   }
   if (str("customerName").length < 3) errors.customerName = FORM_VALIDATION.customerName;
   if (!isValidRut(str("rut"))) errors.rut = FORM_VALIDATION.rut;
