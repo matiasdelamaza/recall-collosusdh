@@ -12,11 +12,16 @@ import { VerificationResult, type VerifyOk } from "./VerificationResult";
  * Galería de estados para QA visual SIN backend. Solo en desarrollo.
  * Las series son de ejemplo y claramente ficticias.
  */
-const RESULTS: { label: string; result: VerifyOk; failedAttempts?: number }[] = [
-  { label: "A — Afectada", result: { ok: true, state: "AFFECTED", serial: "EJEMPLO-AFECTADA-0001", model: "Collosus DH7", size: "M", lookupId: null } },
+const RESULTS: { label: string; result: VerifyOk; failedAttempts?: number; emailGate?: boolean }[] = [
+  {
+    label: "A — Afectada (paso 1: pide el correo)",
+    result: { ok: true, state: "AFFECTED", serial: "EJEMPLO-AFECTADA-0001", model: "Collosus DH7", size: "M", lookupId: null },
+    emailGate: true,
+  },
+  { label: "A — Afectada (paso 2: aviso)", result: { ok: true, state: "AFFECTED", serial: "EJEMPLO-AFECTADA-0001", model: "Collosus DH7", size: "M", lookupId: null } },
   { label: "B — No afectada (OK de Polygon)", result: { ok: true, state: "REINFORCED", serial: "EJEMPLO-REFORZADA-0004", model: "Collosus DH9", size: "L" } },
   { label: "C — No encontrada (1er intento)", result: { ok: true, state: "NOT_IDENTIFIED", serial: "EJEMPLO-NO-ID-0002" }, failedAttempts: 1 },
-  { label: "C — No encontrada (3er intento: revisión manual)", result: { ok: true, state: "NOT_IDENTIFIED", serial: "EJEMPLO-NO-ID-0002" }, failedAttempts: 3 },
+  { label: "C — No encontrada (3er intento: ayuda con fotos, modelo y talla)", result: { ok: true, state: "NOT_IDENTIFIED", serial: "EJEMPLO-NO-ID-0002" }, failedAttempts: 3 },
   { label: "D — Formato inválido", result: { ok: true, state: "UNVERIFIED", serial: "EJEMPLO-X", reason: "TOO_SHORT" }, failedAttempts: 1 },
   { label: "Interino — Pendiente de base", result: { ok: true, state: "PENDING_DATABASE", serial: "EJEMPLO-PENDIENTE-0003" } },
 ];
@@ -43,7 +48,14 @@ export function DevStates() {
 
       {RESULTS.map((r) => (
         <Block key={r.label} title={`Resultado · ${r.label}`}>
-          <VerificationResult result={r.result} failedAttempts={r.failedAttempts ?? 0} onStartRegistration={noop} onRetry={noop} onVerifyAnother={noop} />
+          <VerificationResult
+            result={r.result}
+            failedAttempts={r.failedAttempts ?? 0}
+            onStartRegistration={noop}
+            onRetry={noop}
+            onVerifyAnother={noop}
+            onContactSaved={r.emailGate ? noop : undefined}
+          />
         </Block>
       ))}
 

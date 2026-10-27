@@ -274,8 +274,8 @@ function AffectedEmailGate({
 
 /**
  * Serie no encontrada o con formato inválido: mensaje de error y "volver a intentar".
- * Tras MANUAL_REVIEW_AFTER_ATTEMPTS intentos fallidos seguidos se ofrece la revisión manual,
- * para que un dueño con la serie bien escrita (pero ausente de la lista) no quede sin salida.
+ * Tras MANUAL_REVIEW_AFTER_ATTEMPTS intentos fallidos seguidos, la acción principal pasa a ser
+ * enviar fotos, modelo y talla a Postventa (revisión manual), para que nadie quede sin salida.
  */
 function NotFoundCard({
   headingProps,
@@ -292,7 +292,45 @@ function NotFoundCard({
   onRetry: () => void;
   onStartRegistration: (requestType: RequestType) => void;
 }) {
-  const offerManual = failedAttempts >= MANUAL_REVIEW_AFTER_ATTEMPTS;
+  // Al tercer intento fallido, la ayuda de Postventa pasa a ser la acción principal.
+  if (failedAttempts >= MANUAL_REVIEW_AFTER_ATTEMPTS) {
+    return (
+      <article aria-labelledby="resultado-titulo" className="rounded-md border-2 border-ink bg-paper px-5 py-6 sm:px-8 sm:py-8">
+        <Badge tone="neutral">{RESULT_NOT_FOUND.badge}</Badge>
+        <h2 id="resultado-titulo" {...headingProps} className="headline mt-4 text-[22px] text-ink outline-none sm:text-[28px]">
+          {RESULT_NOT_FOUND.helpTitle}
+        </h2>
+        {reason ? <p className="mt-4 font-semibold text-alert-700">{reason}</p> : null}
+        <p className="mt-4 text-[16px] leading-relaxed text-ink-700">{RESULT_NOT_FOUND.helpBody}</p>
+        <ol className="mt-4 space-y-2 rounded-sm border-l-4 border-ink bg-paper-100 p-4 text-[15px] leading-relaxed text-ink">
+          {RESULT_NOT_FOUND.helpItems.map((item, i) => (
+            <li key={item} className="flex gap-3">
+              <span aria-hidden="true" className="font-bold tabular-nums">
+                {i + 1}.
+              </span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ol>
+        <p className="mt-4 text-[15px] font-semibold text-ink">{RESULT_NOT_FOUND.manualSafety}</p>
+        {serial ? <SerialLine label={FLOW.verifiedSerialLabel} serial={serial} /> : null}
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <Button variant="primary" onClick={() => onStartRegistration("MANUAL_REVIEW")} className="w-full sm:w-auto">
+            {RESULT_NOT_FOUND.manualCta}
+          </Button>
+          <Button variant="secondary" onClick={onRetry} className="w-full sm:w-auto">
+            {RESULT_NOT_FOUND.retryAgain}
+          </Button>
+        </div>
+        <p className="mt-4 text-sm">
+          <a href="#contacto" className="underline underline-offset-4 text-ink-700 hover:text-ink">
+            {RESULT_NOT_FOUND.contactLink}
+          </a>
+        </p>
+      </article>
+    );
+  }
+
   return (
     <article aria-labelledby="resultado-titulo" className="rounded-md border-2 border-alert bg-paper px-5 py-6 sm:px-8 sm:py-8">
       <Badge tone="neutral">{RESULT_NOT_FOUND.badge}</Badge>
@@ -330,21 +368,6 @@ function NotFoundCard({
           {RESULT_NOT_FOUND.retry}
         </Button>
       </div>
-      {offerManual ? (
-        <div className="mt-6 border-t border-line pt-5">
-          <h3 className="text-[16px] font-bold text-ink">{RESULT_NOT_FOUND.manualTitle}</h3>
-          <p className="mt-2 text-[15px] leading-relaxed text-ink-700">{RESULT_NOT_FOUND.manualBody}</p>
-          <p className="mt-2 text-[15px] font-semibold text-ink">{RESULT_NOT_FOUND.manualSafety}</p>
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Button variant="secondary" onClick={() => onStartRegistration("MANUAL_REVIEW")}>
-              {RESULT_NOT_FOUND.manualCta}
-            </Button>
-            <a href="#contacto" className="text-sm underline underline-offset-4 text-ink-700 hover:text-ink">
-              {RESULT_NOT_FOUND.contactLink}
-            </a>
-          </div>
-        </div>
-      ) : null}
     </article>
   );
 }
