@@ -190,6 +190,8 @@ export const ADMIN = {
     clear: "Limpiar",
     columns: { date: "Fecha", serial: "Serie ingresada", result: "Resultado", contact: "Correo", ref: "Código", connection: "Conexión", case: "Caso registrado" },
     noContact: "Sin correo",
+    contactInCase: "En el caso",
+    contactInCaseHint: "Esta consulta no dejó correo, pero la serie ya tiene un caso registrado con correo de contacto.",
     empty: "No hay consultas que coincidan con los filtros.",
     emptySerial: "(vacía)",
     prev: "← Anterior",
