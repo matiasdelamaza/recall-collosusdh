@@ -63,51 +63,102 @@ function siteLine(ctx: EmailContext): string {
   return `${EMAIL.siteLink} ${ctx.siteUrl}`;
 }
 
-/** Envuelve párrafos de texto plano en un HTML sencillo con estilos en línea. */
-function wrapHtml(title: string, blocks: HtmlBlock[]): string {
-  const body = blocks
-    .map((b) => {
-      switch (b.type) {
-        case "alert":
-          return `<p style="margin:0 0 16px;padding:14px 16px;background:#fdeced;border-left:4px solid #d1121c;color:#a60d15;font-weight:700;font-size:16px;">${escapeHtml(b.text)}</p>`;
-        case "caution":
-          return `<p style="margin:0 0 16px;padding:14px 16px;background:#f5f5f6;border-left:4px solid #0b0b0c;color:#0b0b0c;font-weight:700;font-size:15px;">${escapeHtml(b.text)}</p>`;
-        case "kv":
-          return `<table role="presentation" style="margin:0 0 16px;border-collapse:collapse;font-size:15px;">${b.rows
-            .map(
-              ([k, v]) =>
-                `<tr><td style="padding:4px 12px 4px 0;color:#55555c;">${escapeHtml(k)}</td><td style="padding:4px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-weight:700;">${escapeHtml(v)}</td></tr>`,
-            )
-            .join("")}</table>`;
-        case "small":
-          return `<p style="margin:0 0 8px;color:#55555c;font-size:13px;">${escapeHtml(b.text)}</p>`;
-        case "heading":
-          return `<h1 style="margin:0 0 16px;font-size:20px;line-height:1.2;text-transform:uppercase;letter-spacing:-0.01em;">${escapeHtml(b.text)}</h1>`;
-        case "p":
-        default:
-          return `<p style="margin:0 0 12px;font-size:15px;line-height:1.5;">${escapeHtml(b.text).replace(/\n/g, "<br>")}</p>`;
-      }
-    })
-    .join("\n");
+// Colores del sitio (src/app/globals.css). Los correos no leen CSS externo: todo va en línea.
+const C = {
+  ink: "#0b0b0c",
+  ink500: "#55555c",
+  muted: "#8a8a93",
+  line: "#d9d9dd",
+  paper: "#ffffff",
+  paper100: "#f5f5f6",
+  alert: "#d1121c",
+  alert700: "#a60d15",
+  alert50: "#fdeced",
+  ok: "#15803d",
+  ok700: "#166534",
+  ok50: "#f0fdf4",
+} as const;
+const FONT = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
+const MONO = "ui-monospace,SFMono-Regular,Menlo,Consolas,monospace";
+
+/** Color de la franja superior: rojo (afectada / reemplazo), verde (no afectada) o negro (resto). */
+type Tone = "alert" | "ok" | "neutral";
+const TONE_COLOR: Record<Tone, string> = { alert: C.alert, ok: C.ok, neutral: C.ink };
+
+/** Texto escapado con saltos de línea, URLs y correos clicables. */
+function richText(value: string): string {
+  return escapeHtml(value)
+    .replace(/https?:\/\/[^\s<]+/g, (url) => `<a href="${url}" style="color:${C.ink};text-decoration:underline;">${url}</a>`)
+    .replace(/[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g, (mail) => `<a href="mailto:${mail}" style="color:${C.ink};text-decoration:underline;">${mail}</a>`)
+    .replace(/\n/g, "<br>");
+}
+
+function renderBlock(b: HtmlBlock): string {
+  switch (b.type) {
+    case "heading":
+      return `<h1 style="margin:0 0 20px;font-size:24px;line-height:1.15;font-weight:800;text-transform:uppercase;letter-spacing:-0.01em;color:${C.ink};">${escapeHtml(b.text)}</h1>`;
+    case "alert":
+    case "ok":
+    case "caution": {
+      const [bg, bar, fg] = b.type === "alert" ? [C.alert50, C.alert, C.alert700] : b.type === "ok" ? [C.ok50, C.ok, C.ok700] : [C.paper100, C.ink, C.ink];
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 20px;border-collapse:collapse;"><tr><td style="background:${bg};border-left:4px solid ${bar};padding:14px 16px;color:${fg};font-size:15px;line-height:1.45;font-weight:700;">${richText(b.text)}</td></tr></table>`;
+    }
+    case "kv":
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;border-collapse:collapse;border:1px solid ${C.line};">${b.rows
+        .map(
+          ([k, v], i) =>
+            `<tr><td style="padding:10px 14px;${i ? `border-top:1px solid ${C.line};` : ""}font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${C.ink500};width:42%;vertical-align:top;">${escapeHtml(k)}</td><td style="padding:10px 14px;${i ? `border-top:1px solid ${C.line};` : ""}font-family:${/número|rut/i.test(k) ? MONO : FONT};font-size:14px;font-weight:700;color:${C.ink};word-break:break-word;">${escapeHtml(v)}</td></tr>`,
+        )
+        .join("")}</table>`;
+    case "button":
+      return `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;border-collapse:collapse;"><tr><td style="background:${C.ink};"><a href="${escapeHtml(b.href)}" style="display:inline-block;padding:13px 22px;font-size:14px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:#ffffff;text-decoration:none;">${escapeHtml(b.label)}</a></td></tr></table>`;
+    case "contact":
+      return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:8px 0 20px;border-collapse:collapse;"><tr><td style="background:${C.paper100};padding:16px 18px;"><p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:${C.ink500};">${escapeHtml(CONTACT.title)}</p><p style="margin:0;font-size:14px;line-height:1.55;color:${C.ink};">${richText(b.lines.join("\n"))}</p></td></tr></table>`;
+    case "signature":
+      return `<p style="margin:20px 0 0;padding-top:16px;border-top:1px solid ${C.line};font-size:13px;line-height:1.5;color:${C.ink500};">${richText(b.text)}</p>`;
+    case "small":
+      return `<p style="margin:0 0 10px;color:${C.ink500};font-size:13px;line-height:1.5;">${richText(b.text)}</p>`;
+    case "p":
+    default:
+      return `<p style="margin:0 0 14px;font-size:15px;line-height:1.55;color:${C.ink};">${richText(b.text)}</p>`;
+  }
+}
+
+/** Envuelve los bloques en un correo HTML con tablas y estilos en línea (compatible con Gmail y Outlook). */
+function wrapHtml(title: string, blocks: HtmlBlock[], opts: { siteUrl: string; tone?: Tone }): string {
+  const base = opts.siteUrl.replace(/\/$/, "");
+  const bar = TONE_COLOR[opts.tone ?? "neutral"];
   return `<!doctype html>
-<html lang="es-CL"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${escapeHtml(title)}</title></head>
-<body style="margin:0;padding:0;background:#f5f5f6;font-family:Inter,ui-sans-serif,system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#0b0b0c;">
-<div style="max-width:600px;margin:0 auto;padding:24px 16px;">
-<div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#55555c;margin-bottom:12px;">${escapeHtml(BRAND.product)} · Aviso de suspensión de uso · Chile</div>
-<div style="background:#ffffff;padding:24px;border:1px solid #d9d9dd;">
-${body}
-</div>
-<p style="margin:16px 0 0;color:#a1a1aa;font-size:12px;">${escapeHtml(EMAIL.footer)}</p>
-</div></body></html>`;
+<html lang="es-CL"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>${escapeHtml(title)}</title></head>
+<body style="margin:0;padding:0;background:${C.paper100};font-family:${FONT};color:${C.ink};">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.paper100};border-collapse:collapse;"><tr><td align="center" style="padding:24px 12px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;border-collapse:collapse;">
+<tr><td style="padding:0 4px 14px;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;"><tr>
+<td style="vertical-align:middle;"><img src="${base}/brand/polygon-logo.png" width="120" height="27" alt="Polygon" style="display:block;border:0;width:120px;height:auto;"></td>
+<td align="right" style="vertical-align:middle;font-size:10px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:${C.ink500};">Aviso de suspensión de uso · Chile</td>
+</tr></table>
+</td></tr>
+<tr><td style="background:${C.paper};border:1px solid ${C.line};border-top:6px solid ${bar};padding:28px 24px 24px;">
+${blocks.map(renderBlock).join("\n")}
+</td></tr>
+<tr><td style="padding:16px 4px 0;font-size:12px;line-height:1.5;color:${C.muted};">${escapeHtml(EMAIL.footer)}<br>${escapeHtml(BRAND.distributor)} · <a href="${base}" style="color:${C.muted};text-decoration:underline;">${escapeHtml(BRAND.domain)}</a></td></tr>
+</table>
+</td></tr></table>
+</body></html>`;
 }
 
 type HtmlBlock =
   | { type: "heading"; text: string }
   | { type: "p"; text: string }
   | { type: "alert"; text: string }
+  | { type: "ok"; text: string }
   | { type: "caution"; text: string }
   | { type: "small"; text: string }
-  | { type: "kv"; rows: [string, string][] };
+  | { type: "kv"; rows: [string, string][] }
+  | { type: "button"; label: string; href: string }
+  | { type: "contact"; lines: string[] }
+  | { type: "signature"; text: string };
 
 const STOP_RIDING_SOFT = "Hasta recibir confirmación, recomendamos no utilizar la bicicleta.";
 
@@ -172,10 +223,10 @@ export function customerConfirmationEmail(c: CaseEmailData, ctx: EmailContext): 
     },
     { type: "p", text: next },
     { type: "small", text: EMAIL.keepCaseId },
-    { type: "p", text: contact.join("\n") },
+    { type: "contact", lines: contact.filter((l) => l !== CONTACT.team && l !== CONTACT.company) },
     { type: "small", text: siteLine(ctx) },
-    { type: "p", text: EMAIL.signature },
-  ]);
+    { type: "signature", text: EMAIL.signature },
+  ], { siteUrl: ctx.siteUrl, tone: c.requestType === "REPLACEMENT" ? "alert" : "neutral" });
 
   return { subject, text, html };
 }
@@ -184,6 +235,10 @@ export function customerConfirmationEmail(c: CaseEmailData, ctx: EmailContext): 
 export function internalNotificationEmail(c: CaseEmailData, ctx: EmailContext): RenderedEmail {
   const high = c.priority === "HIGH";
   const subject = EMAIL.internalSubject(c.caseId, high);
+  // Alta prioridad: incidente o caída (formularios antiguos) o serie no afectada con daño visible.
+  const highReason = c.accidentReported
+    ? "ALTA PRIORIDAD: el cliente reporta un incidente o caída."
+    : "ALTA PRIORIDAD: serie no afectada con daño reportado en el cuadro.";
   const link = `${ctx.siteUrl.replace(/\/$/, "")}/admin/casos/${encodeURIComponent(c.caseId)}`;
   const rows: [string, string][] = [
     ["Número de caso", c.caseId],
@@ -201,10 +256,10 @@ export function internalNotificationEmail(c: CaseEmailData, ctx: EmailContext): 
     ["Talla", STATUS_LABELS.size[c.size]],
     ["Daño reportado", STATUS_LABELS.tri[c.damageReported]],
     ["Accidente reportado", c.accidentReported ? "Sí" : "No"],
-    ["Fecha de registro", c.createdAt.toISOString()],
+    ["Fecha de registro", c.createdAt.toLocaleString("es-CL", { timeZone: "America/Santiago", dateStyle: "short", timeStyle: "short" })],
   ];
   const text = [
-    high ? "*** ALTA PRIORIDAD: el cliente reporta un incidente o caída ***" : "Nuevo caso registrado en el portal de la campaña de seguridad.",
+    high ? `*** ${highReason} ***` : "Nuevo caso registrado en el portal de la campaña de seguridad.",
     "",
     ...rows.map(([k, v]) => `${k}: ${v}`),
     "",
@@ -215,11 +270,11 @@ export function internalNotificationEmail(c: CaseEmailData, ctx: EmailContext): 
   const html = wrapHtml(subject, [
     { type: "heading", text: `Nuevo caso ${c.caseId}` },
     high
-      ? { type: "alert", text: "ALTA PRIORIDAD: el cliente reporta un incidente o caída." }
+      ? { type: "alert", text: highReason }
       : { type: "p", text: "Nuevo caso registrado en el portal de la campaña de seguridad." },
     { type: "kv", rows },
-    { type: "p", text: `Ver caso: ${link}` },
-  ]);
+    { type: "button", label: "Ver caso", href: link },
+  ], { siteUrl: ctx.siteUrl, tone: high ? "alert" : "neutral" });
   return { subject, text, html };
 }
 
@@ -268,10 +323,10 @@ export function customerResultAffectedEmail(c: CaseEmailData, ctx: EmailContext)
       ],
     },
     { type: "p", text: EMAIL.nextSteps },
-    { type: "p", text: contact.join("\n") },
+    { type: "contact", lines: contact.filter((l) => l !== CONTACT.team && l !== CONTACT.company) },
     { type: "small", text: siteLine(ctx) },
-    { type: "p", text: EMAIL.signature },
-  ]);
+    { type: "signature", text: EMAIL.signature },
+  ], { siteUrl: ctx.siteUrl, tone: "alert" });
   return { subject, text, html };
 }
 
@@ -325,10 +380,10 @@ export function customerResultNotIdentifiedEmail(c: CaseEmailData, ctx: EmailCon
       type: "p",
       text: "Si tienes dudas o deseas solicitar una revisión de tu bicicleta, responde a este correo o contáctanos por los canales indicados.",
     },
-    { type: "p", text: contact.join("\n") },
+    { type: "contact", lines: contact.filter((l) => l !== CONTACT.team && l !== CONTACT.company) },
     { type: "small", text: siteLine(ctx) },
-    { type: "p", text: EMAIL.signature },
-  ]);
+    { type: "signature", text: EMAIL.signature },
+  ], { siteUrl: ctx.siteUrl });
   return { subject, text, html };
 }
 
@@ -369,7 +424,7 @@ export function customerResultReinforcedEmail(c: CaseEmailData, ctx: EmailContex
     { type: "heading", text: "Resultado de verificación" },
     { type: "p", text: EMAIL.greeting(c.customerName) },
     { type: "p", text: intro },
-    { type: "heading", text: RESULT_REINFORCED.title },
+    { type: "ok", text: RESULT_REINFORCED.title },
     { type: "p", text: RESULT_REINFORCED.body1 },
     { type: "p", text: RESULT_REINFORCED.body2 },
     { type: "p", text: RESULT_REINFORCED.emailBody3 },
@@ -381,9 +436,9 @@ export function customerResultReinforcedEmail(c: CaseEmailData, ctx: EmailContex
       ],
     },
     { type: "p", text: help },
-    { type: "p", text: contact.join("\n") },
+    { type: "contact", lines: contact.filter((l) => l !== CONTACT.team && l !== CONTACT.company) },
     { type: "small", text: siteLine(ctx) },
-    { type: "p", text: EMAIL.signature },
-  ]);
+    { type: "signature", text: EMAIL.signature },
+  ], { siteUrl: ctx.siteUrl, tone: "ok" });
   return { subject, text, html };
 }
