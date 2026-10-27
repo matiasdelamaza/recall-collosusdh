@@ -207,6 +207,7 @@ export default async function AdminCaseDetailPage({ params, searchParams }: { pa
               <FieldRow label={F.closedAt}>{fmtDateTime(c.closedAt)}</FieldRow>
               <FieldRow label={F.resultNotifiedAt}>{fmtDateTime(c.resultNotifiedAt)}</FieldRow>
               <FieldRow label={F.source}>{c.source}</FieldRow>
+              <FieldRow label={F.outreachRef}>{c.outreachRef ? <span className="font-mono">{c.outreachRef}</span> : "—"}</FieldRow>
               <FieldRow label={F.internalId} mono>
                 {c.id}
               </FieldRow>

@@ -11,6 +11,8 @@ export interface VerifyRequest {
   serial: string;
   /** Token de Cloudflare Turnstile (solo cuando el servidor lo exige). */
   turnstileToken?: string;
+  /** Código del enlace personal del correo de aviso (?r=…), si lo hay. */
+  ref?: string;
 }
 
 export type VerifyResponse =
@@ -21,6 +23,8 @@ export type VerifyResponse =
       serial: string;
       model?: string | null;
       size?: string | null;
+      /** Consulta registrada: se usa para asociarle el correo antes de mostrar el resultado. */
+      lookupId: string | null;
     }
   | { ok: true; state: "REINFORCED"; serial: string; model?: string | null; size?: string | null }
   | { ok: true; state: "NOT_IDENTIFIED"; serial: string }
@@ -30,6 +34,18 @@ export type VerifyResponse =
   | { ok: false; error: "TURNSTILE_REQUIRED"; message: string }
   | { ok: false; error: "TURNSTILE_FAILED"; message: string }
   | { ok: false; error: "INVALID_REQUEST" | "SERVER_ERROR"; message: string };
+
+// ── POST /api/verificar/correo ─────────────────────────────────────────
+/** Correo que se pide antes de mostrar el resultado de una serie afectada. */
+export interface AffectedContactRequest {
+  lookupId: string;
+  email: string;
+}
+
+export type AffectedContactResponse =
+  | { ok: true }
+  | { ok: false; error: "VALIDATION"; message: string }
+  | { ok: false; error: "NOT_FOUND" | "RATE_LIMITED" | "INVALID_REQUEST" | "SERVER_ERROR"; message: string };
 
 /** Estado de verificación público → tipo de solicitud que abre el formulario. */
 export function requestTypeForState(state: SerialVerificationStatus): RequestType {

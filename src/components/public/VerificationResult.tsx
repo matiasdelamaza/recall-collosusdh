@@ -1,10 +1,11 @@
 "use client";
 
-import type { RefObject } from "react";
-import { FLOW, RESULT_AFFECTED, RESULT_NOT_FOUND, RESULT_PENDING_DATABASE, RESULT_REINFORCED, SERIAL_VALIDATION, WHERE_SERIAL } from "@/lib/copy/es";
+import { useRef, useState, type FormEvent, type RefObject } from "react";
+import { AFFECTED_GATE, FLOW, FORM_VALIDATION, RESULT_AFFECTED, RESULT_NOT_FOUND, RESULT_PENDING_DATABASE, RESULT_REINFORCED, SERIAL_VALIDATION, WHERE_SERIAL } from "@/lib/copy/es";
 import { MANUAL_REVIEW_AFTER_ATTEMPTS } from "@/lib/limits";
-import type { RequestType, VerifyResponse } from "@/lib/types";
-import { Badge, Button, cx } from "./ui";
+import type { AffectedContactResponse, RequestType, VerifyResponse } from "@/lib/types";
+import { EMAIL_RE } from "./RegistrationForm";
+import { Badge, Button, cx, inputClass } from "./ui";
 
 export type VerifyOk = Extract<VerifyResponse, { ok: true }>;
 
@@ -17,6 +18,9 @@ export interface VerificationResultProps {
   /** Vuelve al campo de serie conservando lo escrito, para corregirlo. */
   onRetry: () => void;
   onVerifyAnother: () => void;
+  /** Correo dejado antes de ver el resultado de una serie afectada (null = aún no se pide/entrega). */
+  contactEmail?: string | null;
+  onContactSaved?: (email: string) => void;
 }
 
 function SerialLine({ label, serial, model, size }: { label: string; serial: string; model?: string | null; size?: string | null }) {
@@ -43,8 +47,13 @@ function SerialLine({ label, serial, model, size }: { label: string; serial: str
 }
 
 /** Tarjeta de resultado de la verificación: cuatro estados distintos (brief §10 y §34). */
-export function VerificationResult({ result, headingRef, failedAttempts, onStartRegistration, onRetry, onVerifyAnother }: VerificationResultProps) {
+export function VerificationResult({ result, headingRef, failedAttempts, onStartRegistration, onRetry, onVerifyAnother, contactEmail, onContactSaved }: VerificationResultProps) {
   const headingProps = { ref: headingRef, tabIndex: -1 as const, className: "headline outline-none" };
+
+  // Serie afectada: primero se pide el correo; el aviso se muestra después (pedido de Cross Mountain).
+  if (result.state === "AFFECTED" && !contactEmail && onContactSaved) {
+    return <AffectedEmailGate headingProps={headingProps} serial={result.serial} lookupId={result.lookupId} onSaved={onContactSaved} />;
+  }
 
   if (result.state === "AFFECTED") {
     return (
@@ -152,6 +161,114 @@ export function VerificationResult({ result, headingRef, failedAttempts, onStart
       onRetry={onRetry}
       onStartRegistration={onStartRegistration}
     />
+  );
+}
+
+/**
+ * Paso previo al aviso de una serie afectada: pide un correo y no adelanta el resultado.
+ * Solo un correo mal escrito detiene el paso; si el servidor falla, el aviso se muestra igual
+ * (la persona no puede quedarse sin saber que no debe usar la bicicleta).
+ */
+function AffectedEmailGate({
+  headingProps,
+  serial,
+  lookupId,
+  onSaved,
+}: {
+  headingProps: { ref?: RefObject<HTMLHeadingElement | null>; tabIndex: -1; className: string };
+  serial: string;
+  lookupId: string | null;
+  onSaved: (email: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (sending) return;
+    const value = email.trim().toLowerCase();
+    if (!EMAIL_RE.test(value)) {
+      setError(FORM_VALIDATION.email);
+      inputRef.current?.focus();
+      return;
+    }
+    setError(null);
+    setSending(true);
+    try {
+      if (lookupId) {
+        const res = await fetch("/api/verificar/correo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ lookupId, email: value }),
+        });
+        const data = (await res.json().catch(() => null)) as AffectedContactResponse | null;
+        if (data && !data.ok && data.error === "VALIDATION") {
+          setError(data.message);
+          setSending(false);
+          inputRef.current?.focus();
+          return;
+        }
+      }
+    } catch {
+      // Sin conexión con el servidor: se muestra el aviso igual.
+    }
+    onSaved(value);
+  }
+
+  return (
+    <article aria-labelledby="resultado-titulo" className="rounded-md border-2 border-ink bg-paper px-5 py-6 sm:px-8 sm:py-8">
+      <Badge tone="neutral">{AFFECTED_GATE.badge}</Badge>
+      <h2 id="resultado-titulo" {...headingProps} className="headline mt-4 text-[22px] text-ink outline-none sm:text-[28px]">
+        {AFFECTED_GATE.title}
+      </h2>
+      <p className="mt-4 text-[16px] leading-relaxed text-ink-700">{AFFECTED_GATE.body}</p>
+      <SerialLine label={FLOW.verifiedSerialLabel} serial={serial} />
+      <form onSubmit={handleSubmit} noValidate className="mt-6">
+        <label htmlFor="correo-resultado" className="block text-sm font-bold uppercase tracking-[0.1em] text-ink">
+          {AFFECTED_GATE.emailLabel}
+        </label>
+        <div className="mt-2 flex flex-col gap-3 sm:flex-row">
+          <input
+            ref={inputRef}
+            id="correo-resultado"
+            name="email"
+            type="email"
+            inputMode="email"
+            autoComplete="email"
+            autoCapitalize="none"
+            spellCheck={false}
+            maxLength={160}
+            required
+            placeholder={AFFECTED_GATE.emailPlaceholder}
+            value={email}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (error) setError(null);
+            }}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? "correo-resultado-error" : "correo-resultado-ayuda"}
+            disabled={sending}
+            className={cx(inputClass, "sm:flex-1")}
+          />
+          <Button type="submit" variant="primary" disabled={sending} aria-busy={sending || undefined} className="w-full sm:w-auto">
+            {sending ? AFFECTED_GATE.ctaLoading : AFFECTED_GATE.cta}
+          </Button>
+        </div>
+        {error ? (
+          <p id="correo-resultado-error" role="alert" className="mt-2 text-sm font-medium text-alert">
+            {error}
+          </p>
+        ) : null}
+        <p id="correo-resultado-ayuda" className="mt-3 text-sm leading-relaxed text-ink-500">
+          {AFFECTED_GATE.privacy}{" "}
+          <a href="/privacidad" target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-ink">
+            ({FLOW.privacyLinkText})
+          </a>
+        </p>
+      </form>
+    </article>
   );
 }
 

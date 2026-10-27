@@ -181,6 +181,8 @@ export const recallCases = pgTable(
 
     // Operación / auditoría
     source: text("source").notNull().default("WEB"),
+    /** Código del enlace personal del correo de aviso (?r=…), si el cliente llegó por él. */
+    outreachRef: text("outreach_ref"),
     ipHash: text("ip_hash"),
     userAgent: text("user_agent"),
     /** Última vez que se notificó al cliente el resultado de la verificación (reproceso). */
@@ -253,6 +255,11 @@ export const serialLookups = pgTable(
     result: lookupResultEnum("result").notNull(),
     ipHash: text("ip_hash"),
     userAgent: text("user_agent"),
+    /** Correo que deja quien consulta una serie afectada, antes de ver el resultado. */
+    contactEmail: text("contact_email"),
+    contactAt: timestamp("contact_at", { withTimezone: true }),
+    /** Código del enlace personal del correo de aviso (?r=…); la relación código → persona vive fuera de la BD. */
+    outreachRef: text("outreach_ref"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("serial_lookups_created_at_idx").on(t.createdAt), index("serial_lookups_ip_hash_idx").on(t.ipHash)],

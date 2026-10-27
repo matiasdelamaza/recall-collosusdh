@@ -19,7 +19,8 @@ export type AuditType =
   | "ADMIN_LOGOUT"
   | "FILE_VIEWED"
   | "EXPORT_CSV"
-  | "LOOKUP_SUSPICIOUS";
+  | "LOOKUP_SUSPICIOUS"
+  | "AFFECTED_CONTACT_SAVED";
 
 export interface AuditInput {
   type: AuditType;

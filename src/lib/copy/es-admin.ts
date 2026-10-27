@@ -109,6 +109,7 @@ export const ADMIN = {
       updatedAt: "Actualizado",
       closedAt: "Cerrado",
       source: "Origen",
+      outreachRef: "Código de enlace (correo de aviso)",
       resultNotifiedAt: "Resultado notificado",
       userAgent: "Navegador",
       internalId: "ID interno",
@@ -166,7 +167,7 @@ export const ADMIN = {
   lookups: {
     title: "Consultas de número de serie",
     intro:
-      "Cada número ingresado en el sitio queda registrado con su resultado. La conexión es un identificador anónimo (hash de la IP) que permite ver intentos repetidos de una misma persona sin guardar su IP.",
+      "Cada número ingresado en el sitio queda registrado con su resultado. Si la serie está afectada, se pide un correo antes de mostrar el aviso: queda en la columna Correo aunque la persona no complete el registro. Código = enlace personal del correo de aviso por el que llegó. La conexión es un identificador anónimo (hash de la IP) que permite ver intentos repetidos de una misma persona sin guardar su IP.",
     total: (n: number) => `${n.toLocaleString("es-CL")} consultas`,
     exportCsv: "Exportar CSV",
     kpis: {
@@ -174,6 +175,7 @@ export const ADMIN = {
       distinctSerials: "Series distintas ingresadas",
       distinctConnections: "Conexiones distintas",
       affected: "Tanda afectada",
+      affectedWithEmail: "Afectadas con correo",
       reinforced: "No afectadas (OK)",
       notFound: "No encontradas",
       invalid: "Formato inválido",
@@ -186,7 +188,8 @@ export const ADMIN = {
     all: "Todos",
     apply: "Filtrar",
     clear: "Limpiar",
-    columns: { date: "Fecha", serial: "Serie ingresada", result: "Resultado", connection: "Conexión", case: "Caso registrado" },
+    columns: { date: "Fecha", serial: "Serie ingresada", result: "Resultado", contact: "Correo", ref: "Código", connection: "Conexión", case: "Caso registrado" },
+    noContact: "Sin correo",
     empty: "No hay consultas que coincidan con los filtros.",
     emptySerial: "(vacía)",
     prev: "← Anterior",

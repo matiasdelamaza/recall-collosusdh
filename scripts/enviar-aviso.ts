@@ -12,6 +12,12 @@
  * --incluir-devueltas     incluye filas "3 - devolvió todo" (por defecto se omiten)
  * --limite=N              envía como máximo N correos en esta corrida
  * --csv=ruta              lista alternativa (por defecto ~/Downloads/contactos-collosus-dh/<lista>.csv)
+ * --recordatorio          (solo clientes) envía el recordatorio con enlace personal ?r=<código> a quienes ya
+ *                         recibieron el aviso; marca "Recordatorio enviado" en vez de "Correo enviado"
+ * --excluir=C-AAA,C-BBB   omite esos códigos (p. ej. quienes ya verificaron, según el panel de consultas)
+ *
+ * Cada fila recibe un código propio en la columna "Código" (se crea y se guarda la primera vez, también en la
+ * simulación). El código es lo único que llega al sitio: la relación código → persona queda solo en esta lista.
  *
  * La clave de API de Resend se pide oculta en la terminal (o RESEND_API_KEY). Nunca se guarda.
  * Las listas tienen datos personales: viven fuera del repositorio y la salida enmascara los correos.
@@ -21,19 +27,35 @@ import os from "node:os";
 import path from "node:path";
 import readline from "node:readline";
 import { parseArgs } from "./_env";
-import { outreachCustomerEmail, outreachDistributorEmail } from "../src/lib/email/templates";
+import crypto from "node:crypto";
+import { outreachCustomerEmail, outreachDistributorEmail, reminderCustomerEmail } from "../src/lib/email/templates";
 
 const SITE_URL = "https://recallcollosusdh.cl";
 const CONTACT_EMAIL = "contacto@crossmountain.cl";
 const PAUSE_MS = 3_000;
 
 const LISTS = {
-  clientes: { file: "clientes-finales.csv", from: "contacto@crossmountain.cl", cc: [] as string[], render: outreachCustomerEmail },
-  distribuidores: { file: "distribuidores.csv", from: "b2b@crossmountain.cl", cc: ["frojas@crossports.cl"], render: outreachDistributorEmail },
+  clientes: { file: "clientes-finales.csv", from: "contacto@crossmountain.cl", cc: [] as string[], render: outreachCustomerEmail, refPrefix: "C" },
+  distribuidores: { file: "distribuidores.csv", from: "b2b@crossmountain.cl", cc: ["frojas@crossports.cl"], render: outreachDistributorEmail, refPrefix: "D" },
 } as const;
 type ListName = keyof typeof LISTS;
 
 const SENT_COL = "Correo enviado";
+const REMINDER_COL = "Recordatorio enviado";
+const REF_COL = "Código";
+/** Sin 0/O, 1/I/L: se puede dictar por teléfono sin confusiones. */
+const REF_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+
+function newRef(prefix: string, taken: Set<string>): string {
+  for (;;) {
+    const bytes = crypto.randomBytes(6);
+    const ref = `${prefix}-${Array.from(bytes, (b) => REF_ALPHABET[b % REF_ALPHABET.length]).join("")}`;
+    if (!taken.has(ref)) {
+      taken.add(ref);
+      return ref;
+    }
+  }
+}
 
 /** CSV con ";" y comillas dobles (RFC 4180). */
 function parseCsv(text: string): string[][] {
@@ -113,6 +135,9 @@ async function main() {
   const real = flags.enviar === true && !test;
   const limit = typeof flags.limite === "string" ? Number(flags.limite) : Infinity;
   const priority = typeof flags.prioridad === "string" ? flags.prioridad : undefined;
+  const reminder = flags.recordatorio === true;
+  if (reminder && listName !== "clientes") throw new Error("--recordatorio solo existe para la lista de clientes.");
+  const exclude = new Set(typeof flags.excluir === "string" ? flags.excluir.split(",").map((v) => v.trim().toUpperCase()).filter(Boolean) : []);
 
   const rows = parseCsv(fs.readFileSync(csvPath, "utf8").replace(/^﻿/, ""));
   const header = rows[0]!;
@@ -121,23 +146,52 @@ async function main() {
     if (i < 0) throw new Error(`Falta la columna "${name}" en ${csvPath}`);
     return i;
   };
+  /** Columna que se crea si falta (al final, con celdas vacías). */
+  const ensureCol = (name: string) => {
+    if (!header.includes(name)) header.push(name);
+    return header.indexOf(name);
+  };
   const [iEmail, iPriority, iSent] = [col("Email"), col("Prioridad"), col(SENT_COL)];
+  const iRef = ensureCol(REF_COL);
+  const iReminder = reminder ? ensureCol(REMINDER_COL) : -1;
+  const iMark = reminder ? iReminder : iSent;
+
+  // Código personal por fila: se asigna una sola vez y se guarda en la lista.
+  const taken = new Set(rows.slice(1).map((r) => (r[iRef] ?? "").trim()).filter(Boolean));
+  let assigned = 0;
+  for (const r of rows.slice(1)) {
+    while (r.length < header.length) r.push("");
+    if (!(r[iRef] ?? "").trim()) {
+      r[iRef] = newRef(list.refPrefix, taken);
+      assigned++;
+    }
+  }
+  if (assigned > 0) {
+    fs.writeFileSync(csvPath, toCsv(rows));
+    console.log(`Se asignaron ${assigned} códigos nuevos en la columna "${REF_COL}".`);
+  }
 
   const pending = rows.slice(1).filter((r) => {
-    if ((r[iSent] ?? "").trim()) return false;
+    if ((r[iMark] ?? "").trim()) return false;
+    // El recordatorio solo va a quien ya recibió el aviso.
+    if (reminder && !(r[iSent] ?? "").trim()) return false;
+    if (exclude.has((r[iRef] ?? "").trim().toUpperCase())) return false;
     if (!flags["incluir-devueltas"] && /devolvi/i.test(r[iPriority] ?? "")) return false;
     if (priority && !(r[iPriority] ?? "").startsWith(priority)) return false;
     return /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test((r[iEmail] ?? "").trim());
   });
   const batch = pending.slice(0, limit);
-  const mail = list.render({ siteUrl: SITE_URL, contactEmail: CONTACT_EMAIL });
+  const ctx = { siteUrl: SITE_URL, contactEmail: CONTACT_EMAIL };
+  /** Correo de una fila: el recordatorio lleva el enlace con su código. */
+  const render = (ref: string) => (reminder ? reminderCustomerEmail(ctx, ref) : list.render(ctx));
+  const mail = render("C-PRUEBA");
 
-  console.log(`Lista: ${listName} (${rows.length - 1} filas) · Remitente: ${list.from}${list.cc.length ? ` · CC: ${list.cc.join(", ")}` : ""}`);
+  console.log(`Lista: ${listName}${reminder ? " · RECORDATORIO" : ""} (${rows.length - 1} filas) · Remitente: ${list.from}${list.cc.length ? ` · CC: ${list.cc.join(", ")}` : ""}`);
   console.log(`Asunto: ${mail.subject}`);
   console.log(`Pendientes: ${pending.length} · En esta corrida: ${test ? `1 prueba a ${testTo}` : batch.length}`);
 
   if (!test && !real) {
-    for (const r of batch) console.log(`  [${r[iPriority]}] ${mask(r[iEmail]!.trim())}`);
+    for (const r of batch) console.log(`  [${r[iPriority]}] ${r[iRef]} ${mask(r[iEmail]!.trim())}`);
     console.log("\nSIMULACIÓN: no se envió nada. Usa --prueba o --enviar.");
     return;
   }
@@ -147,8 +201,8 @@ async function main() {
   const key = raw.replace(/\x1b\[20[01]~/g, "").replace(/\s+/g, "");
   if (!key.startsWith("re_")) throw new Error("La clave de Resend debe empezar con re_: no se envía nada.");
 
-  const { html, attachments } = inlineImages(mail.html);
-  const send = async (to: string, cc: string[]): Promise<string> => {
+  const send = async (to: string, cc: string[], m: typeof mail): Promise<string> => {
+    const { html, attachments } = inlineImages(m.html);
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
@@ -157,8 +211,8 @@ async function main() {
         to: [to],
         cc: cc.length ? cc : undefined,
         reply_to: list.from,
-        subject: mail.subject,
-        text: mail.text,
+        subject: m.subject,
+        text: m.text,
         html,
         attachments,
       }),
@@ -170,8 +224,8 @@ async function main() {
 
   if (test) {
     for (const to of testTo.split(",").map((s) => s.trim()).filter(Boolean)) {
-      const id = await send(to, []);
-      console.log(`Prueba enviada a ${to} (id ${id}). No se marcó la lista.`);
+      const id = await send(to, [], mail);
+      console.log(`Prueba enviada a ${to} (id ${id}${reminder ? ", enlace con código C-PRUEBA" : ""}). No se marcó la lista.`);
     }
     return;
   }
@@ -180,17 +234,17 @@ async function main() {
   for (const [n, r] of batch.entries()) {
     const to = r[iEmail]!.trim();
     try {
-      await send(to, [...list.cc]);
-      r[iSent] = new Date().toLocaleString("es-CL", { timeZone: "America/Santiago" });
+      await send(to, [...list.cc], render(r[iRef]!.trim()));
+      r[iMark] = new Date().toLocaleString("es-CL", { timeZone: "America/Santiago" });
       fs.writeFileSync(csvPath, toCsv(rows));
       ok++;
-      console.log(`  ${n + 1}/${batch.length} enviado a ${mask(to)}`);
+      console.log(`  ${n + 1}/${batch.length} enviado a ${mask(to)} (${r[iRef]})`);
     } catch (err) {
       console.log(`  ${n + 1}/${batch.length} ERROR con ${mask(to)}: ${err instanceof Error ? err.message : String(err)}`);
     }
     if (n < batch.length - 1) await sleep(PAUSE_MS);
   }
-  console.log(`\nListo: ${ok} de ${batch.length} enviados. Los enviados quedaron marcados en "${SENT_COL}".`);
+  console.log(`\nListo: ${ok} de ${batch.length} enviados. Los enviados quedaron marcados en "${reminder ? REMINDER_COL : SENT_COL}".`);
 }
 
 main().catch((err) => {

@@ -52,6 +52,7 @@ export default async function AdminLookupsPage({ searchParams }: { searchParams:
         <KpiTile label={L.kpis.distinctSerials} value={fmtNumber(summary.distinctSerials)} />
         <KpiTile label={L.kpis.distinctConnections} value={fmtNumber(summary.distinctConnections)} />
         <KpiTile label={L.kpis.affected} value={fmtNumber(by.AFFECTED)} alert={by.AFFECTED > 0} />
+        <KpiTile label={L.kpis.affectedWithEmail} value={`${fmtNumber(summary.affectedWithEmail)} de ${fmtNumber(by.AFFECTED)}`} />
         <KpiTile label={L.kpis.reinforced} value={fmtNumber(by.REINFORCED)} />
         <KpiTile label={L.kpis.notFound} value={fmtNumber(by.NOT_IDENTIFIED)} />
         <KpiTile label={L.kpis.invalid} value={fmtNumber(by.INVALID)} />
@@ -93,12 +94,14 @@ export default async function AdminLookupsPage({ searchParams }: { searchParams:
         <p className="rounded-md border border-line bg-paper-100 p-6 text-center text-sm text-ink-500">{L.empty}</p>
       ) : (
         <div className="overflow-x-auto rounded-md border border-line">
-          <table className="w-full min-w-[720px] border-collapse text-left text-sm">
+          <table className="w-full min-w-[960px] border-collapse text-left text-sm">
             <thead className="bg-paper-100 text-[11px] uppercase tracking-wider text-ink-500">
               <tr>
                 <th className="px-3 py-2 font-semibold">{L.columns.date}</th>
                 <th className="px-3 py-2 font-semibold">{L.columns.serial}</th>
                 <th className="px-3 py-2 font-semibold">{L.columns.result}</th>
+                <th className="px-3 py-2 font-semibold">{L.columns.contact}</th>
+                <th className="px-3 py-2 font-semibold">{L.columns.ref}</th>
                 <th className="px-3 py-2 font-semibold">{L.columns.connection}</th>
                 <th className="px-3 py-2 font-semibold">{L.columns.case}</th>
               </tr>
@@ -111,6 +114,18 @@ export default async function AdminLookupsPage({ searchParams }: { searchParams:
                   <td className="px-3 py-2">
                     <Badge variant={RESULT_VARIANT[r.result]}>{STATUS_LABELS.lookupResult[r.result]}</Badge>
                   </td>
+                  <td className="px-3 py-2">
+                    {r.contactEmail ? (
+                      <a href={`mailto:${r.contactEmail}`} className="break-all underline underline-offset-2">
+                        {r.contactEmail}
+                      </a>
+                    ) : r.result === "AFFECTED" ? (
+                      <span className="text-alert">{L.noContact}</span>
+                    ) : (
+                      <span className="text-ink-300">{ADMIN.common.none}</span>
+                    )}
+                  </td>
+                  <td className="px-3 py-2 font-mono text-xs">{r.outreachRef ?? <span className="text-ink-300">{ADMIN.common.none}</span>}</td>
                   <td className="px-3 py-2 font-mono text-xs text-ink-500">{r.connection ?? ADMIN.common.none}</td>
                   <td className="px-3 py-2">
                     {r.caseId ? (

@@ -50,6 +50,7 @@ const HEADERS = [
   "Versión cuadro reemplazo",
   "Asignado a",
   "Origen",
+  "Código de enlace",
   "Resultado notificado",
   "Cerrado",
 ];
@@ -96,6 +97,7 @@ export async function GET(req: NextRequest) {
         r.replacementFrameVersion,
         r.assignedTo,
         r.source,
+        r.outreachRef,
         r.resultNotifiedAt,
         r.closedAt,
       ]

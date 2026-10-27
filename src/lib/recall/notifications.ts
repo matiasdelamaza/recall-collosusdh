@@ -8,7 +8,9 @@ import {
   customerResultAffectedEmail,
   customerResultNotIdentifiedEmail,
   customerResultReinforcedEmail,
+  internalAffectedContactEmail,
   internalNotificationEmail,
+  type AffectedContactEmailData,
   type CaseEmailData,
   type EmailContext,
   type RenderedEmail,
@@ -25,7 +27,7 @@ export function getEmailContext(): EmailContext {
   };
 }
 
-type Kind = "CUSTOMER_CONFIRMATION" | "INTERNAL_NEW_CASE" | "CUSTOMER_RESULT_AFFECTED" | "CUSTOMER_RESULT_REINFORCED" | "CUSTOMER_RESULT_NOT_IDENTIFIED";
+type Kind = "CUSTOMER_CONFIRMATION" | "INTERNAL_NEW_CASE" | "INTERNAL_AFFECTED_CONTACT" | "CUSTOMER_RESULT_AFFECTED" | "CUSTOMER_RESULT_REINFORCED" | "CUSTOMER_RESULT_NOT_IDENTIFIED";
 
 /** Tiempo máximo de espera por envío; pasado este plazo se registra el fallo y la petición continúa. */
 const SEND_TIMEOUT_MS = 15_000;
@@ -46,22 +48,23 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-async function deliver(kind: Kind, to: string | string[], rendered: RenderedEmail, c: Pick<RecallCase, "id" | "caseId">): Promise<boolean> {
+/** `c` es el caso al que se asocia el envío en la bitácora; null para avisos sin caso (consultas). */
+async function deliver(kind: Kind, to: string | string[], rendered: RenderedEmail, c: Pick<RecallCase, "id" | "caseId"> | null, label = c?.caseId ?? ""): Promise<boolean> {
   try {
     const provider = getEmailProvider();
     // Se envía desde EMAIL_FROM (no-reply); las respuestas llegan al correo de contacto de Cross Mountain.
     const replyTo = getEmailContext().contactEmail;
     const res = await withTimeout(provider.send({ to, subject: rendered.subject, text: rendered.text, html: rendered.html, replyTo }), SEND_TIMEOUT_MS);
     if (res.ok) {
-      await logAudit({ type: "EMAIL_SENT", caseId: c.id, payload: { kind, provider: res.provider, id: res.id, caseId: c.caseId } });
+      await logAudit({ type: "EMAIL_SENT", caseId: c?.id, payload: { kind, provider: res.provider, id: res.id, caseId: label } });
       return true;
     }
-    console.error(`[email] fallo al enviar ${kind} para ${c.caseId}:`, res.error);
-    await logAudit({ type: "EMAIL_FAILED", caseId: c.id, payload: { kind, provider: res.provider, error: res.error, caseId: c.caseId } });
+    console.error(`[email] fallo al enviar ${kind} para ${label}:`, res.error);
+    await logAudit({ type: "EMAIL_FAILED", caseId: c?.id, payload: { kind, provider: res.provider, error: res.error, caseId: label } });
     return false;
   } catch (err) {
-    console.error(`[email] excepción al enviar ${kind} para ${c.caseId}:`, err);
-    await logAudit({ type: "EMAIL_FAILED", caseId: c.id, payload: { kind, error: err instanceof Error ? err.message : String(err), caseId: c.caseId } });
+    console.error(`[email] excepción al enviar ${kind} para ${label}:`, err);
+    await logAudit({ type: "EMAIL_FAILED", caseId: c?.id, payload: { kind, error: err instanceof Error ? err.message : String(err), caseId: label } });
     return false;
   }
 }
@@ -89,4 +92,14 @@ export async function sendResultNotification(c: RecallCase, result: "AFFECTED" |
   if (result === "AFFECTED") return deliver("CUSTOMER_RESULT_AFFECTED", c.email, customerResultAffectedEmail(c, ctx), c);
   if (result === "REINFORCED") return deliver("CUSTOMER_RESULT_REINFORCED", c.email, customerResultReinforcedEmail(c, ctx), c);
   return deliver("CUSTOMER_RESULT_NOT_IDENTIFIED", c.email, customerResultNotIdentifiedEmail(c, ctx), c);
+}
+
+/** Alerta interna: consulta de serie afectada con correo, aún sin caso. Nunca lanza. */
+export async function sendAffectedContactNotification(d: AffectedContactEmailData): Promise<boolean> {
+  const internalTo = getInternalNotificationEmails();
+  if (internalTo.length === 0) {
+    console.warn(`[email] INTERNAL_NOTIFICATION_EMAILS no configurado: no se envió aviso de la serie afectada ${d.serial}`);
+    return false;
+  }
+  return deliver("INTERNAL_AFFECTED_CONTACT", internalTo, internalAffectedContactEmail(d, getEmailContext()), null, d.serial);
 }
