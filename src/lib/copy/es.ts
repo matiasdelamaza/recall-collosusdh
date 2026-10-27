@@ -177,9 +177,6 @@ export const FORM = {
     headtubePhoto: "Foto de la zona de la dirección / pipa de dirección (recomendada)",
     additionalPhotos: "Fotos adicionales de daños (opcional)",
     damageReported: "¿El cuadro presenta actualmente alguna fisura, separación, deformación o daño estructural?",
-    accidentReported: "¿Has tenido un incidente o caída que pueda estar relacionada con una falla del cuadro?",
-    incidentDescription: "Describe brevemente lo ocurrido (no es necesario incluir información médica)",
-    incidentFiles: "Adjunta los antecedentes disponibles (fotos)",
     acknowledge: "Confirmo que he leído la instrucción de no utilizar la bicicleta hasta completar el procedimiento de reemplazo.",
     privacy: "He leído el aviso de privacidad y autorizo el uso de mis datos exclusivamente para la gestión de esta campaña de recall.",
   },
@@ -361,7 +358,7 @@ export const PRIVACY = {
   sections: [
     {
       h: "Qué datos recopilamos",
-      p: "Nombre, RUT, correo electrónico, teléfono, región y ciudad; número de serie, modelo, talla, lugar y fecha aproximada de compra de la bicicleta; fotografías que adjuntes; y la información que entregues sobre daños o incidentes.",
+      p: "Nombre, RUT, correo electrónico, teléfono, región y ciudad; número de serie, modelo, talla, lugar y fecha aproximada de compra de la bicicleta; fotografías que adjuntes; y la información que entregues sobre el estado del cuadro.",
     },
     {
       h: "Para qué los usamos",

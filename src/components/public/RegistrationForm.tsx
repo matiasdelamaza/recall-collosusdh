@@ -67,9 +67,6 @@ function validate(fd: FormData, requestType: RequestType, serialEditable: boolea
   if (!str("model")) errors.model = FORM_VALIDATION.model;
   if (!str("size")) errors.size = FORM_VALIDATION.size;
   if (!str("damageReported")) errors.damageReported = FORM_VALIDATION.damageReported;
-  const accident = str("accidentReported");
-  if (!accident) errors.accidentReported = FORM_VALIDATION.accidentReported;
-  if (accident === "YES" && str("incidentDescription").length < 10) errors.incidentDescription = FORM_VALIDATION.incidentDescription;
 
   const serialPhotos = filesFrom(fd, "serialPhoto");
   const bikePhotos = filesFrom(fd, "bikePhoto");
@@ -199,7 +196,6 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
   const [errors, setErrors] = useState<Errors>({});
   const [generalError, setGeneralError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [accident, setAccident] = useState<string>("");
   const [rut, setRut] = useState("");
 
   // Si la serie no pudo verificarse, el usuario puede corregirla; en los demás casos queda bloqueada.
@@ -439,25 +435,6 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
           error={err("damageReported")}
           options={(Object.keys(FORM.options.tri) as (keyof typeof FORM.options.tri)[]).map((k) => ({ value: k, label: FORM.options.tri[k] }))}
         />
-        <RadioGroup
-          name="accidentReported"
-          legend={FORM.fields.accidentReported}
-          required
-          error={err("accidentReported")}
-          onChange={setAccident}
-          options={(Object.keys(FORM.options.yesNo) as (keyof typeof FORM.options.yesNo)[]).map((k) => ({ value: k, label: FORM.options.yesNo[k] }))}
-        />
-
-        {accident === "YES" ? (
-          <div className="rounded-sm border border-line bg-paper-100 p-4">
-            <Field id="incidentDescription" label={FORM.fields.incidentDescription} error={err("incidentDescription")} required requiredLabel={FORM.required}>
-              <textarea id="incidentDescription" name="incidentDescription" rows={4} maxLength={2000} className={cx(inputClass, "min-h-28 py-3")} {...aria("incidentDescription")} />
-            </Field>
-            <Field id="incidentFiles" label={FORM.fields.incidentFiles} error={err("incidentFiles")} optionalLabel={FORM.optional}>
-              <FileInput id="incidentFiles" name="incidentFiles" multiple invalid={!!err("incidentFiles")} describedBy={err("incidentFiles") ? "incidentFiles-error" : undefined} />
-            </Field>
-          </div>
-        ) : null}
 
         {/* ── Confirmación ── */}
         <h3 className="mb-4 mt-6 text-xs font-bold uppercase tracking-[0.16em] text-ink-500">{FORM.sections.confirm}</h3>

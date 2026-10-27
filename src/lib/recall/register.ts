@@ -65,7 +65,8 @@ export const registrationSchema = z.object({
   dealer: clean(120).optional(),
   purchaseDate: clean(60).optional(),
   damageReported: z.enum(TRI_STATE, { error: FORM_VALIDATION.damageReported }),
-  accidentReported: z.enum(["YES", "NO"], { error: FORM_VALIDATION.accidentReported }),
+  /** Ya no se pregunta en el formulario público (27-10-2026); se acepta si llega y por defecto es "NO". */
+  accidentReported: z.enum(["YES", "NO"], { error: FORM_VALIDATION.accidentReported }).optional(),
   incidentDescription: clean(2000).optional(),
   acknowledgeStopRiding: onFlag.refine((v) => v, FORM_VALIDATION.acknowledge),
   acceptPrivacy: onFlag.refine((v) => v, FORM_VALIDATION.privacy),
