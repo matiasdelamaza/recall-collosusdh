@@ -97,7 +97,13 @@ export const RESULT_REINFORCED = {
 export const RESULT_NOT_FOUND = {
   badge: "Número no encontrado",
   title: "NO ENCONTRAMOS ESE NÚMERO DE SERIE",
-  body1: "Revisa que hayas ingresado todos los caracteres exactamente como aparecen en el cuadro (letras, números y guiones) e inténtalo nuevamente.",
+  body1: "Revisa que hayas ingresado el número completo, sin espacios, tal como aparece en el cuadro, e inténtalo nuevamente.",
+  formatLabel: "Cómo es el número",
+  formatBody: "Por lo general tiene 9 caracteres: 1 letra seguida de 8 números. Si después de la letra inicial ves una \"O\", lo más probable es que sea un cero.",
+  exampleLabel: "Ejemplo",
+  locationLabel: "Dónde está",
+  locationBody: "Grabado en la parte inferior del cuadro, bajo la caja del pedalier (donde se unen las bielas).",
+  locationLink: "Ver foto de dónde está el número de serie",
   retry: "VOLVER A INTENTAR",
   /** Tras varios intentos sin coincidencia se ofrece la revisión manual. */
   manualTitle: "¿El número está bien escrito?",

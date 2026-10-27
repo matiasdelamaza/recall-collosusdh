@@ -1,7 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
-import { FLOW, RESULT_AFFECTED, RESULT_NOT_FOUND, RESULT_PENDING_DATABASE, RESULT_REINFORCED, SERIAL_VALIDATION } from "@/lib/copy/es";
+import { FLOW, RESULT_AFFECTED, RESULT_NOT_FOUND, RESULT_PENDING_DATABASE, RESULT_REINFORCED, SERIAL_VALIDATION, WHERE_SERIAL } from "@/lib/copy/es";
 import { MANUAL_REVIEW_AFTER_ATTEMPTS } from "@/lib/limits";
 import type { RequestType, VerifyResponse } from "@/lib/types";
 import { Badge, Button, cx } from "./ui";
@@ -181,6 +181,27 @@ function NotFoundCard({
         <p>{RESULT_NOT_FOUND.body1}</p>
       </div>
       {serial ? <SerialLine label={FLOW.verifiedSerialLabel} serial={serial} /> : null}
+      <dl className="mt-4 grid gap-4 rounded-sm border-l-4 border-ink bg-paper-100 p-4 text-[15px] leading-relaxed text-ink-700 sm:grid-cols-2">
+        <div>
+          <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-500">{RESULT_NOT_FOUND.formatLabel}</dt>
+          <dd className="mt-1">{RESULT_NOT_FOUND.formatBody}</dd>
+          <dd className="mt-2">
+            <span className="text-ink-500">{RESULT_NOT_FOUND.exampleLabel}: </span>
+            <span className="serial text-[17px] font-bold tracking-[0.06em] text-ink" translate="no">
+              {WHERE_SERIAL.exampleSerial}
+            </span>
+          </dd>
+        </div>
+        <div>
+          <dt className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-500">{RESULT_NOT_FOUND.locationLabel}</dt>
+          <dd className="mt-1">{RESULT_NOT_FOUND.locationBody}</dd>
+          <dd className="mt-2">
+            <a href="#donde-esta-la-serie" className="font-semibold text-ink underline underline-offset-4 hover:text-ink-700">
+              {RESULT_NOT_FOUND.locationLink}
+            </a>
+          </dd>
+        </div>
+      </dl>
       <div className="mt-6">
         <Button variant="primary" onClick={onRetry} className="w-full sm:w-auto">
           {RESULT_NOT_FOUND.retry}
