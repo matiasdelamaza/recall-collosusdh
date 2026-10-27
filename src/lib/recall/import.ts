@@ -35,12 +35,18 @@ const MAX_ERRORS = 50;
 const BATCH_SIZE = 500;
 const SERIAL_ALIASES = ["serial_number", "serial", "frame_number", "serie", "numero_de_serie", "número_de_serie", "n_serie", "frame_serial", "serialnumber"];
 /** Valores aceptados en la columna de estado (en inglés o en español) → estado guardado. */
+// Estados de la lista de Polygon: NOT OK → afectada; OK (cuadro con la última optimización) → no afectada.
+// Internamente "no afectada" se guarda como REINFORCED.
 const STATUS_ALIASES: Record<string, string> = {
   RECALL: "RECALL",
   AFFECTED: "RECALL",
   AFECTADA: "RECALL",
+  NOT_OK: "RECALL",
+  NOTOK: "RECALL",
   REINFORCED: "REINFORCED",
   REFORZADA: "REINFORCED",
+  OK: "REINFORCED",
+  NO_AFECTADA: "REINFORCED",
   EXCLUDED: "EXCLUDED",
   EXCLUIDA: "EXCLUDED",
 };
@@ -50,7 +56,8 @@ function normalizeStatus(value: string): string | undefined {
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/[\s-]+/g, "_");
   return STATUS_ALIASES[key];
 }
 
@@ -143,10 +150,10 @@ export function parseSerialsCsv(csvText: string): { rows: ParsedRow[]; errors: {
       return;
     }
     seen.set(serialNumber, rowNumber);
-    const statusRaw = pick(r, ["status", "estado", "tanda"]) ?? "RECALL";
+    const statusRaw = pick(r, ["status", "polygon_status", "estado", "tanda"]) ?? "RECALL";
     const status = normalizeStatus(statusRaw);
     if (!status) {
-      if (errors.length < MAX_ERRORS) errors.push({ row: rowNumber, message: `Estado no permitido "${statusRaw.slice(0, 40)}" (use AFECTADA, REFORZADA o EXCLUIDA)` });
+      if (errors.length < MAX_ERRORS) errors.push({ row: rowNumber, message: `Estado no permitido "${statusRaw.slice(0, 40)}" (use NOT OK, OK, AFECTADA, NO AFECTADA o EXCLUIDA)` });
       return;
     }
     rows.push({

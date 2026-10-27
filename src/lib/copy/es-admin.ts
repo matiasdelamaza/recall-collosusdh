@@ -174,7 +174,7 @@ export const ADMIN = {
       distinctSerials: "Series distintas ingresadas",
       distinctConnections: "Conexiones distintas",
       affected: "Tanda afectada",
-      reinforced: "Tanda reforzada",
+      reinforced: "No afectadas (OK)",
       notFound: "No encontradas",
       invalid: "Formato inválido",
       pending: "Pendientes (base no cargada)",
@@ -209,7 +209,7 @@ export const ADMIN = {
     totalSerials: "Series afectadas cargadas",
     importTitle: "Importar base de series (CSV)",
     importHelp:
-      "Archivo CSV con cabecera. Columna obligatoria: serial_number (alias: serial, frame_number, serie, numero_de_serie). Opcionales: model, size, production_batch y status (alias: estado, tanda) con AFECTADA, REFORZADA o EXCLUIDA (también RECALL, REINFORCED, EXCLUDED; AFECTADA por defecto). Separador coma o punto y coma. Máximo 4 MB (para archivos más grandes, usar la importación por consola: npm run serials:import).",
+      "Archivo CSV con cabecera. Columna obligatoria: serial_number (alias: serial, frame_number, serie, numero_de_serie). Opcionales: model, size, production_batch y status (alias: polygon_status, estado, tanda) con NOT OK o AFECTADA, OK o NO AFECTADA, o EXCLUIDA (NOT OK por defecto). Separador coma o punto y coma. Máximo 4 MB (para archivos más grandes, usar la importación por consola: npm run serials:import).",
     importFile: "Archivo CSV",
     importNotes: "Notas (opcional)",
     importDryRun: "Solo validar (sin escribir)",
@@ -227,7 +227,7 @@ export const ADMIN = {
     reprocessDryRun: "Simular (sin cambios ni correos)",
     reprocessSubmit: "Reprocesar",
     reprocessResult: "Resultado del reproceso",
-    reprocessCols: { scanned: "Revisados", nowAffected: "Ahora afectadas", nowReinforced: "Ahora tanda reforzada", nowNotIdentified: "Ahora no identificadas", unchanged: "Sin cambios", notified: "Notificados", errors: "Errores" },
+    reprocessCols: { scanned: "Revisados", nowAffected: "Ahora afectadas", nowReinforced: "Ahora no afectadas (OK)", nowNotIdentified: "Ahora no identificadas", unchanged: "Sin cambios", notified: "Notificados", errors: "Errores" },
     messages: {
       statusChanged: "Estado de la base actualizado.",
       completeWithoutSerials:

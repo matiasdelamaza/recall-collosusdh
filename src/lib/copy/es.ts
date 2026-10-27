@@ -78,12 +78,13 @@ export const RESULT_NOT_IDENTIFIED = {
 } as const;
 
 /**
- * Tanda reforzada: la serie está en la lista de Polygon como unidad NO incluida en la campaña.
+ * No afectada: la serie figura como OK en la lista de Polygon (cuadro con la última optimización),
+ * es decir, NO incluida en la campaña. Internamente es el estado REINFORCED.
  * BORRADOR pendiente de revisión legal y de Polygon (ver docs/PENDIENTES.md). Reglas: no afirmar que
  * la bicicleta "es segura" ni usar "cuadro reforzado" hasta que Polygon confirme la terminología.
  */
 export const RESULT_REINFORCED = {
-  badge: "No incluida en la campaña",
+  badge: "No afectada",
   title: "TU BICICLETA NO ESTÁ INCLUIDA EN ESTE RECALL",
   body1: "El número de serie ingresado corresponde a una unidad fabricada con la versión actualizada del cuadro, que no forma parte de esta campaña.",
   body2: "No necesitas registrar tu bicicleta ni realizar ningún trámite.",
@@ -407,14 +408,14 @@ export const STATUS_LABELS = {
   },
   verification: {
     AFFECTED: "Unidad afectada",
-    REINFORCED: "Tanda reforzada",
+    REINFORCED: "No afectada (OK)",
     NOT_IDENTIFIED: "No identificada",
     UNVERIFIED: "No verificable",
     PENDING_DATABASE: "Pendiente (base no cargada)",
   },
   lookupResult: {
     AFFECTED: "Afectada",
-    REINFORCED: "Reforzada",
+    REINFORCED: "No afectada",
     NOT_IDENTIFIED: "No encontrada",
     INVALID: "Formato inválido",
     PENDING_DATABASE: "Pendiente (base no cargada)",

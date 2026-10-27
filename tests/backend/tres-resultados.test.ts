@@ -39,6 +39,12 @@ beforeAll(async () => {
 beforeEach(() => resetRateLimits());
 
 describe("importación con columna de tanda", () => {
+  it("acepta los estados de Polygon (NOT OK / OK) y sus equivalentes en español", () => {
+    const r = parseSerialsCsv("serial_number,polygon_status\nP-0001,NOT OK\nP-0002,OK\nP-0003,not_ok\nP-0004,No afectada\nP-0005,Not-OK\n");
+    expect(r.errors).toEqual([]);
+    expect(r.rows.map((x) => x.status)).toEqual(["RECALL", "REINFORCED", "RECALL", "REINFORCED", "RECALL"]);
+  });
+
   it("acepta AFECTADA, REFORZADA y EXCLUIDA (con o sin tilde) y sus equivalentes en inglés", () => {
     const r = parseSerialsCsv("serie;tanda\nA-0001;afectada\nA-0002;Reforzada\nA-0003;EXCLUÍDA\nA-0004;REINFORCED\nA-0005;\n");
     expect(r.errors).toEqual([]);
@@ -48,7 +54,7 @@ describe("importación con columna de tanda", () => {
   it("rechaza un estado desconocido con mensaje en español", () => {
     const r = parseSerialsCsv("serial_number,status\nA-0001,DUDOSA\n");
     expect(r.rows).toEqual([]);
-    expect(r.errors[0]!.message).toMatch(/AFECTADA, REFORZADA o EXCLUIDA/);
+    expect(r.errors[0]!.message).toMatch(/NOT OK, OK, AFECTADA, NO AFECTADA o EXCLUIDA/);
   });
 });
 

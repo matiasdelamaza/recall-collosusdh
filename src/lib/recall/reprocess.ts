@@ -13,7 +13,7 @@ import { findListedSerial, getSerialDatabaseStatus } from "./verify";
 
 export interface ReprocessOptions {
   actor: string;
-  /** Enviar correo a los clientes con el resultado (afectada / tanda reforzada / no identificada). */
+  /** Enviar correo a los clientes con el resultado (afectada / no afectada / no identificada). */
   notifyCustomers: boolean;
   dryRun?: boolean;
 }
@@ -85,7 +85,7 @@ export async function reprocessPendingCases(options: ReprocessOptions): Promise<
       }
 
       if (listed?.status === "REINFORCED") {
-        // Tanda reforzada: no forma parte de la campaña. El caso queda en revisión manual para que Postventa lo cierre.
+        // No afectada (OK de Polygon): no forma parte de la campaña. El caso queda en revisión manual para que Postventa lo cierre.
         result.nowReinforced++;
         if (options.dryRun) continue;
         const now = new Date();

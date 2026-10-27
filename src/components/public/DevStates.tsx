@@ -14,7 +14,7 @@ import { VerificationResult, type VerifyOk } from "./VerificationResult";
  */
 const RESULTS: { label: string; result: VerifyOk; failedAttempts?: number }[] = [
   { label: "A — Afectada", result: { ok: true, state: "AFFECTED", serial: "EJEMPLO-AFECTADA-0001", model: "Collosus DH7", size: "M" } },
-  { label: "B — Tanda reforzada", result: { ok: true, state: "REINFORCED", serial: "EJEMPLO-REFORZADA-0004", model: "Collosus DH9", size: "L" } },
+  { label: "B — No afectada (OK de Polygon)", result: { ok: true, state: "REINFORCED", serial: "EJEMPLO-REFORZADA-0004", model: "Collosus DH9", size: "L" } },
   { label: "C — No encontrada (1er intento)", result: { ok: true, state: "NOT_IDENTIFIED", serial: "EJEMPLO-NO-ID-0002" }, failedAttempts: 1 },
   { label: "C — No encontrada (3er intento: revisión manual)", result: { ok: true, state: "NOT_IDENTIFIED", serial: "EJEMPLO-NO-ID-0002" }, failedAttempts: 3 },
   { label: "D — Formato inválido", result: { ok: true, state: "UNVERIFIED", serial: "EJEMPLO-X", reason: "TOO_SHORT" }, failedAttempts: 1 },

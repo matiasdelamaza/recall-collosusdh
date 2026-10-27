@@ -331,7 +331,7 @@ export function customerResultNotIdentifiedEmail(c: CaseEmailData, ctx: EmailCon
 }
 
 /**
- * Resultado tras reproceso: la serie corresponde a la tanda reforzada (no incluida en la campaña).
+ * Resultado tras reproceso: la serie figura como OK en la lista de Polygon (no afectada, no incluida en la campaña).
  * Usa el texto BORRADOR de RESULT_REINFORCED, pendiente de revisión legal. NUNCA certifica seguridad.
  */
 export function customerResultReinforcedEmail(c: CaseEmailData, ctx: EmailContext): RenderedEmail {

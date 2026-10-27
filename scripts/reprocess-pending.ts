@@ -27,7 +27,7 @@ async function main() {
   console.log("");
   console.log(`  Casos revisados:            ${r.scanned}`);
   console.log(`  Ahora AFECTADA:             ${r.nowAffected}`);
-  console.log(`  Ahora TANDA REFORZADA:      ${r.nowReinforced}`);
+  console.log(`  Ahora NO AFECTADAS (OK):    ${r.nowReinforced}`);
   console.log(`  Ahora NO IDENTIFICADA:      ${r.nowNotIdentified}`);
   console.log(`  Sin cambios:                ${r.unchanged}`);
   console.log(`  Clientes notificados:       ${r.notified}`);

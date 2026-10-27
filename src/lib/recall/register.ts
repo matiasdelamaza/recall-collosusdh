@@ -131,7 +131,7 @@ export async function registerCase(input: RegistrationInput, uploads: ValidatedU
     serial = partial;
     requestType = "MANUAL_REVIEW";
   } else if (verification.state === "REINFORCED") {
-    // Tanda reforzada: no forma parte de la campaña y el sitio no ofrece registro (decisión de Cross Mountain).
+    // No afectada (OK de Polygon): no forma parte de la campaña y el sitio no ofrece registro (decisión de Cross Mountain).
     return { kind: "SERIAL_INVALID", message: FORM_VALIDATION.reinforcedNoRegistration };
   } else {
     serial = verification.serial;
