@@ -63,6 +63,7 @@ export const RESULT_AFFECTED = {
   body1: "El número de serie ingresado corresponde a una unidad incluida en la campaña de recall Polygon Collosus DH.",
   body2: "No utilices la bicicleta hasta que se haya realizado el reemplazo del cuadro.",
   body3: "Polygon Bikes y Cross Mountain realizarán el reemplazo del cuadro afectado por una nueva versión sin costo para el propietario.",
+  body4: "Para realizar el cambio, deberás enviarnos el cuadro afectado. Nuestro equipo de Postventa te indicará cómo hacerlo.",
   cta: "INICIAR PROCESO DE REEMPLAZO",
   serialLabel: "Número de serie verificado",
 } as const;
@@ -248,7 +249,7 @@ export const STEPS = {
     { n: "02", title: "Si está afectada, deja de utilizarla", body: "No vuelvas a montar la bicicleta." },
     { n: "03", title: "Registra tus antecedentes", body: "Completa el formulario." },
     { n: "04", title: "Cross Mountain te contactará", body: "Nuestro equipo de Postventa coordina el procedimiento." },
-    { n: "05", title: "Reemplazo del cuadro", body: "Las unidades afectadas reciben un cuadro de nueva versión." },
+    { n: "05", title: "Reemplazo del cuadro", body: "Envías el cuadro afectado y recibes un cuadro de nueva versión." },
   ],
 } as const;
 
@@ -296,7 +297,7 @@ export const FAQ = {
     },
     {
       q: "¿Qué solución recibiré?",
-      a: ["Las unidades afectadas recibirán el reemplazo del cuadro por una nueva versión proporcionada por Polygon Bikes."],
+      a: ["Las unidades afectadas recibirán el reemplazo del cuadro por una nueva versión proporcionada por Polygon Bikes. Para realizar el cambio, deberás enviarnos el cuadro afectado; nuestro equipo de Postventa te indicará cómo hacerlo."],
     },
     {
       q: "¿Tiene costo?",

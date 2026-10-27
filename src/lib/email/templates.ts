@@ -237,6 +237,7 @@ export function customerResultAffectedEmail(c: CaseEmailData, ctx: EmailContext)
     RESULT_AFFECTED.body1,
     RESULT_AFFECTED.body2,
     RESULT_AFFECTED.body3,
+    RESULT_AFFECTED.body4,
     "",
     `${EMAIL.caseIdLabel}: ${c.caseId}`,
     `${EMAIL.serialLabel}: ${c.serialNumber}`,
@@ -258,6 +259,7 @@ export function customerResultAffectedEmail(c: CaseEmailData, ctx: EmailContext)
     { type: "p", text: RESULT_AFFECTED.body1 },
     { type: "p", text: RESULT_AFFECTED.body2 },
     { type: "p", text: RESULT_AFFECTED.body3 },
+    { type: "p", text: RESULT_AFFECTED.body4 },
     {
       type: "kv",
       rows: [

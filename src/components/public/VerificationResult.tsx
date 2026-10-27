@@ -64,6 +64,7 @@ export function VerificationResult({ result, headingRef, failedAttempts, onStart
             <p>{RESULT_AFFECTED.body1}</p>
             <p className="font-semibold text-ink">{RESULT_AFFECTED.body2}</p>
             <p>{RESULT_AFFECTED.body3}</p>
+            <p className="font-semibold text-ink">{RESULT_AFFECTED.body4}</p>
           </div>
           <SerialLine label={RESULT_AFFECTED.serialLabel} serial={result.serial} model={result.model} size={result.size} />
           <div className="mt-6">
