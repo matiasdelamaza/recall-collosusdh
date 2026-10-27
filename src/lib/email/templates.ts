@@ -350,7 +350,7 @@ export function customerResultReinforcedEmail(c: CaseEmailData, ctx: EmailContex
     "",
     RESULT_REINFORCED.body1,
     RESULT_REINFORCED.body2,
-    RESULT_REINFORCED.body3,
+    RESULT_REINFORCED.emailBody3,
     "",
     `${EMAIL.caseIdLabel}: ${c.caseId}`,
     `${EMAIL.serialLabel}: ${c.serialNumber}`,
@@ -372,7 +372,7 @@ export function customerResultReinforcedEmail(c: CaseEmailData, ctx: EmailContex
     { type: "heading", text: RESULT_REINFORCED.title },
     { type: "p", text: RESULT_REINFORCED.body1 },
     { type: "p", text: RESULT_REINFORCED.body2 },
-    { type: "p", text: RESULT_REINFORCED.body3 },
+    { type: "p", text: RESULT_REINFORCED.emailBody3 },
     {
       type: "kv",
       rows: [

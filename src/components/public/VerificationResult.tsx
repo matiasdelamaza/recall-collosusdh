@@ -93,9 +93,14 @@ export function VerificationResult({ result, headingRef, failedAttempts, onStart
           <div className="space-y-3 text-[16px] leading-relaxed text-ink-700">
             <p>{RESULT_REINFORCED.body1}</p>
             <p className="font-semibold text-ok-700">{RESULT_REINFORCED.body2}</p>
-            <p className="text-[15px] text-ink-500">{RESULT_REINFORCED.body3}</p>
           </div>
           <SerialLine label={RESULT_REINFORCED.serialLabel} serial={result.serial} model={result.model} size={result.size} />
+          <div className="mt-6 rounded-sm border border-line bg-paper-100 px-4 py-4">
+            <p className="text-[15px] font-semibold leading-relaxed text-ink">{RESULT_REINFORCED.body3}</p>
+            <Button variant="secondary" onClick={() => onStartRegistration("MANUAL_REVIEW")} className="mt-3">
+              {RESULT_REINFORCED.ctaDamage}
+            </Button>
+          </div>
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
             <Button variant="secondary" onClick={onVerifyAnother}>
               {RESULT_REINFORCED.ctaAnother}

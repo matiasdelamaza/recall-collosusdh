@@ -89,8 +89,11 @@ export const RESULT_REINFORCED = {
   title: "TU BICICLETA NO PERTENECE A LA TANDA AFECTADA",
   body1: "El número de serie ingresado no forma parte de las unidades incluidas en esta campaña.",
   body2: "Puedes seguir usando tu bicicleta con normalidad. No necesitas registrarla ni realizar ningún trámite.",
-  body3: "Como con cualquier bicicleta, si notas algún daño en el cuadro, comunícate con nuestro equipo de Postventa.",
+  body3: "Si ves fisuras, grietas o deformaciones en el cuadro, deja de usar la bicicleta y completa el formulario.",
+  /** En el correo el cliente ya tiene un caso: responde el correo (llega a Postventa) en vez de llenar el formulario. */
+  emailBody3: "Si ves fisuras, grietas o deformaciones en el cuadro, deja de usar la bicicleta y responde este correo con fotos de la zona.",
   serialLabel: "Número de serie verificado",
+  ctaDamage: "COMPLETAR FORMULARIO",
   ctaAnother: "VERIFICAR OTRO NÚMERO",
 } as const;
 
@@ -142,11 +145,13 @@ export const FORM = {
     REPLACEMENT: "Registro para reemplazo de cuadro",
     MANUAL_REVIEW: "Solicitud de revisión manual",
     PENDING_DATABASE: "Registro de bicicleta",
+    DAMAGE_REVIEW: "Revisión de daño en el cuadro",
   },
   intro: {
     REPLACEMENT: "Completa tus datos para generar tu caso. Nuestro equipo de Postventa se pondrá en contacto contigo para coordinar el reemplazo del cuadro.",
     MANUAL_REVIEW: "Completa tus datos y adjunta una foto clara del número de serie. Nuestro equipo de Postventa revisará tu caso.",
     PENDING_DATABASE: "Completa tus datos. Una vez que Polygon Bikes confirme la base de números de serie, te notificaremos el resultado de la verificación.",
+    DAMAGE_REVIEW: "Completa tus datos y adjunta fotos de la zona dañada del cuadro. Nuestro equipo de Postventa revisará tu caso y se pondrá en contacto contigo.",
   },
   sections: {
     customer: "Datos del propietario",
@@ -179,6 +184,7 @@ export const FORM = {
     additionalPhotos: "Fotos adicionales de daños (opcional)",
     damageReported: "¿El cuadro presenta actualmente alguna fisura, separación, deformación o daño estructural?",
     acknowledge: "Confirmo que he leído la instrucción de no utilizar la bicicleta hasta completar el procedimiento de reemplazo.",
+    acknowledgeDamage: "Confirmo que no utilizaré la bicicleta hasta que Postventa revise el cuadro.",
     privacy: "He leído el aviso de privacidad y autorizo el uso de mis datos exclusivamente para la gestión de esta campaña de recall.",
   },
   options: {
@@ -194,6 +200,7 @@ export const FORM = {
     REPLACEMENT: "REGISTRAR Y SOLICITAR REEMPLAZO",
     MANUAL_REVIEW: "ENVIAR SOLICITUD DE REVISIÓN",
     PENDING_DATABASE: "REGISTRAR MI BICICLETA",
+    DAMAGE_REVIEW: "ENVIAR SOLICITUD DE REVISIÓN",
   },
   submitting: "Enviando…",
   back: "Volver",
@@ -224,7 +231,6 @@ export const FORM_VALIDATION = {
   serverError: "No pudimos registrar tu solicitud. Inténtalo nuevamente en unos minutos o contacta a nuestro equipo de Postventa.",
   rateLimited: "Has enviado demasiadas solicitudes en poco tiempo. Espera unos minutos e inténtalo nuevamente.",
   tooLarge: "Las fotos adjuntas superan el tamaño total permitido (4 MB). Adjunta menos fotos o usa fotos de menor resolución.",
-  reinforcedNoRegistration: "Este número de serie no forma parte de la campaña, por lo que no es necesario registrar la bicicleta.",
   duplicateLimit: "Ya existen solicitudes activas para este número de serie. Nuestro equipo de Postventa revisará la situación y se pondrá en contacto contigo.",
 } as const;
 
@@ -498,6 +504,7 @@ export const FLOW = {
     AFFECTED: "Unidad afectada · No utilices la bicicleta",
     PENDING_DATABASE: "Verificación pendiente",
     MANUAL_REVIEW: "Revisión manual",
+    REINFORCED: "No afectada · Revisión de daño",
   },
 } as const;
 

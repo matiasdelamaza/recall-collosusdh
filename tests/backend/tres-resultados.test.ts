@@ -75,14 +75,15 @@ describe("verificación de una serie de la tanda reforzada", () => {
     expect(rows.map((r) => r.result)).toEqual(["REINFORCED"]);
   });
 
-  it("el registro de una serie reforzada se rechaza (no forma parte de la campaña)", async () => {
-    const res = await registro(postForm(REG_URL, buildRegistrationForm({ serial: "TR-REFORZADA-01", rut: rutFor(2222221), email: "ref@example.test" }), { "x-forwarded-for": "10.1.0.2" }));
-    expect(res.status).toBe(422);
-    const body = await res.json();
-    expect(body).toMatchObject({ ok: false, error: "VALIDATION" });
-    expect(body.fields.serial).toMatch(/no forma parte/i);
+  it("el registro de una serie reforzada (daño visible) entra como revisión manual de alta prioridad, nunca como reemplazo", async () => {
+    const form = buildRegistrationForm({ serial: "TR-REFORZADA-01", rut: rutFor(2222221), email: "ref@example.test" });
+    form.set("requestType", "REPLACEMENT"); // el servidor ignora el tipo que manda el cliente
+    const res = await registro(postForm(REG_URL, form, { "x-forwarded-for": "10.1.0.2" }));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ ok: true, outcome: "CREATED", requestType: "MANUAL_REVIEW", verification: "REINFORCED" });
     const db = await getDb();
-    expect(await db.select().from(recallCases).where(eq(recallCases.serialNumber, "TR-REFORZADA-01"))).toEqual([]);
+    const row = (await db.select().from(recallCases).where(eq(recallCases.serialNumber, "TR-REFORZADA-01")))[0]!;
+    expect(row).toMatchObject({ serialVerificationStatus: "REINFORCED", requestType: "MANUAL_REVIEW", caseStatus: "MANUAL_REVIEW", priority: "HIGH" });
   });
 });
 

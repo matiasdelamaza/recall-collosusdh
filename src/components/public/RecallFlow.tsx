@@ -321,7 +321,13 @@ function CompactResult({ result }: { result: VerifyOk }) {
   return (
     <div className={cx("flex flex-wrap items-center justify-between gap-3 rounded-sm border px-4 py-3", affected ? "border-alert bg-alert-50" : "border-line bg-paper")}>
       <span className={cx("text-[12px] font-bold uppercase tracking-[0.12em]", affected ? "text-alert-700" : "text-ink-500")}>
-        {affected ? FLOW.compact.AFFECTED : result.state === "PENDING_DATABASE" ? FLOW.compact.PENDING_DATABASE : FLOW.compact.MANUAL_REVIEW}
+        {affected
+          ? FLOW.compact.AFFECTED
+          : result.state === "PENDING_DATABASE"
+            ? FLOW.compact.PENDING_DATABASE
+            : result.state === "REINFORCED"
+              ? FLOW.compact.REINFORCED
+              : FLOW.compact.MANUAL_REVIEW}
       </span>
       {result.serial ? <span className="serial text-sm font-bold text-ink">{result.serial}</span> : null}
     </div>

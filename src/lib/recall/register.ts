@@ -132,8 +132,10 @@ export async function registerCase(input: RegistrationInput, uploads: ValidatedU
     serial = partial;
     requestType = "MANUAL_REVIEW";
   } else if (verification.state === "REINFORCED") {
-    // No afectada (OK de Polygon): no forma parte de la campaña y el sitio no ofrece registro (decisión de Cross Mountain).
-    return { kind: "SERIAL_INVALID", message: FORM_VALIDATION.reinforcedNoRegistration };
+    // No afectada (OK de Polygon): solo se registra si el cliente ve daño en el cuadro (27-10-2026, pedido de Cross Mountain).
+    // Va a revisión manual de Postventa, nunca como reemplazo.
+    serial = verification.serial;
+    requestType = "MANUAL_REVIEW";
   } else {
     serial = verification.serial;
     requestType = requestTypeForState(verification.state);
@@ -161,7 +163,8 @@ export async function registerCase(input: RegistrationInput, uploads: ValidatedU
 
   const flaggedDuplicate = decision.kind === "FLAG_DUPLICATE";
   const caseStatus: CaseStatus = flaggedDuplicate ? "DUPLICATE_CASE" : requestType === "MANUAL_REVIEW" ? "MANUAL_REVIEW" : "REGISTERED";
-  const priority = input.accidentReported === "YES" ? "HIGH" : "NORMAL";
+  // Serie no afectada que llega por la vía de daño visible: alta prioridad para que Postventa la vea primero.
+  const priority = input.accidentReported === "YES" || verification.state === "REINFORCED" ? "HIGH" : "NORMAL";
 
   const storage = getStorage();
   const caseUuid = crypto.randomUUID();

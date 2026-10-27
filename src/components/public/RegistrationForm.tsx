@@ -200,6 +200,8 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
 
   // Si la serie no pudo verificarse, el usuario puede corregirla; en los demás casos queda bloqueada.
   const serialEditable = verification === "UNVERIFIED";
+  // Serie no afectada con daño visible: mismo formulario, con textos de revisión de daño.
+  const copyKey = verification === "REINFORCED" ? "DAMAGE_REVIEW" : requestType;
 
   function focusFirstError(errs: Errors) {
     const first = Object.keys(errs)[0];
@@ -276,9 +278,9 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
     <form ref={formRef} onSubmit={handleSubmit} noValidate encType="multipart/form-data" aria-labelledby="formulario-titulo" className="rounded-md border border-line bg-paper">
       <div className="border-b border-line px-5 py-6 sm:px-8">
         <h2 id="formulario-titulo" ref={headingRef} tabIndex={-1} className="headline text-[24px] text-ink outline-none sm:text-[30px]">
-          {FORM.title[requestType]}
+          {FORM.title[copyKey]}
         </h2>
-        <p className="mt-3 text-[15px] leading-relaxed text-ink-700">{FORM.intro[requestType]}</p>
+        <p className="mt-3 text-[15px] leading-relaxed text-ink-700">{FORM.intro[copyKey]}</p>
       </div>
 
       <div className="px-5 py-6 sm:px-8">
@@ -442,7 +444,7 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
         <div className="mb-4">
           <label className="flex cursor-pointer items-start gap-3 text-[15px] leading-relaxed text-ink">
             <input type="checkbox" name="acknowledgeStopRiding" className="mt-1 h-5 w-5 shrink-0 accent-ink" aria-describedby={err("acknowledgeStopRiding") ? "acknowledgeStopRiding-error" : undefined} />
-            <span className="font-semibold">{FORM.fields.acknowledge}</span>
+            <span className="font-semibold">{copyKey === "DAMAGE_REVIEW" ? FORM.fields.acknowledgeDamage : FORM.fields.acknowledge}</span>
           </label>
           <FieldError id="acknowledgeStopRiding-error" message={err("acknowledgeStopRiding")} />
         </div>
@@ -461,7 +463,7 @@ export function RegistrationForm({ serial, requestType, verification, headingRef
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Button type="submit" variant={requestType === "REPLACEMENT" ? "primary" : "primary"} disabled={submitting} aria-busy={submitting || undefined}>
-            {submitting ? FORM.submitting : FORM.submit[requestType]}
+            {submitting ? FORM.submitting : FORM.submit[copyKey]}
           </Button>
           <Button type="button" variant="ghost" onClick={onBack} disabled={submitting}>
             {FORM.back}
