@@ -3,6 +3,7 @@ import { getEnv } from "@/lib/config";
 import { createLocalStorage } from "./local";
 import { createS3Storage } from "./s3";
 import { createSupabaseStorage } from "./supabase";
+import { createVercelBlobStorage } from "./vercel-blob";
 import type { StorageProvider } from "./types";
 
 export type { StorageProvider, StoredObject } from "./types";
@@ -14,7 +15,9 @@ const g = globalThis as GlobalWithStorage;
 export function getStorage(): StorageProvider {
   if (g.__recallStorage) return g.__recallStorage;
   const env = getEnv();
-  if (env.STORAGE_PROVIDER === "supabase") {
+  if (env.STORAGE_PROVIDER === "vercel-blob") {
+    g.__recallStorage = createVercelBlobStorage({ prefix: env.VERCEL_BLOB_PREFIX, token: env.BLOB_READ_WRITE_TOKEN });
+  } else if (env.STORAGE_PROVIDER === "supabase") {
     if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error("STORAGE_PROVIDER=supabase requiere SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY");
     }
