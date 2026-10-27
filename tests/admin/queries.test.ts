@@ -73,10 +73,19 @@ describe("consultas y métricas del panel interno", () => {
 
   it("filtra por estado, accidente y verificación", async () => {
     const { listCases, parseCaseFilters } = await import("@/lib/recall/cases");
-    expect((await listCases(parseCaseFilters({ status: "REPLACED" }))).rows.map((r) => r.caseId)).toEqual(["RCDH-DEF45"]);
-    expect((await listCases(parseCaseFilters({ accident: "YES" }))).total).toBe(1);
+    expect((await listCases(parseCaseFilters({ status: "REPLACED", verification: "ALL" }))).rows.map((r) => r.caseId)).toEqual(["RCDH-DEF45"]);
+    expect((await listCases(parseCaseFilters({ accident: "YES", verification: "ALL" }))).total).toBe(1);
     expect((await listCases(parseCaseFilters({ verification: "AFFECTED" }))).total).toBe(1);
-    expect((await listCases(parseCaseFilters({ status: "INVENTADO" }))).total).toBe(2); // valor inválido se ignora
+    expect((await listCases(parseCaseFilters({ status: "INVENTADO", verification: "ALL" }))).total).toBe(2); // valor inválido se ignora
+  });
+
+  it("sin filtro de verificación muestra solo unidades afectadas; \"ALL\" y las búsquedas abarcan todos", async () => {
+    const { listCases, parseCaseFilters } = await import("@/lib/recall/cases");
+    expect(parseCaseFilters({}).verification).toBe("AFFECTED");
+    expect(parseCaseFilters({ verification: "" }).verification).toBe("AFFECTED");
+    expect((await listCases(parseCaseFilters({}))).total).toBe(1);
+    expect((await listCases(parseCaseFilters({ verification: "ALL" }))).total).toBe(2);
+    expect(parseCaseFilters({ q: "otra persona" }).verification).toBe("ALL");
   });
 
   it("busca por caso, serie, RUT, nombre y correo", async () => {
