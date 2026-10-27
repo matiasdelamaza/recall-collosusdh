@@ -60,7 +60,7 @@ Hecho sin intervención: código en GitHub (`matiasdelamaza/recall-collosusdh`),
 
 Pendiente y **solo puede hacerlo Cross Mountain** (por permisos o por tratarse de credenciales que no deben pasar por el asistente):
 
-1. **Autorizar el conector de Vercel para el equipo `cross-mountain`** (enlace de consentimiento que entrega el asistente, o reautorizar el conector en claude.ai eligiendo ese equipo). Sin esto no se puede crear el proyecto en Vercel desde la sesión. Alternativa manual: en Vercel, *Add New → Project → Import* `matiasdelamaza/recall-collosusdh`.
+1. ~~Autorizar el conector de Vercel y crear el proyecto~~ **Hecho**: proyecto `recall-collosusdh` desplegado en https://recall-collosusdh.vercel.app con base efímera (ver `docs/DESPLIEGUE.md`).
 2. **Conectar Supabase con Vercel** desde Supabase: *Project Settings → Integrations → Vercel → Connect project* `recall-collosusdh`. Esto inyecta en Vercel `POSTGRES_URL`, `POSTGRES_URL_NON_POOLING`, `SUPABASE_URL` y `SUPABASE_SERVICE_ROLE_KEY`, que la app usa directamente. Así ninguna contraseña pasa por el chat.
 3. **Variables en Vercel** (Settings → Environment Variables, Production y Preview):
    - `STORAGE_PROVIDER=supabase`
@@ -70,5 +70,5 @@ Pendiente y **solo puede hacerlo Cross Mountain** (por permisos o por tratarse d
    - `NEXT_PUBLIC_SITE_URL` (la URL de Vercel mientras no haya dominio; luego `https://recallcollosusdh.cl`)
    - `NEXT_PUBLIC_NOINDEX=true` hasta el lanzamiento oficial
    - `TRUSTED_PROXY=standard`, `EMAIL_PROVIDER=console` (hasta configurar Resend/SMTP), `NEXT_PUBLIC_LAST_UPDATED=2026-10-27`
-4. **Redesplegar** (Deployments → Redeploy) para que el build aplique las migraciones (ya están aplicadas; el paso será un no-op) y arranque con la base real.
+4. **Borrar** la variable `ALLOW_PGLITE_IN_PRODUCTION` (y `PGLITE_DATA_DIR`) para que la app exija PostgreSQL, y **redesplegar** (Deployments → Redeploy) para que el build aplique las migraciones (ya están aplicadas; el paso será un no-op) y arranque con la base real.
 5. Comprobar: `/api/health` → `{"ok":true,"db":"ok"}`; `/` muestra el aviso de modo interino; `/admin` pide contraseña.

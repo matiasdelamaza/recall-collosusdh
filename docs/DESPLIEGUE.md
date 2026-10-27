@@ -11,6 +11,25 @@ Guía paso a paso para publicar `recallcollosusdh.cl`. El sitio puede publicarse
 
 ## 2. Opción A — Vercel + Supabase (recomendada por simplicidad)
 
+### Estado actual (27-10-2026): proyecto Vercel ya creado y desplegado
+
+| Dato | Valor |
+|---|---|
+| Proyecto Vercel | `recall-collosusdh` (`prj_eP0FynX0TOprJ5ifdhq571cqceEt`), equipo `cross-mountain` |
+| Repositorio enlazado | `matiasdelamaza/recall-collosusdh`, rama de producción `main` (cada push despliega) |
+| URL de producción | https://recall-collosusdh.vercel.app (también `recall-collosusdh-cross-mountain.vercel.app`) |
+| Región de funciones | `gru1` (São Paulo), junto a la base Supabase |
+| Protección | Vercel Authentication activa en las URLs `*.vercel.app` (solo miembros del equipo); el dominio propio quedará público al asignarlo |
+| Base de datos actual | **PGlite efímero en `/tmp`** (`ALLOW_PGLITE_IN_PRODUCTION=true`): los datos se pierden entre arranques. Se reemplaza automáticamente al conectar Supabase (variable `POSTGRES_URL`) |
+| Fotos | `STORAGE_PROVIDER=local` en `/tmp` (efímero) hasta cambiar a `supabase` |
+| Correo | `EMAIL_PROVIDER=console` (solo logs) |
+| Indexación | `NEXT_PUBLIC_NOINDEX=true` |
+
+Variables ya cargadas en Vercel (Production y Preview): `ALLOW_PGLITE_IN_PRODUCTION`, `PGLITE_DATA_DIR`, `STORAGE_PROVIDER`, `LOCAL_STORAGE_DIR`, `EMAIL_PROVIDER`, `TRUSTED_PROXY`, `NEXT_PUBLIC_NOINDEX`, `NEXT_PUBLIC_SITE_URL`, `SUPABASE_URL`, `SUPABASE_STORAGE_BUCKET`, `NEXT_PUBLIC_LAST_UPDATED`.
+
+**Para pasar a la base real (Supabase) y fotos persistentes**, ver el checklist de `docs/PENDIENTES.md` (integración Supabase→Vercel, `STORAGE_PROVIDER=supabase`, `ADMIN_PASSWORD`, `ADMIN_SESSION_SECRET`, `IP_HASH_SALT`, y borrar `ALLOW_PGLITE_IN_PRODUCTION`).
+
+
 ### Estado actual (27-10-2026): proyecto Supabase ya creado
 
 | Dato | Valor |
