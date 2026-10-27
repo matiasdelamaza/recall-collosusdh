@@ -3,6 +3,8 @@ import { sql } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { getEnv, getInternalNotificationEmails, RATE_LIMITS } from "@/lib/config";
 import { getEmailProvider } from "@/lib/email";
+import { testEmail } from "@/lib/email/templates";
+import { getEmailContext } from "@/lib/recall/notifications";
 import { checkRateLimit } from "@/lib/server/rate-limit";
 import { getClientIp, hashIp } from "@/lib/server/request";
 import { getStorage } from "@/lib/storage";
@@ -67,8 +69,8 @@ export async function GET(req: NextRequest) {
       body.email = { provider, ok: false, recipients: 0, error: "sin_destinatarios" };
     } else {
       try {
-        const text = "Correo de prueba del portal de la campaña de seguridad Polygon Collosus DH. Si lo recibes, el envío de correos funciona. No requiere ninguna acción.";
-        const res = await getEmailProvider().send({ to, subject: "Prueba de correo · Aviso de suspensión de uso Polygon Collosus DH", text, html: `<p>${text}</p>` });
+        const m = testEmail(getEmailContext());
+        const res = await getEmailProvider().send({ to, subject: m.subject, text: m.text, html: m.html });
         body.email = { provider: res.provider, ok: res.ok, recipients: to.length, ...(res.ok ? {} : { error: (res.error ?? "error").slice(0, 160) }) };
         if (!res.ok) body.ok = false;
       } catch (err) {

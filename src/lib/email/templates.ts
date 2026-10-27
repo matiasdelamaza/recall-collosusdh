@@ -442,3 +442,20 @@ export function customerResultReinforcedEmail(c: CaseEmailData, ctx: EmailContex
   ], { siteUrl: ctx.siteUrl, tone: "ok" });
   return { subject, text, html };
 }
+
+/** Correo de prueba técnica (/api/health?email=1): mismo diseño que los correos reales, sin datos de clientes. */
+export function testEmail(ctx: EmailContext): RenderedEmail {
+  const subject = "Prueba de correo · Aviso de suspensión de uso Polygon Collosus DH";
+  const body = "Correo de prueba del portal de la campaña de seguridad Polygon Collosus DH. Si lo recibes, el envío de correos funciona. No requiere ninguna acción.";
+  const contact = contactLines(ctx);
+  const text = [body, "", ...contact, "", siteLine(ctx), "", EMAIL.signature, "", EMAIL.footer].join("\n");
+  const html = wrapHtml(subject, [
+    { type: "heading", text: "Correo de prueba" },
+    { type: "p", text: body },
+    { type: "kv", rows: [["Número de caso", "RCDH-PRUEBA"], ["Número de serie", "A25012345"]] },
+    { type: "contact", lines: contact.filter((l) => l !== CONTACT.team && l !== CONTACT.company) },
+    { type: "small", text: siteLine(ctx) },
+    { type: "signature", text: EMAIL.signature },
+  ], { siteUrl: ctx.siteUrl });
+  return { subject, text, html };
+}
