@@ -40,7 +40,7 @@ export const HERO = {
   body1: "Polygon Bikes y Cross Mountain han iniciado una campaña de recall en Chile para determinadas unidades Polygon Collosus DH.",
   body2: "Si tienes una Polygon Collosus DH, verifica el número de serie de tu bicicleta.",
   serialLabel: "Número de serie",
-  serialPlaceholder: "Ingresa el número de serie del cuadro",
+  serialPlaceholder: "Ej.: A25012345",
   cta: "VERIFICAR MI BICICLETA",
   ctaLoading: "Verificando…",
   whereIsSerial: "¿Dónde encuentro mi número de serie?",
@@ -264,6 +264,10 @@ export const WHERE_SERIAL = {
   body3: "Si el número está parcialmente ilegible, ingresa lo que puedas leer y solicita una revisión manual adjuntando una foto.",
   figureAlt: "Polygon Collosus DH7 vista de lado. Un círculo rojo marca la parte inferior del cuadro, bajo la caja del pedalier, donde está grabado el número de serie.",
   markerLabel: "Número de serie: bajo la caja del pedalier",
+  /** Serie ficticia con el formato de la lista de Polygon (una letra + 8 dígitos); no corresponde a ninguna bicicleta. */
+  exampleLabel: "Ejemplo de número de serie",
+  exampleSerial: "A25012345",
+  exampleNote: "Por lo general, una letra seguida de 8 números. Es solo un ejemplo de formato: ingresa el número de tu bicicleta.",
 } as const;
 
 export const FAQ = {

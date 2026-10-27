@@ -10,6 +10,13 @@ export function WhereSerialSection() {
             <SectionTitle id="serie-titulo">{WHERE_SERIAL.title}</SectionTitle>
             <div className="space-y-4 text-[16px] leading-relaxed text-ink-700">
               <p>{WHERE_SERIAL.body1}</p>
+              <div className="rounded-md border-l-4 border-ink bg-paper p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-ink-500">{WHERE_SERIAL.exampleLabel}</p>
+                <p className="serial mt-1 text-[28px] font-bold leading-none tracking-[0.06em] text-ink" translate="no">
+                  {WHERE_SERIAL.exampleSerial}
+                </p>
+                <p className="mt-2 text-sm text-ink-500">{WHERE_SERIAL.exampleNote}</p>
+              </div>
               <p>{WHERE_SERIAL.body2}</p>
               <p>{WHERE_SERIAL.body3}</p>
             </div>
