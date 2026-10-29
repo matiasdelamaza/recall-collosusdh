@@ -5,6 +5,9 @@ import { CONTACT } from "@/lib/copy/es";
 import { getEmailProvider } from "@/lib/email";
 import {
   affectedReminderEmail,
+  contactBroadcastEmail,
+  customerFollowUpEmail,
+  type FollowUpKind,
   customerConfirmationEmail,
   customerResultAffectedEmail,
   customerResultNotIdentifiedEmail,
@@ -28,7 +31,7 @@ export function getEmailContext(): EmailContext {
   };
 }
 
-type Kind = "CUSTOMER_CONFIRMATION" | "INTERNAL_NEW_CASE" | "INTERNAL_AFFECTED_CONTACT" | "CUSTOMER_AFFECTED_REMINDER" | "CUSTOMER_RESULT_AFFECTED" | "CUSTOMER_RESULT_REINFORCED" | "CUSTOMER_RESULT_NOT_IDENTIFIED";
+type Kind = "CUSTOMER_FOLLOW_UP" | "CUSTOMER_BROADCAST" | "CUSTOMER_CONFIRMATION" | "INTERNAL_NEW_CASE" | "INTERNAL_AFFECTED_CONTACT" | "CUSTOMER_AFFECTED_REMINDER" | "CUSTOMER_RESULT_AFFECTED" | "CUSTOMER_RESULT_REINFORCED" | "CUSTOMER_RESULT_NOT_IDENTIFIED";
 
 /** Tiempo máximo de espera por envío; pasado este plazo se registra el fallo y la petición continúa. */
 const SEND_TIMEOUT_MS = 15_000;
@@ -96,6 +99,17 @@ export async function sendResultNotification(c: RecallCase, result: "AFFECTED" |
 }
 
 /** Alerta interna: consulta de serie afectada con correo, aún sin caso. Nunca lanza. */
+/** Seguimiento a un cliente con caso (cambio de etapa, novedad semanal o comunicado). Nunca lanza. */
+export async function sendFollowUp(c: RecallCase, kind: FollowUpKind, message?: { subject: string; body: string }, to: string | string[] = c.email): Promise<boolean> {
+  const rendered = customerFollowUpEmail(c, kind, getEmailContext(), message);
+  return deliver(kind === "BROADCAST" ? "CUSTOMER_BROADCAST" : "CUSTOMER_FOLLOW_UP", to, rendered, c.id ? c : null, c.caseId);
+}
+
+/** Comunicado a quien dejó su correo con una serie afectada y no tiene caso. Nunca lanza. */
+export async function sendBroadcastToContact(email: string, serials: string[], message: { subject: string; body: string }): Promise<boolean> {
+  return deliver("CUSTOMER_BROADCAST", email, contactBroadcastEmail(serials, message, getEmailContext()), null, serials.join(", "));
+}
+
 /** Recordatorio a quien dejó su correo con una serie afectada y no registró caso. Nunca lanza. */
 export async function sendAffectedReminder(email: string, serials: string[]): Promise<boolean> {
   return deliver("CUSTOMER_AFFECTED_REMINDER", email, affectedReminderEmail(serials, getEmailContext()), null, serials.join(", "));

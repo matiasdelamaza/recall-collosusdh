@@ -492,6 +492,46 @@ export const OUTREACH = {
 } as const;
 
 /** Etiquetas en español para estados técnicos (panel interno). */
+/**
+ * Seguimiento por correo a clientes con unidad afectada (29-10-2026, pedido de Cross Mountain):
+ * aviso en cada cambio de etapa, novedad semanal si el caso no avanza y comunicados desde el panel.
+ */
+export const FOLLOW_UP = {
+  /** Etapas del reemplazo que ve el cliente, en orden, con nombres para el cliente. */
+  stages: [
+    ["REGISTERED", "Registro recibido"],
+    ["VALIDATED", "Registro validado"],
+    ["CUSTOMER_CONTACTED", "Coordinación con Postventa"],
+    ["REPLACEMENT_FRAME_ASSIGNED", "Cuadro de reemplazo asignado"],
+    ["FRAME_IN_TRANSIT", "Cuadro en tránsito"],
+    ["FRAME_RECEIVED", "Cuadro recibido"],
+    ["SERVICE_SCHEDULED", "Servicio agendado"],
+    ["REPLACED", "Reemplazo realizado"],
+  ] as const,
+  stagesTitle: "Etapas de tu caso",
+  currentStageLabel: "Etapa actual",
+  stage: {
+    subject: (caseId: string) => `Tu caso ${caseId} avanzó – Polygon Collosus DH`,
+    heading: "Tu caso avanzó a una nueva etapa",
+    body: (stage: string) => `Tu caso de la campaña de seguridad Polygon Collosus DH avanzó a la etapa: ${stage}.`,
+  },
+  replaced: {
+    subject: (caseId: string) => `Reemplazo realizado – caso ${caseId}`,
+    heading: "El reemplazo de tu cuadro quedó registrado",
+    body: "Nuestro equipo registró como realizado el reemplazo del cuadro de tu bicicleta. Gracias por tu paciencia durante esta campaña de seguridad.",
+  },
+  weekly: {
+    subject: (caseId: string) => `Novedades de tu caso ${caseId} – Polygon Collosus DH`,
+    heading: "Seguimos trabajando en tu caso",
+    body: (stage: string) => `Tu caso sigue activo, en la etapa: ${stage}. Nuestro equipo de Postventa te contactará para coordinar los siguientes pasos.`,
+  },
+  broadcast: {
+    heading: "Novedades de la campaña de seguridad",
+  },
+  nextContact: "Te escribiremos cada vez que tu caso avance. Si tienes dudas, responde este correo.",
+  noCaseYet: "Si aún no registras tu bicicleta, ingresa el número de serie en nuestro sitio y completa el formulario:",
+} as const;
+
 export const STATUS_LABELS = {
   caseStatus: {
     REGISTERED: "Registrado",

@@ -187,6 +187,8 @@ export const recallCases = pgTable(
     userAgent: text("user_agent"),
     /** Última vez que se notificó al cliente el resultado de la verificación (reproceso). */
     resultNotifiedAt: timestamp("result_notified_at", { withTimezone: true }),
+    /** Último correo de seguimiento al cliente (cambio de etapa, novedad semanal o comunicado). */
+    lastCustomerUpdateAt: timestamp("last_customer_update_at", { withTimezone: true }),
     closedAt: timestamp("closed_at", { withTimezone: true }),
   },
   (t) => [

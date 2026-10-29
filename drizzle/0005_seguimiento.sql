@@ -1,0 +1,1 @@
+ALTER TABLE "recall_cases" ADD COLUMN "last_customer_update_at" timestamp with time zone;
