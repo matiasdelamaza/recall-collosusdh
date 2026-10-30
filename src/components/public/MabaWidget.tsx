@@ -1,18 +1,19 @@
 import Script from "next/script";
 
+const WIDGET_SRC = "https://www.trymaba.com/widget.js";
+
 /**
  * Agente de MABA (chat) del sitio público.
  *
- * Se activa con NEXT_PUBLIC_MABA_WIDGET_SRC (URL del script que entrega MABA) y, si el
- * embed lo pide, NEXT_PUBLIC_MABA_AGENT_ID (se pasa como data-agent-id). Sin configurar,
- * en producción no se muestra nada; en desarrollo aparece un marcador para ubicar el widget.
+ * Se activa con NEXT_PUBLIC_MABA_MERCHANT_ID (se pasa como data-merchant al script de MABA).
+ * Sin configurar, en producción no se muestra nada; en desarrollo aparece un marcador para
+ * ubicar el widget.
  */
 export function MabaWidget() {
-  const src = process.env.NEXT_PUBLIC_MABA_WIDGET_SRC?.trim();
-  const agentId = process.env.NEXT_PUBLIC_MABA_AGENT_ID?.trim() || undefined;
+  const merchantId = process.env.NEXT_PUBLIC_MABA_MERCHANT_ID?.trim();
 
-  if (src) {
-    return <Script id="maba-widget" src={src} strategy="lazyOnload" data-agent-id={agentId} />;
+  if (merchantId) {
+    return <Script id="maba-widget" src={WIDGET_SRC} strategy="lazyOnload" data-merchant={merchantId} />;
   }
 
   if (process.env.NODE_ENV !== "development") return null;
