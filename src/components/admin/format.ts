@@ -89,6 +89,7 @@ export const AUDIT_TYPE_LABELS: Record<string, string> = {
   MESSAGE_HANDLED: "Correo marcado como atendido",
   AI_KNOWLEDGE_CHANGED: "Entrenamiento de la IA modificado",
   AI_DRAFT_GENERATED: "Propuesta de respuesta con IA",
+  EMAIL_LOG_REBUILT: "Correos anteriores agregados a la bitácora",
 };
 
 export function labelAuditType(t: string): string {

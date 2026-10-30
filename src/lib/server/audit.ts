@@ -30,7 +30,8 @@ export type AuditType =
   | "CUSTOMER_CALLED"
   | "MESSAGE_HANDLED"
   | "AI_KNOWLEDGE_CHANGED"
-  | "AI_DRAFT_GENERATED";
+  | "AI_DRAFT_GENERATED"
+  | "EMAIL_LOG_REBUILT";
 
 export interface AuditInput {
   type: AuditType;

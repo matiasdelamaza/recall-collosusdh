@@ -14,6 +14,7 @@ import { getInternalNotificationEmails } from "@/lib/config";
 import { notifyStageChange, sendBroadcast, sendBroadcastTest } from "@/lib/recall/follow-up";
 import { sendFromInbox } from "@/lib/recall/inbox";
 import { getMessage, linkSenderToCase, markCaseCalled, markInboundHandled } from "@/lib/recall/mailbox";
+import { importOutreach, OutreachCsvError, rebuildCaseEmails } from "@/lib/recall/email-backfill";
 import { importSerialsFromCsv, type ImportSerialsResult } from "@/lib/recall/import";
 import { reprocessPendingCases, type ReprocessResult } from "@/lib/recall/reprocess";
 import { countRecallSerials, getSerialDatabaseStatus, setSerialDatabaseStatus } from "@/lib/recall/verify";
@@ -303,4 +304,43 @@ export async function linkMessageAction(formData: FormData): Promise<void> {
   revalidatePath("/admin/mesa");
   revalidatePath("/admin/bandeja", "layout");
   redirect(withMsg(`/admin/bandeja/${messageId}`, "linked"));
+}
+
+// ── Correos anteriores en la bitácora ──────────────────────────────────
+
+export type RebuildActionState = { status: "idle" } | { status: "error"; message: string } | { status: "done"; message: string };
+
+const OUTREACH_CSV_MAX_BYTES = 1_000_000;
+
+export async function rebuildCaseEmailsAction(_prev: RebuildActionState): Promise<RebuildActionState> {
+  const { actor } = await requireAdmin();
+  const R = ADMIN.comms.rebuild;
+  try {
+    const r = await rebuildCaseEmails(actor);
+    revalidatePath("/admin/bandeja");
+    revalidatePath("/admin/mesa");
+    return { status: "done", message: R.systemDone(r.inserted, r.existing) };
+  } catch (err) {
+    console.error("[admin] reconstrucción de la bitácora falló:", err instanceof Error ? err.message : err);
+    return { status: "error", message: R.error };
+  }
+}
+
+export async function importOutreachAction(_prev: RebuildActionState, formData: FormData): Promise<RebuildActionState> {
+  const { actor } = await requireAdmin();
+  const R = ADMIN.comms.rebuild;
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) return { status: "error", message: R.fileRequired };
+  if (file.size > OUTREACH_CSV_MAX_BYTES) return { status: "error", message: R.fileTooLarge };
+  try {
+    const text = new TextDecoder("utf-8", { fatal: false }).decode(new Uint8Array(await file.arrayBuffer()));
+    const r = await importOutreach(text, actor);
+    revalidatePath("/admin/bandeja");
+    revalidatePath("/admin/mesa");
+    return { status: "done", message: R.outreachDone(r) };
+  } catch (err) {
+    if (err instanceof OutreachCsvError) return { status: "error", message: R.badColumns };
+    console.error("[admin] importación del aviso falló:", err instanceof Error ? err.message : err);
+    return { status: "error", message: R.error };
+  }
 }
