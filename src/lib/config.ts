@@ -28,6 +28,8 @@ const envSchema = z.object({
   OPENROUTER_MODEL: z.string().optional(),
   /** Lo envía Vercel Cron como "Authorization: Bearer …" a /api/cron/*. */
   CRON_SECRET: z.string().min(16).optional(),
+  /** Clave del agente de MABA para /api/maba/* ("Authorization: Bearer …"). Sin ella el endpoint responde 503. */
+  MABA_API_KEY: z.string().min(32).optional(),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_SECURE: z
@@ -115,6 +117,8 @@ export const RATE_LIMITS = {
   adminLogin: { windowMs: 15 * 60 * 1000, max: 8 },
   /** Prueba de correo de /api/health: límite global (no por IP), solo a los correos internos. */
   healthEmail: { windowMs: 60 * 60 * 1000, max: 3 },
+  /** Consultas del agente de MABA (/api/maba/serie): límite global por clave, no por IP. */
+  mabaLookup: { windowMs: 10 * 60 * 1000, max: 300 },
 } as const;
 
 /** Máximo de casos activos por serie antes de rechazar nuevos registros (control de duplicados). */
