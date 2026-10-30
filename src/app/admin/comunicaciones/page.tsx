@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { auditEvents } from "@/db/schema";
 import { CommsForm } from "@/components/admin/CommsForm";
+import { EmailBackfillForms } from "@/components/admin/EmailBackfillForms";
 import { fmtDateTime, fmtNumber } from "@/components/admin/format";
 import { Card, KpiTile, PageHeader } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/session";
@@ -83,6 +84,13 @@ export default async function AdminCommsPage() {
               </table>
             </div>
           )}
+        </Card>
+      </div>
+
+      <div className="mt-4">
+        <Card title={C.rebuild.title}>
+          <p className="mb-4 max-w-3xl text-sm text-ink-500">{C.rebuild.intro}</p>
+          <EmailBackfillForms />
         </Card>
       </div>
     </>
