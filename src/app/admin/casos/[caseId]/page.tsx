@@ -256,9 +256,14 @@ export default async function AdminCaseDetailPage({ params, searchParams }: { pa
             </dl>
           </Card>
 
-          <a href={`/api/admin/exportar/casos.csv?q=${encodeURIComponent(c.caseId)}`} className={buttonSecondary}>
-            {ADMIN.cases.exportCsv}
-          </a>
+          <div className="flex flex-wrap gap-2">
+            <a href={`/api/admin/exportar/casos.csv?q=${encodeURIComponent(c.caseId)}`} className={buttonSecondary}>
+              {ADMIN.cases.exportCsv}
+            </a>
+            <a href={`/api/admin/exportar/casos.xlsx?q=${encodeURIComponent(c.caseId)}`} className={buttonSecondary}>
+              {ADMIN.cases.exportXlsx}
+            </a>
+          </div>
         </div>
       </div>
     </>

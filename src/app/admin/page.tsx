@@ -23,6 +23,9 @@ export default async function AdminCasesPage({ searchParams }: { searchParams: P
         <a href={`/api/admin/exportar/casos.csv${filtersToQuery(filters, { page: undefined })}`} className={buttonSecondary}>
           {ADMIN.cases.exportCsv}
         </a>
+        <a href={`/api/admin/exportar/casos.xlsx${filtersToQuery(filters, { page: undefined })}`} className={buttonSecondary}>
+          {ADMIN.cases.exportXlsx}
+        </a>
       </PageHeader>
 
       <CasesFilters filters={filters} />

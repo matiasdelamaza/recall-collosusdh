@@ -211,6 +211,7 @@ export const ADMIN = {
       clear: "Limpiar",
     },
     exportCsv: "Exportar CSV",
+    exportXlsx: "Exportar Excel",
     onlyAffected: "Mostrando solo unidades afectadas.",
     showAll: "Ver todos los casos",
     columns: {
