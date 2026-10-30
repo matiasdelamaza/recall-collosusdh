@@ -47,7 +47,7 @@ describe("consultas y métricas del panel interno", () => {
         serialRaw: "DEMO-OTRA-0002",
         model: "NOT_SURE",
         size: "NOT_SURE",
-        serialVerificationStatus: "PENDING_DATABASE",
+        serialVerificationStatus: "NOT_IDENTIFIED",
         requestType: "PENDING_DATABASE",
         priority: "NORMAL",
         caseStatus: "REPLACED",
@@ -73,19 +73,49 @@ describe("consultas y métricas del panel interno", () => {
 
   it("filtra por estado, accidente y verificación", async () => {
     const { listCases, parseCaseFilters } = await import("@/lib/recall/cases");
-    expect((await listCases(parseCaseFilters({ status: "REPLACED", verification: "ALL" }))).rows.map((r) => r.caseId)).toEqual(["RCDH-DEF45"]);
-    expect((await listCases(parseCaseFilters({ accident: "YES", verification: "ALL" }))).total).toBe(1);
+    expect((await listCases(parseCaseFilters({ status: "REPLACED" }))).rows.map((r) => r.caseId)).toEqual(["RCDH-DEF45"]);
+    expect((await listCases(parseCaseFilters({ accident: "YES" }))).total).toBe(1);
     expect((await listCases(parseCaseFilters({ verification: "AFFECTED" }))).total).toBe(1);
-    expect((await listCases(parseCaseFilters({ status: "INVENTADO", verification: "ALL" }))).total).toBe(2); // valor inválido se ignora
+    expect((await listCases(parseCaseFilters({ verification: "NOT_IDENTIFIED" }))).rows.map((r) => r.caseId)).toEqual(["RCDH-DEF45"]);
+    expect((await listCases(parseCaseFilters({ status: "INVENTADO" }))).total).toBe(2); // valor inválido se ignora
   });
 
-  it("sin filtro de verificación muestra solo unidades afectadas; \"ALL\" y las búsquedas abarcan todos", async () => {
+  it("Casos muestra solo unidades afectadas y no identificadas, también al buscar", async () => {
+    const { getDb } = await import("@/db/client");
+    const { recallCases } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
     const { listCases, parseCaseFilters } = await import("@/lib/recall/cases");
-    expect(parseCaseFilters({}).verification).toBe("AFFECTED");
-    expect(parseCaseFilters({ verification: "" }).verification).toBe("AFFECTED");
-    expect((await listCases(parseCaseFilters({}))).total).toBe(1);
-    expect((await listCases(parseCaseFilters({ verification: "ALL" }))).total).toBe(2);
-    expect(parseCaseFilters({ q: "otra persona" }).verification).toBe("ALL");
+    expect(parseCaseFilters({}).verification).toBe("ALL");
+    expect(parseCaseFilters({ verification: "REINFORCED" }).verification).toBe("ALL"); // fuera de Casos: se ignora
+    expect((await listCases(parseCaseFilters({}))).total).toBe(2);
+    const db = await getDb();
+    await db.update(recallCases).set({ serialVerificationStatus: "REINFORCED" }).where(eq(recallCases.caseId, "RCDH-DEF45"));
+    try {
+      expect((await listCases(parseCaseFilters({}))).rows.map((r) => r.caseId)).toEqual(["RCDH-ABC23"]);
+      expect((await listCases(parseCaseFilters({ q: "otra persona" }))).total).toBe(0);
+      expect((await listCases({ page: 1 })).total).toBe(1);
+    } finally {
+      await db.update(recallCases).set({ serialVerificationStatus: "NOT_IDENTIFIED" }).where(eq(recallCases.caseId, "RCDH-DEF45"));
+    }
+  });
+
+  it("sin filtro de estado oculta los cerrados; \"ALL\", el estado Cerrado y las búsquedas los muestran", async () => {
+    const { getDb } = await import("@/db/client");
+    const { recallCases } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const { listCases, parseCaseFilters } = await import("@/lib/recall/cases");
+    const db = await getDb();
+    await db.update(recallCases).set({ caseStatus: "CLOSED" }).where(eq(recallCases.caseId, "RCDH-DEF45"));
+    try {
+      expect(parseCaseFilters({}).status).toBe("OPEN");
+      expect((await listCases(parseCaseFilters({}))).rows.map((r) => r.caseId)).toEqual(["RCDH-ABC23"]);
+      expect((await listCases(parseCaseFilters({ status: "ALL" }))).total).toBe(2);
+      expect((await listCases(parseCaseFilters({ status: "CLOSED" }))).rows.map((r) => r.caseId)).toEqual(["RCDH-DEF45"]);
+      expect(parseCaseFilters({ q: "otra persona" }).status).toBe("ALL");
+      expect((await listCases(parseCaseFilters({ q: "otra persona" }))).total).toBe(1);
+    } finally {
+      await db.update(recallCases).set({ caseStatus: "REPLACED" }).where(eq(recallCases.caseId, "RCDH-DEF45"));
+    }
   });
 
   it("busca por caso, serie, RUT, nombre y correo", async () => {
