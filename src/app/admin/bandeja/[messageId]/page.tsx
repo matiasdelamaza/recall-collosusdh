@@ -12,6 +12,8 @@ import { ADMIN } from "@/lib/copy/es-admin";
 import { EMPTY_MAIL_STATS, caseSignal, getMailStats, getThread, markMessagesRead } from "@/lib/recall/mailbox";
 
 export const dynamic = "force-dynamic";
+// El resumen con IA puede tardar hasta ~40 s (también al pulsar "Actualizar").
+export const maxDuration = 60;
 
 const I = ADMIN.inbox;
 type Search = Record<string, string | string[] | undefined>;
@@ -105,7 +107,7 @@ export default async function AdminThreadPage({ params, searchParams }: { params
 
         <aside className="grid min-w-0 content-start gap-4">
           <Suspense fallback={<CaseSummarySkeleton />}>
-            <CaseSummaryCard messageId={message.id} />
+            <CaseSummaryCard messageId={message.id} refreshFailed={sp.ia === "error"} />
           </Suspense>
           {c ? (
             <Card title={ADMIN.caseDetail.sections.customer}>

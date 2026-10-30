@@ -61,6 +61,9 @@ export async function refreshSummaryAction(formData: FormData): Promise<void> {
   await requireAdmin();
   const messageId = str(formData, "messageId", 64);
   if (!UUID.test(messageId)) return;
-  await getCaseSummary(messageId, { force: true });
-  revalidatePath(`/admin/bandeja/${messageId}`);
+  const summary = await getCaseSummary(messageId, { force: true });
+  const path = `/admin/bandeja/${messageId}`;
+  revalidatePath(path);
+  // Si falla, la página lo avisa en la tarjeta en vez de seguir mostrando el resumen anterior en silencio.
+  redirect(summary ? path : `${path}?ia=error`);
 }

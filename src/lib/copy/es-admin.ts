@@ -463,6 +463,8 @@ export const ADMIN = {
       generatedAt: (when: string) => `Generado el ${when}`,
       disclaimer: "Generado con IA: revísalo antes de actuar.",
       refresh: "Actualizar",
+      refreshing: "Actualizando…",
+      refreshFailed: "No se pudo actualizar el resumen. Se muestra el anterior.",
       failed: "No se pudo generar el resumen.",
       retry: "Reintentar",
     },

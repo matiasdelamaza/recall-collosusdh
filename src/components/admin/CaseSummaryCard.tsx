@@ -1,4 +1,5 @@
 import { AlertBox, Card } from "@/components/admin/ui";
+import { PendingButton } from "@/components/admin/PendingButton";
 import { fmtDateTime } from "@/components/admin/format";
 import { getCaseSummary } from "@/lib/ai/assist";
 import { refreshSummaryAction } from "@/lib/admin/ai-actions";
@@ -11,15 +12,15 @@ function RefreshForm({ messageId, label }: { messageId: string; label: string })
   return (
     <form action={refreshSummaryAction}>
       <input type="hidden" name="messageId" value={messageId} />
-      <button type="submit" className={smallButton}>
+      <PendingButton className={smallButton} pendingLabel={S.refreshing}>
         {label}
-      </button>
+      </PendingButton>
     </form>
   );
 }
 
 /** Resumen del hilo generado con IA. Se renderiza dentro de <Suspense> para no frenar la página. */
-export async function CaseSummaryCard({ messageId }: { messageId: string }) {
+export async function CaseSummaryCard({ messageId, refreshFailed = false }: { messageId: string; refreshFailed?: boolean }) {
   if (!process.env.OPENROUTER_API_KEY) {
     return (
       <Card title={S.title}>
@@ -45,6 +46,11 @@ export async function CaseSummaryCard({ messageId }: { messageId: string }) {
   return (
     <Card title={S.title}>
       <div className="grid gap-3 text-sm">
+        {refreshFailed ? (
+          <p role="status" className="text-xs font-semibold text-alert-700">
+            {S.refreshFailed}
+          </p>
+        ) : null}
         {content.alerta.trim() ? <AlertBox>{content.alerta}</AlertBox> : null}
         {content.resumen.trim() ? <p className="text-pretty">{content.resumen}</p> : null}
         {content.pide.trim() ? (

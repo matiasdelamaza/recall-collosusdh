@@ -396,6 +396,23 @@ describe("resumen del caso", () => {
     expect(await db.select().from(aiSummaries).where(eq(aiSummaries.threadKey, c.id))).toHaveLength(0);
   });
 
+  it("si falla la base de datos devuelve null en vez de lanzar", async () => {
+    stubOk();
+    const { getCaseSummary } = await import("@/lib/ai/assist");
+    const { sql } = await import("drizzle-orm");
+    const { first, db } = await seedCase();
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    await db.execute(sql`alter table ai_summaries rename to ai_summaries_fuera`);
+    try {
+      await expect(getCaseSummary(first.id)).resolves.toBeNull();
+      await expect(getCaseSummary(first.id, { force: true })).resolves.toBeNull();
+      expect(errors.mock.calls.some((c) => String(c[0]).startsWith("[resumen]"))).toBe(true);
+    } finally {
+      await db.execute(sql`alter table ai_summaries_fuera rename to ai_summaries`);
+      errors.mockRestore();
+    }
+  });
+
   it("sin clave devuelve null sin llamar", async () => {
     vi.stubEnv("OPENROUTER_API_KEY", "");
     const calls: unknown[] = [];

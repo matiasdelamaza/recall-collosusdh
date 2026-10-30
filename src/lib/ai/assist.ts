@@ -124,6 +124,16 @@ const SUMMARY_JSON_SCHEMA = {
  */
 export async function getCaseSummary(messageId: string, opts: { force?: boolean } = {}): Promise<{ content: CaseSummary; createdAt: Date } | null> {
   if (!process.env.OPENROUTER_API_KEY) return null;
+  try {
+    return await generateCaseSummary(messageId, opts);
+  } catch (err) {
+    // Una falla de la BD o del contexto no debe romper la conversación: la tarjeta muestra el aviso.
+    console.error("[resumen] no se pudo preparar el resumen:", err);
+    return null;
+  }
+}
+
+async function generateCaseSummary(messageId: string, opts: { force?: boolean }): Promise<{ content: CaseSummary; createdAt: Date } | null> {
   const thread = await getThread(messageId);
   if (!thread) return null;
   const key = threadKey(thread);
