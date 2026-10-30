@@ -620,7 +620,8 @@ export function customerFollowUpEmail(c: FollowUpCaseData, kind: FollowUpKind, c
 /** Comunicado del panel a quien dejó su correo con una serie afectada y aún no registra caso. */
 export function contactBroadcastEmail(serials: string[], message: { subject: string; body: string }, ctx: EmailContext): RenderedEmail {
   const url = `${publicUrl(ctx)}/`;
-  const help = `Ante cualquier duda, puedes escribirnos a ${contactEmailOf(ctx)}.`;
+  // Responder llega a la casilla de la campaña (reply-to), igual que el comunicado a los casos.
+  const help = "Si tienes dudas, responde este correo.";
   const serialLine = `${EMAIL.serialLabel}: ${serials.join(", ")}`;
   const text = [OUTREACH.affectedReminder.greeting, "", message.body, "", EMAIL.stopRiding, "", serialLine, "", FOLLOW_UP.noCaseYet, url, "", help, "", "Saludos,", "", OUTREACH.signature, "", EMAIL.footer].join("\n");
   const html = wrapHtml(message.subject, [

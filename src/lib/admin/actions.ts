@@ -11,7 +11,7 @@ import { isValidCaseId, normalizeCaseId } from "@/lib/case-id";
 import { ADMIN } from "@/lib/copy/es-admin";
 import { SERIALS_CSV_MAX_BYTES } from "@/lib/limits";
 import { getBroadcastTestEmails } from "@/lib/config";
-import { notifyStageChange, sendBroadcast, sendBroadcastTest } from "@/lib/recall/follow-up";
+import { BROADCAST_TARGETS, notifyStageChange, sendBroadcast, sendBroadcastTest, type BroadcastTarget } from "@/lib/recall/follow-up";
 import { sendFromInbox } from "@/lib/recall/inbox";
 import { getMessage, linkSenderToCase, markCaseCalled, markInboundHandled } from "@/lib/recall/mailbox";
 import { importOutreach, OutreachCsvError, rebuildCaseEmails } from "@/lib/recall/email-backfill";
@@ -211,16 +211,18 @@ export async function broadcastAction(_prev: BroadcastActionState, formData: For
   if (subject.length < 5 || subject.length > 120) return { status: "error", message: C.invalidSubject };
   if (body.length < 20 || body.length > 4000) return { status: "error", message: C.invalidBody };
   const message = { subject, body };
+  const target = str(formData, "target", 10) as BroadcastTarget;
+  if (!BROADCAST_TARGETS.includes(target)) return { status: "error", message: C.invalidTarget };
 
   if (str(formData, "intent", 10) === "test") {
     const to = getBroadcastTestEmails();
     if (to.length === 0) return { status: "error", message: C.noInternal };
-    const ok = await sendBroadcastTest(message, to);
+    const ok = await sendBroadcastTest(message, to, target);
     return ok ? { status: "tested", message: C.testSent(to.join(", ")) } : { status: "error", message: C.testFailed };
   }
 
   if (!isChecked(formData, "confirmed")) return { status: "error", message: C.needConfirm };
-  const result = await sendBroadcast(message, { includeContacts: isChecked(formData, "includeContacts"), actor });
+  const result = await sendBroadcast(message, { target, actor });
   revalidatePath("/admin/comunicaciones");
   return { status: "sent", message: C.sent(result.sent, result.failed) };
 }

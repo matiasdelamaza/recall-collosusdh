@@ -83,7 +83,7 @@ describe("Seguimiento por correo a clientes con unidad afectada", () => {
     expect(at(terminada.id)).toBeNull();
   });
 
-  it("el comunicado llega a los casos en curso y, si se pide, a correos sin caso (sin repetir)", async () => {
+  it("el comunicado llega a los casos en curso, a los correos sin caso o a ambos (sin repetir)", async () => {
     const db = await getDb();
     await db.delete(recallCases);
     await caso({ caseId: "RCDH-COM01", caseStatus: "FRAME_IN_TRANSIT" });
@@ -96,11 +96,12 @@ describe("Seguimiento por correo a clientes con unidad afectada", () => {
 
     expect(await getBroadcastAudience()).toEqual({ cases: 1, contacts: 1 });
     const msg = { subject: "Novedades sobre los cuadros", body: "Los cuadros de reemplazo ya están en camino a Chile." };
-    expect(await sendBroadcast(msg, { includeContacts: false, actor: "prueba" })).toMatchObject({ cases: 1, contacts: 0, sent: 1, failed: 0 });
-    expect(await sendBroadcast(msg, { includeContacts: true, actor: "prueba" })).toMatchObject({ cases: 1, contacts: 1, sent: 2, failed: 0 });
+    expect(await sendBroadcast(msg, { target: "cases", actor: "prueba" })).toMatchObject({ cases: 1, contacts: 0, sent: 1, failed: 0 });
+    expect(await sendBroadcast(msg, { target: "contacts", actor: "prueba" })).toMatchObject({ cases: 0, contacts: 1, sent: 1, failed: 0 });
+    expect(await sendBroadcast(msg, { target: "all", actor: "prueba" })).toMatchObject({ cases: 1, contacts: 1, sent: 2, failed: 0 });
 
     const audits = await db.select().from(auditEvents).where(eq(auditEvents.type, "BROADCAST_SENT"));
-    expect(audits).toHaveLength(2);
+    expect(audits).toHaveLength(3);
     expect(audits[0]!.actor).toBe("prueba");
   });
 

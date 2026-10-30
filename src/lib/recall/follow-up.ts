@@ -103,14 +103,21 @@ export async function getBroadcastAudience(): Promise<BroadcastAudience> {
   return { cases: cases.length, contacts: contacts.length };
 }
 
+/** A quién va un comunicado: casos afectados en curso, correos sin caso registrado o ambos. */
+export type BroadcastTarget = "cases" | "contacts" | "all";
+export const BROADCAST_TARGETS: readonly BroadcastTarget[] = ["cases", "contacts", "all"];
+
 export interface BroadcastResult extends BroadcastAudience {
   sent: number;
   failed: number;
 }
 
-/** Comunicado de Postventa a todos los casos afectados en curso y, opcionalmente, a contactos sin caso. */
-export async function sendBroadcast(message: { subject: string; body: string }, options: { includeContacts: boolean; actor: string }): Promise<BroadcastResult> {
-  const [cases, contacts] = await Promise.all([casesInProgress(), options.includeContacts ? contactsWithoutCase() : Promise.resolve([])]);
+/** Comunicado de Postventa a los casos afectados en curso, a los correos sin caso o a ambos. */
+export async function sendBroadcast(message: { subject: string; body: string }, options: { target: BroadcastTarget; actor: string }): Promise<BroadcastResult> {
+  const [cases, contacts] = await Promise.all([
+    options.target === "contacts" ? Promise.resolve([]) : casesInProgress(),
+    options.target === "cases" ? Promise.resolve([]) : contactsWithoutCase(),
+  ]);
   const result: BroadcastResult = { cases: cases.length, contacts: contacts.length, sent: 0, failed: 0 };
   let first = true;
   for (const c of cases) {
@@ -127,16 +134,18 @@ export async function sendBroadcast(message: { subject: string; body: string }, 
     if (await sendBroadcastToContact(k.email, k.serials, message)) result.sent++;
     else result.failed++;
   }
-  await logAudit({ type: "BROADCAST_SENT", actor: options.actor, payload: { subject: message.subject, body: message.body, includeContacts: options.includeContacts, ...result } });
+  await logAudit({ type: "BROADCAST_SENT", actor: options.actor, payload: { subject: message.subject, body: message.body, target: options.target, ...result } });
   return result;
 }
 
-/** Prueba de un comunicado a los correos internos, con un caso de ejemplo. */
-export async function sendBroadcastTest(message: { subject: string; body: string }, to: string[]): Promise<boolean> {
+/** Prueba de un comunicado a los correos internos: con un caso de ejemplo o, solo para correos sin caso, con su formato. */
+export async function sendBroadcastTest(message: { subject: string; body: string }, to: string[], target: BroadcastTarget = "cases"): Promise<boolean> {
   const sample = { id: "", caseId: "RCDH-EJEMPLO", customerName: "Nombre Apellido", email: to.join(","), serialNumber: "H24000000", caseStatus: "VALIDATED" } as RecallCase;
   // La hora deja cada prueba en su propia conversación: si se repite el asunto, Gmail agrupa las
   // pruebas y oculta tras "…" el texto que ya apareció en la anterior.
   const time = new Date().toLocaleTimeString("es-CL", { timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit", second: "2-digit" });
-  return sendFollowUp({ ...sample, email: to[0]! }, "BROADCAST", { ...message, subject: `[PRUEBA ${time}] ${message.subject}` }, to);
+  const test = { ...message, subject: `[PRUEBA ${time}] ${message.subject}` };
+  if (target === "contacts") return sendBroadcastToContact(to, [sample.serialNumber], test);
+  return sendFollowUp({ ...sample, email: to[0]! }, "BROADCAST", test, to);
 }
 

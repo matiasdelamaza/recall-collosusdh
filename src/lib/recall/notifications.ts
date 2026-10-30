@@ -143,7 +143,7 @@ export async function sendFollowUp(c: RecallCase, kind: FollowUpKind, message?: 
 }
 
 /** Comunicado a quien dejó su correo con una serie afectada y no tiene caso. Nunca lanza. */
-export async function sendBroadcastToContact(email: string, serials: string[], message: { subject: string; body: string }): Promise<boolean> {
+export async function sendBroadcastToContact(email: string | string[], serials: string[], message: { subject: string; body: string }): Promise<boolean> {
   return deliver("CUSTOMER_BROADCAST", email, contactBroadcastEmail(serials, message, getEmailContext()), null, serials.join(", "));
 }
 
