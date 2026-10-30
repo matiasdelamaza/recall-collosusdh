@@ -7,7 +7,7 @@ import { setupTestEnv } from "./helpers";
 setupTestEnv("mesa");
 const SECRET_BYTES = randomBytes(24);
 process.env.RESEND_WEBHOOK_SECRET = `whsec_${SECRET_BYTES.toString("base64")}`;
-delete process.env.ANTHROPIC_API_KEY;
+delete process.env.OPENROUTER_API_KEY;
 
 const inbound = new Map<string, import("@/lib/email/inbound").InboundEmail>();
 vi.mock("@/lib/email/inbound", () => ({
@@ -22,7 +22,7 @@ vi.mock("@/lib/email/inbound", () => ({
 const { POST: webhook } = await import("@/app/api/webhooks/resend/route");
 const { getDb } = await import("@/db/client");
 const { auditEvents, emailMessages, recallCases } = await import("@/db/schema");
-const { triageByRules } = await import("@/lib/recall/triage");
+const { triageByRules, triageMessage } = await import("@/lib/recall/triage");
 const { sendFromInbox, stripQuotedReply } = await import("@/lib/recall/inbox");
 const { caseSignal, getControlBoard, getMailStats, markCaseCalled, EMPTY_MAIL_STATS } = await import("@/lib/recall/mailbox");
 const { sendBroadcastTest } = await import("@/lib/recall/follow-up");
@@ -90,6 +90,32 @@ describe("Mesa de control: bandeja, prioridad y semáforo", () => {
     expect(t("Ya no la uso desde que me llegó el aviso")).toBe("LOW");
     expect(t("Estoy muy molesto, nadie me responde")).toBe("MEDIUM");
     expect(t("Muchas gracias por la información")).toBe("LOW");
+  });
+
+  it("con OpenRouter, la IA puede subir la prioridad pero nunca bajarla; si falla, quedan las reglas", async () => {
+    const calls: { url: string; body: Record<string, unknown> }[] = [];
+    let reply: unknown = { priority: "HIGH", reason: "Angustia evidente" };
+    let status = 200;
+    vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      calls.push({ url, body: JSON.parse(String(init.body)) });
+      return new Response(JSON.stringify({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify(reply) } }] }), { status });
+    });
+    process.env.OPENROUTER_API_KEY = "sk-or-prueba";
+    try {
+      const quiet = { subject: "Consulta", body: "No sé qué hacer, estoy muy preocupado" };
+      expect(await triageMessage(quiet)).toMatchObject({ priority: "HIGH", source: "AI", reason: "Angustia evidente" });
+      expect(calls[0]!.url).toBe("https://openrouter.ai/api/v1/chat/completions");
+      expect(calls[0]!.body).toMatchObject({ model: "anthropic/claude-opus-5.5", response_format: { type: "json_schema" } });
+
+      reply = { priority: "LOW", reason: "Consulta" };
+      expect((await triageMessage({ subject: "Consulta", body: "Me caí ayer" })).priority).toBe("HIGH");
+
+      status = 500;
+      expect(await triageMessage(quiet)).toMatchObject({ priority: "LOW", source: "RULES" });
+    } finally {
+      delete process.env.OPENROUTER_API_KEY;
+      vi.unstubAllGlobals();
+    }
   });
 
   it("el texto citado de nuestro correo no cuenta para la prioridad", () => {

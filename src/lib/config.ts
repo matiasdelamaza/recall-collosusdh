@@ -22,8 +22,10 @@ const envSchema = z.object({
   RESEND_WEBHOOK_SECRET: z.string().optional(),
   /** Casilla de la mesa de control (p. ej. postventa@recallcollosusdh.cl). Si está, las respuestas de los clientes llegan aquí. */
   INBOX_EMAIL: z.string().email().optional(),
-  /** Análisis de prioridad de los correos entrantes con Claude (opcional; sin clave se usan solo reglas). */
-  ANTHROPIC_API_KEY: z.string().optional(),
+  /** Análisis de prioridad de los correos entrantes con Claude vía OpenRouter (opcional; sin clave se usan solo reglas). */
+  OPENROUTER_API_KEY: z.string().optional(),
+  /** Modelo de OpenRouter para el análisis (por defecto anthropic/claude-opus-5.5). */
+  OPENROUTER_MODEL: z.string().optional(),
   /** Lo envía Vercel Cron como "Authorization: Bearer …" a /api/cron/*. */
   CRON_SECRET: z.string().min(16).optional(),
   SMTP_HOST: z.string().optional(),
