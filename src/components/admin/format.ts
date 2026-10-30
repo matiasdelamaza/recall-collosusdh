@@ -64,6 +64,13 @@ export const AUDIT_TYPE_LABELS: Record<string, string> = {
   LOOKUP_SUSPICIOUS: "Actividad sospechosa de consultas",
   AFFECTED_CONTACT_SAVED: "Correo dejado en serie afectada",
   AFFECTED_REMINDERS_SENT: "Recordatorios a consultas sin registro",
+  FOLLOW_UPS_SENT: "Novedades semanales a casos",
+  BROADCAST_SENT: "Comunicado a afectados",
+  EMAIL_RECEIVED: "Correo recibido",
+  EMAIL_BOUNCED: "Correo no entregado",
+  EMAIL_LINKED: "Correo asociado al caso",
+  CUSTOMER_CALLED: "Llamada al cliente",
+  MESSAGE_HANDLED: "Correo marcado como atendido",
 };
 
 export function labelAuditType(t: string): string {

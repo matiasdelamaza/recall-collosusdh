@@ -3,7 +3,7 @@
  * TODO EL TEXTO EN ESPAÑOL. Los datos del usuario se escapan en HTML.
  */
 import type { RecallCase } from "@/db/schema";
-import { BRAND, CONTACT, EMAIL, HERO, MODELS, OUTREACH, RESULT_AFFECTED, RESULT_NOT_IDENTIFIED, RESULT_REINFORCED, STATUS_LABELS } from "@/lib/copy/es";
+import { BRAND, CONTACT, EMAIL, FOLLOW_UP, HERO, MODELS, OUTREACH, RESULT_AFFECTED, RESULT_NOT_IDENTIFIED, RESULT_REINFORCED, STATUS_LABELS } from "@/lib/copy/es";
 
 export interface RenderedEmail {
   subject: string;
@@ -567,6 +567,74 @@ export function reminderCustomerEmail(ctx: EmailContext, ref: string): RenderedE
   return { subject: t.subject, text, html };
 }
 
+export type FollowUpKind = "STAGE" | "WEEKLY" | "BROADCAST";
+export type FollowUpCaseData = Pick<RecallCase, "caseId" | "customerName" | "serialNumber" | "caseStatus">;
+
+/** Etapas del caso con marcas: hechas (✓), actual (→) y pendientes (·). */
+function stagesText(status: string): { current: string | null; text: string } {
+  const idx = FOLLOW_UP.stages.findIndex(([s]) => s === status);
+  const current = idx >= 0 ? FOLLOW_UP.stages[idx]![1] : null;
+  const lines = FOLLOW_UP.stages.map(([, label], i) => (idx < 0 ? `· ${label}` : i < idx || (i === idx && status === "REPLACED") ? `✓ ${label}` : i === idx ? `→ ${label}` : `· ${label}`));
+  return { current, text: lines.join("\n") };
+}
+
+/**
+ * Seguimiento a un cliente con unidad afectada: cambio de etapa, novedad semanal o comunicado del panel.
+ * Un comunicado lleva el asunto y el mensaje que escribe Postventa (texto plano).
+ */
+export function customerFollowUpEmail(c: FollowUpCaseData, kind: FollowUpKind, ctx: EmailContext, message?: { subject: string; body: string }): RenderedEmail {
+  const { current, text: stages } = stagesText(c.caseStatus);
+  const stageLabel = current ?? STATUS_LABELS.caseStatus[c.caseStatus];
+  const replaced = c.caseStatus === "REPLACED";
+  const t = kind === "BROADCAST" ? null : kind === "WEEKLY" ? FOLLOW_UP.weekly : replaced ? FOLLOW_UP.replaced : FOLLOW_UP.stage;
+  const subject = message?.subject ?? (t ? t.subject(c.caseId) : FOLLOW_UP.broadcast.heading);
+  const heading = t ? t.heading : FOLLOW_UP.broadcast.heading;
+  const body = message?.body ?? (kind === "WEEKLY" ? FOLLOW_UP.weekly.body(stageLabel) : replaced ? FOLLOW_UP.replaced.body : FOLLOW_UP.stage.body(stageLabel));
+  const contact = contactLines(ctx);
+  const rows: [string, string][] = [
+    [EMAIL.caseIdLabel, c.caseId],
+    [EMAIL.serialLabel, c.serialNumber],
+    [FOLLOW_UP.currentStageLabel, stageLabel],
+  ];
+  const text = [
+    EMAIL.greeting(c.customerName), "", body, "", ...(replaced ? [] : [EMAIL.stopRiding, ""]),
+    ...rows.map(([k, v]) => `${k}: ${v}`), "", `${FOLLOW_UP.stagesTitle}:`, stages, "", FOLLOW_UP.nextContact, "", ...contact, "", siteLine(ctx), "", EMAIL.signature, "", EMAIL.footer,
+  ].join("\n");
+  const html = wrapHtml(subject, [
+    { type: "heading", text: heading },
+    { type: "p", text: EMAIL.greeting(c.customerName) },
+    { type: "p", text: body },
+    ...(replaced ? [{ type: "ok" as const, text: FOLLOW_UP.replaced.heading }] : [{ type: "alert" as const, text: EMAIL.stopRiding }]),
+    { type: "kv", rows },
+    { type: "box", title: FOLLOW_UP.stagesTitle, text: stages },
+    { type: "p", text: FOLLOW_UP.nextContact },
+    { type: "contact", lines: contact.filter((l) => l !== CONTACT.team && l !== CONTACT.company) },
+    { type: "small", text: siteLine(ctx) },
+    { type: "signature", text: EMAIL.signature },
+  ], { siteUrl: ctx.siteUrl, tone: replaced ? "ok" : "alert" });
+  return { subject, text, html };
+}
+
+/** Comunicado del panel a quien dejó su correo con una serie afectada y aún no registra caso. */
+export function contactBroadcastEmail(serials: string[], message: { subject: string; body: string }, ctx: EmailContext): RenderedEmail {
+  const url = `${publicUrl(ctx)}/`;
+  const help = `Ante cualquier duda, puedes escribirnos a ${contactEmailOf(ctx)}.`;
+  const serialLine = `${EMAIL.serialLabel}: ${serials.join(", ")}`;
+  const text = [OUTREACH.affectedReminder.greeting, "", message.body, "", EMAIL.stopRiding, "", serialLine, "", FOLLOW_UP.noCaseYet, url, "", help, "", "Saludos,", "", OUTREACH.signature, "", EMAIL.footer].join("\n");
+  const html = wrapHtml(message.subject, [
+    { type: "heading", text: FOLLOW_UP.broadcast.heading },
+    { type: "p", text: OUTREACH.affectedReminder.greeting },
+    { type: "p", text: message.body },
+    { type: "alert", text: EMAIL.stopRiding },
+    { type: "small", text: serialLine },
+    { type: "p", text: FOLLOW_UP.noCaseYet },
+    { type: "button", label: RESULT_AFFECTED.cta, href: url },
+    { type: "p", text: help },
+    { type: "signature", text: `Saludos,\n${OUTREACH.signature}` },
+  ], { siteUrl: ctx.siteUrl, tone: "alert" });
+  return { subject: message.subject, text, html };
+}
+
 /** Recordatorio automático a quien consultó una serie afectada, dejó su correo y no registró caso. */
 export function affectedReminderEmail(serials: string[], ctx: EmailContext): RenderedEmail {
   const t = OUTREACH.affectedReminder;
@@ -620,4 +688,59 @@ export function outreachDistributorEmail(ctx: EmailContext): RenderedEmail {
     { type: "signature", text: `Saludos,\n${OUTREACH.signature}` },
   ], { siteUrl: ctx.siteUrl });
   return { subject: t.subject, text, html };
+}
+
+// ── Mesa de control ────────────────────────────────────────────────────
+
+/**
+ * Correo escrito por Postventa desde la bandeja (respuesta o mensaje nuevo). El cuerpo es texto plano
+ * del panel (puede partir de una plantilla); se agrega la referencia del caso y la firma.
+ */
+export function manualEmail(c: Pick<RecallCase, "caseId" | "serialNumber"> | null, message: { subject: string; body: string }, ctx: EmailContext): RenderedEmail {
+  const rows: [string, string][] = c ? [[EMAIL.caseIdLabel, c.caseId], [EMAIL.serialLabel, c.serialNumber]] : [];
+  const contact = contactLines(ctx);
+  const text = [message.body, "", ...rows.map(([k, v]) => `${k}: ${v}`), ...(rows.length ? [""] : []), EMAIL.signature, "", siteLine(ctx), "", EMAIL.footer].join("\n");
+  const html = wrapHtml(message.subject, [
+    { type: "p", text: message.body },
+    ...(rows.length ? [{ type: "kv" as const, rows }] : []),
+    { type: "contact", lines: contact.filter((l) => l !== CONTACT.team && l !== CONTACT.company) },
+    { type: "signature", text: EMAIL.signature },
+  ], { siteUrl: ctx.siteUrl });
+  return { subject: message.subject, text, html };
+}
+
+export interface UrgentMessageEmailData {
+  caseId: string | null;
+  customerName: string | null;
+  phone: string | null;
+  fromEmail: string;
+  subject: string;
+  reason: string;
+  excerpt: string;
+  messageId: string;
+}
+
+/** Alerta interna: llegó un correo de alta prioridad, hay que llamar al cliente. */
+export function internalUrgentMessageEmail(d: UrgentMessageEmailData, ctx: EmailContext): RenderedEmail {
+  const base = ctx.siteUrl.replace(/\/$/, "");
+  const subject = `LLAMAR AHORA · ${d.caseId ?? d.fromEmail} · correo de alta prioridad`;
+  const intro = "Llegó un correo de alta prioridad a la mesa de control. Llama al cliente lo antes posible y marca la llamada en el panel.";
+  const link = `${base}/admin/bandeja/${d.messageId}`;
+  const rows: [string, string][] = [
+    ["Motivo", d.reason],
+    ["Caso", d.caseId ?? "Sin caso asociado"],
+    ["Cliente", d.customerName ?? "—"],
+    ["Teléfono", d.phone ?? "Sin teléfono (no tiene caso)"],
+    ["Correo", d.fromEmail],
+    ["Asunto", d.subject],
+  ];
+  const text = [`*** ${intro} ***`, "", ...rows.map(([k, v]) => `${k}: ${v}`), "", "Mensaje:", d.excerpt, "", `Abrir en la bandeja: ${link}`, "", EMAIL.footer].join("\n");
+  const html = wrapHtml(subject, [
+    { type: "heading", text: "Llamar ahora" },
+    { type: "alert", text: intro },
+    { type: "kv", rows },
+    { type: "box", title: "Mensaje", text: d.excerpt },
+    { type: "button", label: "Abrir en la bandeja", href: link },
+  ], { siteUrl: ctx.siteUrl, tone: "alert" });
+  return { subject, text, html };
 }

@@ -21,7 +21,14 @@ export type AuditType =
   | "EXPORT_CSV"
   | "LOOKUP_SUSPICIOUS"
   | "AFFECTED_CONTACT_SAVED"
-  | "AFFECTED_REMINDERS_SENT";
+  | "AFFECTED_REMINDERS_SENT"
+  | "FOLLOW_UPS_SENT"
+  | "BROADCAST_SENT"
+  | "EMAIL_RECEIVED"
+  | "EMAIL_BOUNCED"
+  | "EMAIL_LINKED"
+  | "CUSTOMER_CALLED"
+  | "MESSAGE_HANDLED";
 
 export interface AuditInput {
   type: AuditType;
