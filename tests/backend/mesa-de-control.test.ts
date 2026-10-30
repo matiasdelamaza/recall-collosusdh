@@ -24,7 +24,7 @@ const { getDb } = await import("@/db/client");
 const { auditEvents, emailMessages, recallCases } = await import("@/db/schema");
 const { triageByRules, triageMessage } = await import("@/lib/recall/triage");
 const { sendFromInbox, stripQuotedReply } = await import("@/lib/recall/inbox");
-const { caseSignal, getControlBoard, getMailStats, markCaseCalled, EMPTY_MAIL_STATS } = await import("@/lib/recall/mailbox");
+const { caseSignal, countInboxByPriority, getControlBoard, getMailStats, listInbox, markCaseCalled, EMPTY_MAIL_STATS } = await import("@/lib/recall/mailbox");
 const { sendBroadcastTest } = await import("@/lib/recall/follow-up");
 
 function signed(body: unknown, opts: { badSignature?: boolean } = {}) {
@@ -193,6 +193,16 @@ describe("Mesa de control: bandeja, prioridad y semáforo", () => {
     const db = await getDb();
     const [auto] = await db.select().from(emailMessages).where(eq(emailMessages.providerId, "in-3"));
     expect(auto).toMatchObject({ priority: "LOW", handledBy: "automático" });
+  });
+
+  it("la bandeja filtra los correos entrantes por prioridad y cuenta cuántos hay de cada una", async () => {
+    const high = await listInbox("in", "HIGH");
+    expect(high.length).toBeGreaterThan(0);
+    expect(high.every((m) => m.direction === "IN" && m.priority === "HIGH")).toBe(true);
+    expect((await listInbox("in", "LOW")).every((m) => m.priority === "LOW")).toBe(true);
+    const counts = await countInboxByPriority("in");
+    expect(counts.HIGH).toBe(high.length);
+    expect(counts.HIGH + counts.MEDIUM + counts.LOW).toBe((await listInbox("in")).length);
   });
 
   it("las pruebas de comunicados a Postventa no entran a la bandeja", async () => {
