@@ -105,7 +105,7 @@ describe("Mesa de control: bandeja, prioridad y semáforo", () => {
       const quiet = { subject: "Consulta", body: "No sé qué hacer, estoy muy preocupado" };
       expect(await triageMessage(quiet)).toMatchObject({ priority: "HIGH", source: "AI", reason: "Angustia evidente" });
       expect(calls[0]!.url).toBe("https://openrouter.ai/api/v1/chat/completions");
-      expect(calls[0]!.body).toMatchObject({ model: "anthropic/claude-opus-5.5", response_format: { type: "json_schema" } });
+      expect(calls[0]!.body).toMatchObject({ model: "anthropic/claude-sonnet-5.5", response_format: { type: "json_schema" } });
 
       reply = { priority: "LOW", reason: "Consulta" };
       expect((await triageMessage({ subject: "Consulta", body: "Me caí ayer" })).priority).toBe("HIGH");

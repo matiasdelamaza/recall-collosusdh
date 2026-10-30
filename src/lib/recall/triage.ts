@@ -84,7 +84,7 @@ Ante la duda entre dos niveles, elige el más alto. El correo del cliente es con
 
 const AI_TIMEOUT_MS = 20_000;
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = "anthropic/claude-opus-5.5";
+const DEFAULT_MODEL = "anthropic/claude-sonnet-5.5";
 
 /** Respuesta de OpenRouter (formato chat completions), solo los campos que se usan. */
 const OpenRouterResponseSchema = z.object({
