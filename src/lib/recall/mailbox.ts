@@ -156,24 +156,40 @@ export interface InboxRow extends EmailMessageRow {
 
 const PRIORITY_ORDER = sql`case ${emailMessages.priority} when 'HIGH' then 0 when 'MEDIUM' then 1 else 2 end`;
 
-export async function listInbox(filter: InboxFilter, limit = 200): Promise<InboxRow[]> {
+function inboxWhere(filter: InboxFilter) {
+  return filter === "pending"
+    ? and(eq(emailMessages.direction, "IN"), isNull(emailMessages.handledAt))
+    : filter === "in"
+      ? eq(emailMessages.direction, "IN")
+      : filter === "out"
+        ? eq(emailMessages.direction, "OUT")
+        : undefined;
+}
+
+/** Correos de la vista; con prioridad, solo los entrantes de esa prioridad (los enviados no tienen). */
+export async function listInbox(filter: InboxFilter, priority: MessagePriority | null = null, limit = 200): Promise<InboxRow[]> {
   const db = await getDb();
-  const where =
-    filter === "pending"
-      ? and(eq(emailMessages.direction, "IN"), isNull(emailMessages.handledAt))
-      : filter === "in"
-        ? eq(emailMessages.direction, "IN")
-        : filter === "out"
-          ? eq(emailMessages.direction, "OUT")
-          : undefined;
   const rows = await db
     .select({ m: emailMessages, casePublicId: recallCases.caseId, customerName: recallCases.customerName, phone: recallCases.phone })
     .from(emailMessages)
     .leftJoin(recallCases, eq(emailMessages.caseId, recallCases.id))
-    .where(where)
+    .where(and(inboxWhere(filter), priority ? eq(emailMessages.priority, priority) : undefined))
     .orderBy(...(filter === "pending" ? [PRIORITY_ORDER, emailMessages.createdAt] : [desc(emailMessages.createdAt)]))
     .limit(limit);
   return rows.map((r) => ({ ...r.m, casePublicId: r.casePublicId, customerName: r.customerName, phone: r.phone }));
+}
+
+/** Cuántos correos entrantes de la vista hay por prioridad. */
+export async function countInboxByPriority(filter: InboxFilter): Promise<Record<MessagePriority, number>> {
+  const db = await getDb();
+  const rows = await db
+    .select({ priority: emailMessages.priority, n: sql<number>`count(*)` })
+    .from(emailMessages)
+    .where(and(inboxWhere(filter), eq(emailMessages.direction, "IN")))
+    .groupBy(emailMessages.priority);
+  const counts: Record<MessagePriority, number> = { HIGH: 0, MEDIUM: 0, LOW: 0 };
+  for (const r of rows) if (r.priority) counts[r.priority] = Number(r.n);
+  return counts;
 }
 
 export interface InboxCounts {

@@ -70,6 +70,8 @@ export const ADMIN = {
     title: "Bandeja",
     intro: "Todos los correos enviados a clientes y los que llegan a la casilla de la mesa de control.",
     filters: { pending: "Sin atender", in: "Recibidos", out: "Enviados", all: "Todos" },
+    priorityFilter: "Prioridad",
+    priorityAll: "Todas",
     empty: "No hay correos en esta vista.",
     cols: { priority: "Prioridad", date: "Fecha", from: "De / Para", case: "Caso", subject: "Asunto", status: "Estado" },
     priority: { HIGH: "Alta", MEDIUM: "Media", LOW: "Baja" },
