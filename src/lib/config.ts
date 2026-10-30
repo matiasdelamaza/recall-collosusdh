@@ -17,6 +17,8 @@ const envSchema = z.object({
   EMAIL_PROVIDER: z.enum(["console", "resend", "smtp"]).default("console"),
   EMAIL_FROM: z.string().default("Polygon Collosus DH · Cross Mountain <no-reply@recallcollosusdh.cl>"),
   INTERNAL_NOTIFICATION_EMAILS: z.string().optional(),
+  /** Destinatarios de las pruebas de comunicados (separados por coma). Si no está, se usan los correos internos. */
+  BROADCAST_TEST_EMAILS: z.string().optional(),
   RESEND_API_KEY: z.string().optional(),
   /** Secreto de firma del webhook de Resend (whsec_…): correos entrantes y estados de entrega. */
   RESEND_WEBHOOK_SECRET: z.string().optional(),
@@ -93,6 +95,15 @@ export function getInternalNotificationEmails(): string[] {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
+}
+
+/** Destinatarios de la prueba de un comunicado: BROADCAST_TEST_EMAILS o, si no está, los correos internos. */
+export function getBroadcastTestEmails(): string[] {
+  const own = (getEnv().BROADCAST_TEST_EMAILS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return own.length > 0 ? own : getInternalNotificationEmails();
 }
 
 /** Límites de carga de archivos. */
