@@ -23,4 +23,16 @@ describe("anonimización", () => {
   it("sin contexto solo quita correos, teléfonos y RUT", () => {
     expect(redactForAi("fono 912345678 rut 12345678-5")).toBe("fono [teléfono] rut [rut]");
   });
+
+  it("anonimiza teléfonos con prefijo 56 sin +", () => {
+    expect(redactForAi("fono 56912345678")).toBe("fono [teléfono]");
+    expect(redactForAi("fono 56 9 1234 5678")).toBe("fono [teléfono]");
+  });
+
+  it("anonimiza RUT sin guion", () => {
+    expect(redactForAi("rut 12.345.678")).toBe("rut [rut]");
+    expect(redactForAi("rut 12.345.678 5")).toBe("rut [rut]");
+    expect(redactForAi("rut 12345678k")).toBe("rut [rut]");
+    expect(redactForAi("rut 12.345.678-K.")).toBe("rut [rut].");
+  });
 });

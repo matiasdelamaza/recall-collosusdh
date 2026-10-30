@@ -10,8 +10,9 @@ export interface RedactContext {
 }
 
 const EMAIL = /[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.[\p{L}]{2,}/gu;
-const RUT = /(?<![\p{L}\p{N}])\d{1,2}\.?\d{3}\.?\d{3}-[\dkK](?![\p{L}\p{N}])/gu;
-const PHONE = /(?<![\p{L}\p{N}])(?:\+56[ -]?)?\d(?:[ -]?\d){7,8}(?![\p{L}\p{N}])/gu;
+const RUT =
+  /(?<![\p{L}\p{N}])(?:\d{1,2}\.\d{3}\.\d{3}(?:[ -]?[\dkK])?|\d{7,8}(?:-[\dkK]|[kK]))(?![\p{L}\p{N}])/gu;
+const PHONE = /(?<![\p{L}\p{N}])(?:\+?56[ -]?)?\d(?:[ -]?\d){7,8}(?![\p{L}\p{N}])/gu;
 
 /** Minúsculas y sin tildes, carácter a carácter para conservar los índices. */
 function fold(text: string): string {
@@ -44,7 +45,7 @@ function replaceToken(text: string, token: string, placeholder: string): string 
 }
 
 export function redactForAi(text: string, ctx: RedactContext = {}): string {
-  let out = text.replace(EMAIL, "[correo]");
+  let out = text.normalize("NFC").replace(EMAIL, "[correo]");
   if (ctx.caseId?.trim()) out = replaceToken(out, ctx.caseId.trim(), "{caso}");
   if (ctx.serial?.trim()) out = replaceToken(out, ctx.serial.trim(), "{serie}");
   out = out.replace(RUT, "[rut]").replace(PHONE, "[teléfono]");
