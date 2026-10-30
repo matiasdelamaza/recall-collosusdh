@@ -88,6 +88,25 @@ describe("consultas y métricas del panel interno", () => {
     expect(parseCaseFilters({ q: "otra persona" }).verification).toBe("ALL");
   });
 
+  it("sin filtro de estado oculta los cerrados; \"ALL\", el estado Cerrado y las búsquedas los muestran", async () => {
+    const { getDb } = await import("@/db/client");
+    const { recallCases } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const { listCases, parseCaseFilters } = await import("@/lib/recall/cases");
+    const db = await getDb();
+    await db.update(recallCases).set({ caseStatus: "CLOSED" }).where(eq(recallCases.caseId, "RCDH-DEF45"));
+    try {
+      expect(parseCaseFilters({}).status).toBe("OPEN");
+      expect((await listCases(parseCaseFilters({ verification: "ALL" }))).rows.map((r) => r.caseId)).toEqual(["RCDH-ABC23"]);
+      expect((await listCases(parseCaseFilters({ verification: "ALL", status: "ALL" }))).total).toBe(2);
+      expect((await listCases(parseCaseFilters({ verification: "ALL", status: "CLOSED" }))).rows.map((r) => r.caseId)).toEqual(["RCDH-DEF45"]);
+      expect(parseCaseFilters({ q: "otra persona" }).status).toBe("ALL");
+      expect((await listCases(parseCaseFilters({ q: "otra persona" }))).total).toBe(1);
+    } finally {
+      await db.update(recallCases).set({ caseStatus: "REPLACED" }).where(eq(recallCases.caseId, "RCDH-DEF45"));
+    }
+  });
+
   it("busca por caso, serie, RUT, nombre y correo", async () => {
     const { listCases, parseCaseFilters } = await import("@/lib/recall/cases");
     expect((await listCases(parseCaseFilters({ q: "rcdh-abc23" }))).rows[0]!.caseId).toBe("RCDH-ABC23");

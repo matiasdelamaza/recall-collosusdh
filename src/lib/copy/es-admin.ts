@@ -207,6 +207,7 @@ export const ADMIN = {
       requestType: "Tipo",
       verification: "Verificación",
       all: "Todos",
+      open: "Abiertos",
       apply: "Filtrar",
       clear: "Limpiar",
     },
@@ -214,6 +215,8 @@ export const ADMIN = {
     exportXlsx: "Exportar Excel",
     onlyAffected: "Mostrando solo unidades afectadas.",
     showAll: "Ver todos los casos",
+    closedHidden: "Los casos cerrados no se muestran.",
+    showClosed: "Incluir cerrados",
     columns: {
       caseId: "Caso",
       createdAt: "Fecha",

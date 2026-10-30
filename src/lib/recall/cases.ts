@@ -2,7 +2,7 @@
  * Consultas de casos para el panel interno (SOLO servidor).
  */
 import "server-only";
-import { and, asc, count, desc, eq, ilike, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, ne, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   auditEvents,
@@ -30,7 +30,8 @@ import { normalizeSerial } from "@/lib/serial";
 
 export interface CaseListFilters {
   q?: string;
-  status?: CaseStatus;
+  /** "OPEN" = todos menos los cerrados (por defecto); "ALL" = todos los estados. */
+  status?: CaseStatus | typeof STATUS_OPEN | typeof STATUS_ALL;
   priority?: Priority;
   damage?: TriState;
   accident?: "YES" | "NO";
@@ -46,6 +47,10 @@ export const DEFAULT_PAGE_SIZE = 50;
 /** Valor del filtro Verificación para ver todos los casos (afectadas, no afectadas y en revisión). */
 export const VERIFICATION_ALL = "ALL";
 
+/** Valores del filtro Estado: sin cerrados (por defecto) o todos los estados. */
+export const STATUS_OPEN = "OPEN";
+export const STATUS_ALL = "ALL";
+
 /** Convierte searchParams (strings) en filtros tipados, descartando valores inválidos. */
 export function parseCaseFilters(params: Record<string, string | string[] | undefined>): CaseListFilters {
   const pick = (k: string) => {
@@ -57,7 +62,8 @@ export function parseCaseFilters(params: Record<string, string | string[] | unde
   const page = Math.max(1, Number.parseInt(pick("page") || "1", 10) || 1);
   return {
     q: pick("q").slice(0, 120) || undefined,
-    status: inList(pick("status"), CASE_STATUSES),
+    // Casos oculta los cerrados salvo que se pidan (30-10-2026, pedido de Cross Mountain); una búsqueda abarca todos.
+    status: inList(pick("status"), [...CASE_STATUSES, STATUS_OPEN, STATUS_ALL]) ?? (pick("q") ? STATUS_ALL : STATUS_OPEN),
     priority: inList(pick("priority"), PRIORITIES),
     damage: inList(pick("damage"), TRI_STATE),
     accident: inList(pick("accident"), ["YES", "NO"] as const),
@@ -74,7 +80,8 @@ export function parseCaseFilters(params: Record<string, string | string[] | unde
 
 function buildWhere(filters: CaseListFilters): SQL | undefined {
   const conds: SQL[] = [];
-  if (filters.status) conds.push(eq(recallCases.caseStatus, filters.status));
+  if (filters.status === STATUS_OPEN) conds.push(ne(recallCases.caseStatus, "CLOSED"));
+  else if (filters.status && filters.status !== STATUS_ALL) conds.push(eq(recallCases.caseStatus, filters.status));
   if (filters.priority) conds.push(eq(recallCases.priority, filters.priority));
   if (filters.damage) conds.push(eq(recallCases.damageReported, filters.damage));
   if (filters.accident) conds.push(eq(recallCases.accidentReported, filters.accident === "YES"));
