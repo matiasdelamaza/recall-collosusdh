@@ -21,7 +21,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <div className="min-h-dvh bg-paper-100 text-ink">
       <header className="border-b border-line bg-paper">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <Link href="/admin" className="text-sm font-extrabold uppercase tracking-wider">
             {ADMIN.brand}
           </Link>
@@ -47,7 +47,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           ) : null}
         </div>
       </header>
-      <main className="mx-auto max-w-7xl px-4 py-5">{children}</main>
+      <main className="px-4 py-5 sm:px-6">{children}</main>
     </div>
   );
 }
