@@ -13,7 +13,7 @@ import { ADMIN } from "@/lib/copy/es-admin";
 import { isValidCaseId, normalizeCaseId } from "@/lib/case-id";
 import { STATUS_LABELS } from "@/lib/copy/es";
 import { EMPTY_MAIL_STATS, caseSignal, getCaseMessages, getMailStats, getThread } from "@/lib/recall/mailbox";
-import { buildAiContext } from "./knowledge";
+import { buildAiContext, buildFacts } from "./knowledge";
 import { aiModel, callOpenRouterJson } from "./openrouter";
 import { redactForAi, type RedactContext } from "./redact";
 
@@ -31,11 +31,14 @@ export function threadKey(thread: Pick<Thread, "case" | "counterpart">): string 
   return thread.case ? thread.case.id : `email:${thread.counterpart.toLowerCase()}`;
 }
 
-/** Contexto de anonimización del hilo: datos del caso y nombres que firmaron los correos entrantes. */
+/**
+ * Contexto de anonimización del hilo: datos del caso y nombres que firmaron los correos entrantes.
+ * Sin caso, además se reemplaza el nombre del saludo inicial de cada correo ("Hola Juan:").
+ */
 function redactContextFor(thread: Pick<Thread, "case" | "messages">): RedactContext {
   const fromNames = thread.messages.filter((m) => m.direction === "IN" && m.fromName).map((m) => m.fromName);
   const c = thread.case;
-  return c ? { names: [c.customerName, ...fromNames], caseId: c.caseId, serial: c.serialNumber } : { names: fromNames };
+  return c ? { names: [c.customerName, ...fromNames], caseId: c.caseId, serial: c.serialNumber } : { names: fromNames, greeting: true };
 }
 
 /** Texto del hilo para la IA: últimos 15 correos, anonimizados, con dirección y fecha y sin direcciones de correo. */
@@ -148,7 +151,7 @@ async function generateCaseSummary(messageId: string, opts: { force?: boolean })
   }
 
   const redact = redactContextFor(thread);
-  const { facts } = await buildAiContext();
+  const facts = await buildFacts();
   const parts = [`CONTEXTO DE LA CAMPAÑA\n\n${facts}`];
   if (thread.case) {
     parts.push(`DATOS DEL CASO\n\n${await caseFacts(thread.case, thread.messages)}`);

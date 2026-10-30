@@ -55,11 +55,12 @@ export function EmailComposer({
   }, [body]);
   const [draftState, draftAction, drafting] = useActionState(async (prev: DraftActionState, formData: FormData) => {
     const res = await draftReplyAction(prev, formData);
-    if (res.status === "ok" && (!bodyRef.current.trim() || window.confirm(A.replaceConfirm))) {
-      setTemplateId("");
-      setSubject(res.subject);
-      setBody(fill(res.body, target));
-    }
+    if (res.status !== "ok") return res;
+    // Si cancela el reemplazo, se conserva lo escrito y no se avisa "Propuesta lista".
+    if (bodyRef.current.trim() && !window.confirm(A.replaceConfirm)) return draftInitial;
+    setTemplateId("");
+    setSubject(res.subject);
+    setBody(fill(res.body, target));
     return res;
   }, draftInitial);
   const sentAt = state.status === "sent" ? state.at : 0;

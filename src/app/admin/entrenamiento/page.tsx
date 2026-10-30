@@ -16,7 +16,20 @@ export default async function AdminTrainingPage({ searchParams }: { searchParams
   const sp = await searchParams;
   const msgKey = Array.isArray(sp.msg) ? sp.msg[0] : sp.msg;
   const msg = msgKey && Object.hasOwn(T.messages, msgKey) ? { key: msgKey, text: T.messages[msgKey as keyof typeof T.messages] } : null;
-  const [cards, { used: usedExamples, excluded: excludedExamples }] = await Promise.all([listKnowledge(), listExamplesForAdmin()]);
+  let data: [Awaited<ReturnType<typeof listKnowledge>>, Awaited<ReturnType<typeof listExamplesForAdmin>>];
+  try {
+    data = await Promise.all([listKnowledge(), listExamplesForAdmin()]);
+  } catch (err) {
+    // Si la base falla (por ejemplo, falta aplicar la migración 0007), la página avisa en vez de romperse.
+    console.error("[entrenamiento] no se pudieron cargar las fichas o los ejemplos:", err);
+    return (
+      <>
+        <PageHeader title={T.title} />
+        <AlertBox tone="caution">{T.loadFailed}</AlertBox>
+      </>
+    );
+  }
+  const [cards, { used: usedExamples, excluded: excludedExamples }] = data;
   const examples = [...usedExamples, ...excludedExamples];
   const used = activeKnowledgeChars(cards);
   const examplesUsed = usedExamples.length;

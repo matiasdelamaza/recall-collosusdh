@@ -237,6 +237,13 @@ function withMsg(path: string, msg: string): string {
   return `${path}${path.includes("?") ? "&" : "?"}msg=${encodeURIComponent(msg)}`;
 }
 
+/** Marcas que la IA deja para completar a mano: [completar: …], [correo], [teléfono] y [rut]. */
+const PLACEHOLDER_RE = /\[\s*(?:completar|correo\s*\]|tel[eé]fono\s*\]|rut\s*\])/i;
+
+function hasPlaceholder(text: string): boolean {
+  return PLACEHOLDER_RE.test(text.normalize("NFC"));
+}
+
 export type SendEmailActionState = { status: "idle" } | { status: "error"; message: string } | { status: "sent"; message: string; at: number };
 
 /** Envía un correo desde la bandeja (respuesta o mensaje nuevo) al cliente de un caso o a un remitente sin caso. */
@@ -247,8 +254,8 @@ export async function sendEmailAction(_prev: SendEmailActionState, formData: For
   const body = str(formData, "body", 7000);
   if (subject.length < 3 || subject.length > 150) return { status: "error", message: I.invalidSubject };
   if (body.length < 10 || body.length > 6000) return { status: "error", message: I.invalidBody };
-  // Una propuesta de la IA con partes por completar no puede salir tal cual.
-  if (/\[completar/i.test(subject) || /\[completar/i.test(body)) return { status: "error", message: ADMIN.ai.draftIncomplete };
+  // Una propuesta de la IA con partes por completar o marcas de anonimización no puede salir tal cual.
+  if (hasPlaceholder(subject) || hasPlaceholder(body)) return { status: "error", message: ADMIN.ai.draftIncomplete };
   const caseIdInput = str(formData, "caseId", 20);
   const c = caseIdInput ? await loadCase(caseIdInput) : null;
   if (caseIdInput && !c) return { status: "error", message: ADMIN.caseDetail.messages.invalid };

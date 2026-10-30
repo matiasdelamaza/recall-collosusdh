@@ -9,7 +9,7 @@ vi.mock("@/lib/admin/session", async (importOriginal) => ({
   requireAdmin: async () => ({ actor: "admin-pruebas" }),
 }));
 
-const { redactForAi } = await import("@/lib/ai/redact");
+const { redactForAi, redactGreeting } = await import("@/lib/ai/redact");
 const { triageMessage, triageByRules } = await import("@/lib/recall/triage");
 
 describe("anonimización", () => {
@@ -41,6 +41,21 @@ describe("anonimización", () => {
     expect(redactForAi("rut 12.345.678 5")).toBe("rut [rut]");
     expect(redactForAi("rut 12345678k")).toBe("rut [rut]");
     expect(redactForAi("rut 12.345.678-K.")).toBe("rut [rut].");
+  });
+
+  it("no toma fechas por teléfonos", () => {
+    expect(redactForAi("llega el 30-10-2026, o el 30/10/2026, o el 2026-10-30")).toBe("llega el 30-10-2026, o el 30/10/2026, o el 2026-10-30");
+    expect(redactForAi("el 1/2/2026 llamé al 912345678")).toBe("el 1/2/2026 llamé al [teléfono]");
+  });
+
+  it("saludo sin caso: reemplaza el nombre con o sin coma antes", () => {
+    expect(redactGreeting("Hola Juan:\n\nTexto")).toBe("Hola {nombre}:\n\nTexto");
+    expect(redactGreeting("Hola, Juan:\n\nTexto")).toBe("Hola, {nombre}:\n\nTexto");
+    expect(redactGreeting("Estimado, Juan\nTexto")).toBe("Estimado, {nombre}\nTexto");
+    expect(redactGreeting("Estimada Ana Soto, te escribo")).toBe("Estimada {nombre}, te escribo");
+    expect(redactGreeting("Hola,\nTexto")).toBe("Hola,\nTexto");
+    expect(redactForAi("Hola, Juan:\nfono 912345678", { greeting: true })).toBe("Hola, {nombre}:\nfono [teléfono]");
+    expect(redactForAi("Hola, Juan:", {})).toBe("Hola, Juan:");
   });
 });
 
@@ -419,6 +434,31 @@ describe("resumen del caso", () => {
     }
   });
 
+  it("hilo sin caso: el saludo de Postventa no deja pasar el nombre aunque el remitente no lo dé", async () => {
+    stubOk();
+    const { getCaseSummary, buildThreadText } = await import("@/lib/ai/assist");
+    const { getDb } = await import("@/db/client");
+    const { emailMessages } = await import("@/db/schema");
+    const db = await getDb();
+    const from = `sin.nombre${++n}@example.test`;
+    const base = Date.now() - 5 * 60 * 60 * 1000;
+    const [inMsg] = await db
+      .insert(emailMessages)
+      .values([
+        { direction: "IN", kind: "CUSTOMER_MESSAGE", fromEmail: from, fromName: null, toEmails: "postventa@example.test", subject: "Consulta", bodyText: "¿Cuándo llega mi cuadro?", status: "RECEIVED", createdAt: new Date(base) },
+        { direction: "OUT", kind: "MANUAL_EMAIL", fromEmail: "postventa@example.test", toEmails: from, subject: "Re: Consulta", bodyText: "Hola, Rigoberto:\n\nLo revisamos y te avisamos.", status: "SENT", createdAt: new Date(base + 60_000) },
+      ])
+      .returning();
+    await getCaseSummary(inMsg!.id);
+    const user = userText(bodies[0]!);
+    expect(user).not.toContain("Rigoberto");
+    expect(user).toContain("Hola, {nombre}:");
+
+    // buildThreadText aplica el saludo cuando el contexto lo pide.
+    const text = buildThreadText([{ ...inMsg!, bodyText: "Hola Rigoberto:\nhola" }], { greeting: true });
+    expect(text).toContain("Hola {nombre}:");
+  });
+
   it("sin clave devuelve null sin llamar", async () => {
     vi.stubEnv("OPENROUTER_API_KEY", "");
     const calls: unknown[] = [];
@@ -631,5 +671,32 @@ describe("propuesta de respuesta", () => {
     fd.set("body", "Hola:\n\nTu cuadro llega el [completar: fecha]. Saludos.");
     expect(await sendEmailAction({ status: "idle" }, fd)).toEqual({ status: "error", message: ADMIN.ai.draftIncomplete });
     expect(await db.select().from(emailMessages).where(eq(emailMessages.subject, "Asunto con borrador pendiente"))).toHaveLength(0);
+  });
+
+  it("sendEmailAction tampoco envía con marcas de anonimización ([correo], [teléfono], [rut])", async () => {
+    const { sendEmailAction } = await import("@/lib/admin/actions");
+    const { ADMIN } = await import("@/lib/copy/es-admin");
+    const { c } = await seedCase();
+    const blocked = [
+      "Escríbenos a [correo] cuando puedas.",
+      "Te llamamos al [ teléfono ] mañana.",
+      "Te llamamos al [TELEFONO] mañana.",
+      "Confírmanos tu [rut] por favor.",
+      "Tu cuadro llega el [ Completar: fecha ].",
+    ];
+    for (const body of blocked) {
+      const fd = new FormData();
+      fd.set("caseId", c.caseId);
+      fd.set("to", c.email);
+      fd.set("subject", "Asunto de prueba");
+      fd.set("body", `Hola:\n\n${body}`);
+      expect(await sendEmailAction({ status: "idle" }, fd)).toEqual({ status: "error", message: ADMIN.ai.draftIncomplete });
+    }
+    const fd = new FormData();
+    fd.set("caseId", c.caseId);
+    fd.set("to", c.email);
+    fd.set("subject", "Tu [rut] pendiente");
+    fd.set("body", "Hola:\n\nTexto completo y sin marcas.");
+    expect(await sendEmailAction({ status: "idle" }, fd)).toEqual({ status: "error", message: ADMIN.ai.draftIncomplete });
   });
 });

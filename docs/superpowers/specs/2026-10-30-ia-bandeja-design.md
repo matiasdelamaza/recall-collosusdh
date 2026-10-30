@@ -83,6 +83,9 @@ Función `redactForAi(text, ctx)`:
 Se aplica a correos del hilo, notas internas, respuestas de ejemplo y al análisis de prioridad. Del caso solo van campos sin datos
 personales: estado, modelo, talla, accidente declarado, daño declarado, fechas de registro y último contacto,
 motivos del semáforo.
+Límite conocido: en hilos sin caso solo se conocen el nombre del remitente (si viene en el correo) y el del saludo inicial
+("Hola Juan:", "Hola, Juan:"), que se reemplazan; la firma que el cliente escribe al pie de su propio correo no se puede detectar
+en general sin un caso que dé el nombre.
 
 ### 3. Resumen del caso (panel lateral)
 

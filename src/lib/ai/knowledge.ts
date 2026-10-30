@@ -87,11 +87,6 @@ export const EXAMPLE_TEXT_MAX = 3000;
 /** Estados de envío que no cuentan como respuesta real al cliente. */
 const NOT_SENT = ["FAILED", "BOUNCED", "COMPLAINED"] as const;
 
-/** Sin caso no hay nombre conocido: el nombre del saludo inicial se reemplaza igual. */
-function redactGreeting(text: string): string {
-  return text.replace(/^(\s*(?:Hola|Estimad[oa]s?(?:\/a)?))[ \t]+[^:,\n]+/i, "$1 {nombre}");
-}
-
 type ExampleFilter = "used" | "excluded" | "all";
 
 async function queryExamples(filter: ExampleFilter): Promise<ExampleReply[]> {
@@ -118,7 +113,8 @@ async function queryExamples(filter: ExampleFilter): Promise<ExampleReply[]> {
     .orderBy(desc(emailMessages.createdAt))
     .limit(EXAMPLES_MAX);
   return rows.map((r) => {
-    const ctx = { names: [r.customerName], caseId: r.caseId, serial: r.serial };
+    // Sin caso no hay nombre conocido: el nombre del saludo inicial se reemplaza igual.
+    const ctx = { names: [r.customerName], caseId: r.caseId, serial: r.serial, greeting: !r.hasCase };
     let body = stripManualFooter(r.bodyText);
     let subject = r.subject;
     // Además del patrón general de correos, se quitan literalmente las direcciones del destinatario.
@@ -126,7 +122,6 @@ async function queryExamples(filter: ExampleFilter): Promise<ExampleReply[]> {
       body = body.split(addr).join("[correo]");
       subject = subject.split(addr).join("[correo]");
     }
-    if (!r.hasCase) body = redactGreeting(body);
     let text = redactForAi(body, ctx);
     if (text.length > EXAMPLE_TEXT_MAX) text = `${text.slice(0, EXAMPLE_TEXT_MAX)}…`;
     return { id: r.id, subject: redactForAi(subject, ctx), text, excluded: r.excludedAt !== null, createdAt: r.createdAt };
@@ -160,10 +155,16 @@ export function fixedContext(): string {
   return `${FAQ.title}\n\n${faq}\n\nPLANTILLAS\n\n${templates}`;
 }
 
-export async function buildAiContext(): Promise<{ facts: string; examples: string }> {
-  const [knowledge, examples] = await Promise.all([listKnowledge(), listExampleReplies()]);
+/** Hechos para la IA: contexto fijo y fichas activas del equipo (sin ejemplos). */
+export async function buildFacts(): Promise<string> {
+  const knowledge = await listKnowledge();
   const cards = knowledge.filter((k) => k.active).map((k) => `## ${k.title}\n${k.body}`);
-  const facts = [fixedContext(), ...(cards.length ? ["FICHAS DEL EQUIPO", ...cards] : [])].join("\n\n");
+  return [fixedContext(), ...(cards.length ? ["FICHAS DEL EQUIPO", ...cards] : [])].join("\n\n");
+}
+
+/** Hechos más respuestas de ejemplo (para la propuesta de respuesta). */
+export async function buildAiContext(): Promise<{ facts: string; examples: string }> {
+  const [facts, examples] = await Promise.all([buildFacts(), listExampleReplies()]);
   const ex = examples.map((e, i) => `Ejemplo ${i + 1}\nAsunto: ${e.subject}\n${e.text}`).join("\n\n---\n\n");
   return { facts, examples: ex };
 }
