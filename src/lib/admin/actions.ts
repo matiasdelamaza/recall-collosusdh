@@ -10,6 +10,8 @@ import { caseNotes, recallCases, CASE_STATUSES, SERIAL_DATABASE_STATUSES, type C
 import { isValidCaseId, normalizeCaseId } from "@/lib/case-id";
 import { ADMIN } from "@/lib/copy/es-admin";
 import { SERIALS_CSV_MAX_BYTES } from "@/lib/limits";
+import { getInternalNotificationEmails } from "@/lib/config";
+import { notifyStageChange, sendBroadcast, sendBroadcastTest } from "@/lib/recall/follow-up";
 import { importSerialsFromCsv, type ImportSerialsResult } from "@/lib/recall/import";
 import { reprocessPendingCases, type ReprocessResult } from "@/lib/recall/reprocess";
 import { countRecallSerials, getSerialDatabaseStatus, setSerialDatabaseStatus } from "@/lib/recall/verify";
@@ -53,12 +55,15 @@ export async function updateCaseStatus(formData: FormData): Promise<void> {
   const now = new Date();
   const closes = status === "CLOSED" || status === "REPLACED";
   const db = await getDb();
-  await db
+  const [updated] = await db
     .update(recallCases)
     .set({ caseStatus: status, updatedAt: now, closedAt: closes ? now : row.closedAt })
-    .where(eq(recallCases.id, row.id));
+    .where(eq(recallCases.id, row.id))
+    .returning();
   await logAudit({ type: "STATUS_CHANGED", actor, caseId: row.id, payload: { from: row.caseStatus, to: status } });
-  caseRedirect(caseId, "statusUpdated");
+  // Aviso al cliente de la nueva etapa (solo unidades afectadas y etapas del reemplazo).
+  const notified = isChecked(formData, "notifyCustomer") && updated ? await notifyStageChange(updated) : false;
+  caseRedirect(caseId, notified ? "statusUpdatedNotified" : "statusUpdated");
 }
 
 export async function assignCase(formData: FormData): Promise<void> {
@@ -189,4 +194,30 @@ export async function reprocessAction(_prev: ReprocessActionState, formData: For
     console.error("[admin] reproceso falló:", message);
     return { status: "error", message: message.includes("pendiente de implementación") ? ADMIN.serials.messages.notImplemented : ADMIN.serials.messages.error };
   }
+}
+
+// ── Comunicaciones ─────────────────────────────────────────────────────
+
+export type BroadcastActionState = { status: "idle" } | { status: "error"; message: string } | { status: "tested"; message: string } | { status: "sent"; message: string };
+
+export async function broadcastAction(_prev: BroadcastActionState, formData: FormData): Promise<BroadcastActionState> {
+  const { actor } = await requireAdmin();
+  const C = ADMIN.comms;
+  const subject = str(formData, "subject", 200);
+  const body = str(formData, "body", 5000);
+  if (subject.length < 5 || subject.length > 120) return { status: "error", message: C.invalidSubject };
+  if (body.length < 20 || body.length > 4000) return { status: "error", message: C.invalidBody };
+  const message = { subject, body };
+
+  if (str(formData, "intent", 10) === "test") {
+    const to = getInternalNotificationEmails();
+    if (to.length === 0) return { status: "error", message: C.noInternal };
+    const ok = await sendBroadcastTest(message, to);
+    return ok ? { status: "tested", message: C.testSent(to.join(", ")) } : { status: "error", message: C.testFailed };
+  }
+
+  if (!isChecked(formData, "confirmed")) return { status: "error", message: C.needConfirm };
+  const result = await sendBroadcast(message, { includeContacts: isChecked(formData, "includeContacts"), actor });
+  revalidatePath("/admin/comunicaciones");
+  return { status: "sent", message: C.sent(result.sent, result.failed) };
 }

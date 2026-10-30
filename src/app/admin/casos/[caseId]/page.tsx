@@ -26,6 +26,7 @@ const F = D.fields;
 
 const MESSAGES: Record<string, { kind: "ok" | "error"; text: string }> = {
   statusUpdated: { kind: "ok", text: D.messages.statusUpdated },
+  statusUpdatedNotified: { kind: "ok", text: D.messages.statusUpdatedNotified },
   assigned: { kind: "ok", text: D.messages.assigned },
   noteAdded: { kind: "ok", text: D.messages.noteAdded },
   replacementSaved: { kind: "ok", text: D.messages.replacementSaved },
@@ -206,6 +207,7 @@ export default async function AdminCaseDetailPage({ params, searchParams }: { pa
               <FieldRow label={F.updatedAt}>{fmtDateTime(c.updatedAt)}</FieldRow>
               <FieldRow label={F.closedAt}>{fmtDateTime(c.closedAt)}</FieldRow>
               <FieldRow label={F.resultNotifiedAt}>{fmtDateTime(c.resultNotifiedAt)}</FieldRow>
+              <FieldRow label={F.lastCustomerUpdateAt}>{fmtDateTime(c.lastCustomerUpdateAt)}</FieldRow>
               <FieldRow label={F.source}>{c.source}</FieldRow>
               <FieldRow label={F.outreachRef}>{c.outreachRef ? <span className="font-mono">{c.outreachRef}</span> : "—"}</FieldRow>
               <FieldRow label={F.internalId} mono>

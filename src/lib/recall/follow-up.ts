@@ -14,7 +14,7 @@ import { sendBroadcastToContact, sendFollowUp } from "./notifications";
 
 export const WEEKLY_FOLLOW_UP_MS = 7 * 24 * 60 * 60 * 1000;
 /** Pausa entre envíos masivos, bajo el límite de 2 por segundo de Resend. */
-const SEND_GAP_MS = 600;
+const SEND_GAP_MS = process.env.NODE_ENV === "test" ? 0 : 600;
 
 /** Etapas del reemplazo que generan aviso al cliente (el registro ya tiene su confirmación). */
 export const STAGE_EMAIL_STATUSES: readonly CaseStatus[] = FOLLOW_UP.stages.map(([s]) => s).filter((s) => s !== "REGISTERED");

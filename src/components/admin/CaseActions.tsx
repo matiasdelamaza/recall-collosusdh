@@ -11,23 +11,34 @@ export function CaseActions({ c }: { c: RecallCase }) {
   return (
     <div className="grid gap-4">
       <Card title={A.changeStatus}>
-        <form action={updateCaseStatus} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+        <form action={updateCaseStatus} className="grid gap-2">
           <input type="hidden" name="caseId" value={c.caseId} />
-          <div className="flex-1">
-            <label htmlFor="status" className={labelClass}>
-              {A.newStatus}
-            </label>
-            <select id="status" name="status" defaultValue={c.caseStatus} className={selectClass}>
-              {CASE_STATUSES.map((s) => (
-                <option key={s} value={s}>
-                  {labelStatus(s)}
-                </option>
-              ))}
-            </select>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+            <div className="flex-1">
+              <label htmlFor="status" className={labelClass}>
+                {A.newStatus}
+              </label>
+              <select id="status" name="status" defaultValue={c.caseStatus} className={selectClass}>
+                {CASE_STATUSES.map((s) => (
+                  <option key={s} value={s}>
+                    {labelStatus(s)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <button type="submit" className={buttonPrimary}>
+              {A.save}
+            </button>
           </div>
-          <button type="submit" className={buttonPrimary}>
-            {A.save}
-          </button>
+          {c.serialVerificationStatus === "AFFECTED" ? (
+            <label className="flex items-start gap-2 text-sm">
+              <input type="checkbox" name="notifyCustomer" defaultChecked className="mt-0.5 size-4 accent-ink" />
+              <span>
+                {A.notifyCustomer}
+                <span className="block text-xs text-ink-500">{A.notifyCustomerHint}</span>
+              </span>
+            </label>
+          ) : null}
         </form>
       </Card>
 
