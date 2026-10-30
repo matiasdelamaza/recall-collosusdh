@@ -417,7 +417,11 @@ export const EMAIL = {
   resultAffectedSubject: "IMPORTANTE: tu bicicleta está incluida en la campaña de seguridad — Polygon Collosus DH",
   resultNotIdentifiedSubject: "Resultado de verificación — Aviso de suspensión de uso Polygon Collosus DH",
   internalSubject: (caseId: string, high: boolean) => `${high ? "[ALTA PRIORIDAD] " : ""}Nuevo caso ${caseId} — Aviso de suspensión de uso Collosus DH`,
-  greeting: (name: string) => `Hola ${name},`,
+  /** Saluda solo con el primer nombre, con mayúscula inicial ("bruno eitel" → "Hola Bruno,"). */
+  greeting: (name: string) => {
+    const first = name.trim().split(/\s+/)[0] ?? "";
+    return first ? `Hola ${first.charAt(0).toLocaleUpperCase("es-CL")}${first.slice(1)},` : "Hola,";
+  },
   stopRiding: "NO UTILICES LA BICICLETA hasta que se haya completado el procedimiento de reemplazo.",
   caseIdLabel: "Número de caso",
   serialLabel: "Número de serie",
