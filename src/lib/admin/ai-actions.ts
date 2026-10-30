@@ -5,7 +5,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { draftReply, getCaseSummary } from "@/lib/ai/assist";
-import { deleteKnowledge, saveKnowledge, setExampleExcluded } from "@/lib/ai/knowledge";
+import { saveTeamContext, setExampleExcluded } from "@/lib/ai/knowledge";
 import { ADMIN } from "@/lib/copy/es-admin";
 import { logAudit } from "@/lib/server/audit";
 import { requireAdmin } from "./session";
@@ -30,23 +30,11 @@ function done(msg: string): never {
   redirect(`${PATH}?msg=${encodeURIComponent(msg)}`);
 }
 
-export async function saveKnowledgeAction(formData: FormData): Promise<void> {
+export async function saveTeamContextAction(formData: FormData): Promise<void> {
   const { actor } = await requireAdmin();
-  const id = idOf(formData);
-  if (formData.get("id") && !id) done("invalid");
   // Se deja pasar un poco más del máximo para que la validación avise en vez de recortar en silencio.
-  const res = await saveKnowledge(
-    { id: id || undefined, title: str(formData, "title", 1000), body: str(formData, "body", 20_000), active: formData.get("active") === "on" || formData.get("active") === "true" },
-    actor,
-  );
+  const res = await saveTeamContext(str(formData, "body", 60_000), actor);
   done(res.ok ? "saved" : res.error);
-}
-
-export async function deleteKnowledgeAction(formData: FormData): Promise<void> {
-  const { actor } = await requireAdmin();
-  const id = idOf(formData);
-  if (id) await deleteKnowledge(id, actor);
-  done(id ? "deleted" : "invalid");
 }
 
 export async function toggleExampleAction(formData: FormData): Promise<void> {
