@@ -1,5 +1,5 @@
 "use client";
-import { useActionState, useState } from "react";
+import { startTransition, useActionState, useState } from "react";
 import { broadcastAction, type BroadcastActionState } from "@/lib/admin/actions";
 import { ADMIN } from "@/lib/copy/es-admin";
 import { buttonDanger, buttonSecondary, inputClass, labelClass } from "./ui";
@@ -9,7 +9,8 @@ const initial: BroadcastActionState = { status: "idle" };
 
 export function CommsForm({ cases, contacts }: { cases: number; contacts: number }) {
   const [state, formAction, pending] = useActionState(broadcastAction, initial);
-  // Controlados: React reinicia los campos no controlados después de cada acción.
+  // El envío se despacha a mano (sin la prop `action`) para que React no restablezca el formulario:
+  // al restablecerlo, la casilla de contactos volvía a marcarse sin que cambiara el destinatario.
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
   const [includeContacts, setIncludeContacts] = useState(true);
@@ -18,11 +19,13 @@ export function CommsForm({ cases, contacts }: { cases: number; contacts: number
 
   return (
     <form
-      action={formAction}
       className="grid gap-3"
       onSubmit={(e) => {
-        const intent = (e.nativeEvent as SubmitEvent).submitter?.getAttribute("value");
-        if (intent === "send" && !window.confirm(C.confirmDialog(total))) e.preventDefault();
+        e.preventDefault();
+        const submitter = (e.nativeEvent as SubmitEvent).submitter;
+        if (submitter?.getAttribute("value") === "send" && !window.confirm(C.confirmDialog(total))) return;
+        const data = new FormData(e.currentTarget, submitter);
+        startTransition(() => formAction(data));
       }}
     >
       <div>
@@ -38,13 +41,16 @@ export function CommsForm({ cases, contacts }: { cases: number; contacts: number
         <textarea id="body" name="body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={4000} required rows={8} placeholder={C.bodyPlaceholder} className={inputClass} />
       </div>
       <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" name="includeContacts" checked={includeContacts} onChange={(e) => setIncludeContacts(e.target.checked)} className="mt-0.5 size-4 accent-ink" />
+        <input type="checkbox" checked={includeContacts} onChange={(e) => setIncludeContacts(e.target.checked)} className="mt-0.5 size-4 accent-ink" />
         {C.includeContacts} ({contacts})
       </label>
       <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" name="confirmed" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5 size-4 accent-ink" />
+        <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} className="mt-0.5 size-4 accent-ink" />
         {C.confirm}
       </label>
+      {/* Las casillas viajan desde el estado, así lo enviado es siempre lo que muestra el botón. */}
+      <input type="hidden" name="includeContacts" value={includeContacts ? "on" : ""} />
+      <input type="hidden" name="confirmed" value={confirmed ? "on" : ""} />
       <div className="flex flex-wrap gap-2">
         <button type="submit" name="intent" value="test" disabled={pending} className={buttonSecondary}>
           {pending ? C.sending : C.sendTest}
