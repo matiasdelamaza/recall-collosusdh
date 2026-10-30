@@ -25,7 +25,7 @@ describe("POST /api/registro", () => {
   beforeEach(() => resetRateLimits());
 
   it("registro completo de serie afectada → 201 CREATED, archivos guardados, correos auditados", async () => {
-    const form = buildRegistrationForm({}, { extra: [{ field: "headtubePhoto", data: fakePng(), name: "direccion.png" }] });
+    const form = buildRegistrationForm({ phone: "912345678" }, { extra: [{ field: "headtubePhoto", data: fakePng(), name: "direccion.png" }] });
     const res = await POST(postForm(URL_, form, IP));
     expect(res.status).toBe(201);
     const body = await res.json();
@@ -38,6 +38,7 @@ describe("POST /api/registro", () => {
     expect(row.priority).toBe("NORMAL");
     expect(row.rut).toBe("12345678-5");
     expect(row.email).toBe("juana.perez@example.test");
+    expect(row.phone).toBe("+56 9 1234 5678");
     expect(row.acknowledgedStopRiding).toBe(true);
     expect(row.ipHash).toBeTruthy();
     expect(row.ipHash).not.toContain("192.0.2.10");
