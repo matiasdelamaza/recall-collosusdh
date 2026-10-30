@@ -119,6 +119,7 @@ Copia `.env.example` a `.env`. Ninguna variable con datos de contacto debe inven
 | `EMAIL_PROVIDER` | Sí | `console` (imprime en consola), `resend` o `smtp`. |
 | `EMAIL_FROM` | Sí | Remitente de los correos. |
 | `INTERNAL_NOTIFICATION_EMAILS` | Sí (prod) | Correos de Postventa que reciben la alerta de cada caso, separados por coma. `[POR DEFINIR]` |
+| `BROADCAST_TEST_EMAILS` | No | Correos que reciben la prueba de un comunicado (Comunicaciones), separados por coma. Vacío: se usan los internos. |
 | `RESEND_API_KEY` | Si `resend` | Clave de API de Resend. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS` | Si `smtp` | Credenciales SMTP. |
 | `STORAGE_PROVIDER` | Sí | `local` (disco) o `s3`. |

@@ -10,7 +10,7 @@ import { caseNotes, recallCases, CASE_STATUSES, SERIAL_DATABASE_STATUSES, type C
 import { isValidCaseId, normalizeCaseId } from "@/lib/case-id";
 import { ADMIN } from "@/lib/copy/es-admin";
 import { SERIALS_CSV_MAX_BYTES } from "@/lib/limits";
-import { getInternalNotificationEmails } from "@/lib/config";
+import { getBroadcastTestEmails } from "@/lib/config";
 import { notifyStageChange, sendBroadcast, sendBroadcastTest } from "@/lib/recall/follow-up";
 import { sendFromInbox } from "@/lib/recall/inbox";
 import { getMessage, linkSenderToCase, markCaseCalled, markInboundHandled } from "@/lib/recall/mailbox";
@@ -213,7 +213,7 @@ export async function broadcastAction(_prev: BroadcastActionState, formData: For
   const message = { subject, body };
 
   if (str(formData, "intent", 10) === "test") {
-    const to = getInternalNotificationEmails();
+    const to = getBroadcastTestEmails();
     if (to.length === 0) return { status: "error", message: C.noInternal };
     const ok = await sendBroadcastTest(message, to);
     return ok ? { status: "tested", message: C.testSent(to.join(", ")) } : { status: "error", message: C.testFailed };
