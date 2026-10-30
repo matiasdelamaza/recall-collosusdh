@@ -3,6 +3,12 @@ import { setupTestEnv } from "./helpers";
 
 setupTestEnv("ia");
 
+// Las server actions exigen sesión del panel; en estas pruebas se da por iniciada.
+vi.mock("@/lib/admin/session", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/admin/session")>()),
+  requireAdmin: async () => ({ actor: "admin-pruebas" }),
+}));
+
 const { redactForAi } = await import("@/lib/ai/redact");
 const { triageMessage, triageByRules } = await import("@/lib/recall/triage");
 
@@ -424,5 +430,206 @@ describe("resumen del caso", () => {
     const { first } = await seedCase();
     expect(await getCaseSummary(first.id)).toBeNull();
     expect(calls).toHaveLength(0);
+  });
+});
+
+describe("propuesta de respuesta", () => {
+  let n = 0;
+  const OK_DRAFT = { asunto: "Estado de tu reemplazo", cuerpo: "Hola {nombre}:\n\nTu cuadro está en camino. Llega en [completar: fecha]." };
+  type Body = { messages: { role: string; content: string }[] };
+  let bodies: Body[] = [];
+  const stubOk = (content: unknown = OK_DRAFT) => {
+    bodies = [];
+    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
+    vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return new Response(JSON.stringify({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify(content) } }] }), { status: 200 });
+    });
+  };
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  async function seedCase() {
+    const { getDb } = await import("@/db/client");
+    const { caseNotes, emailMessages, recallCases } = await import("@/db/schema");
+    const db = await getDb();
+    const i = ++n;
+    const [c] = await db
+      .insert(recallCases)
+      .values({
+        caseId: `RCDH-DR${"ABCDEFGHJK"[i % 10]}${"MNPQRSTUVW"[Math.floor(i / 10) % 10]}Z`,
+        customerName: "Leopoldina Errázuriz",
+        rut: "12.345.678-5",
+        email: `leopoldina${i}@example.test`,
+        phone: "+56 9 8765 4321",
+        region: "Metropolitana de Santiago",
+        city: "Santiago",
+        serialNumber: `S-DR${i}`,
+        serialRaw: `S-DR${i}`,
+        model: "COLLOSUS_DH7",
+        size: "L",
+        damageReported: "NO",
+        accidentReported: false,
+        acknowledgedStopRiding: true,
+        serialVerificationStatus: "AFFECTED",
+        requestType: "REPLACEMENT",
+        caseStatus: "VALIDATED",
+      })
+      .returning();
+    await db.insert(caseNotes).values({ caseId: c!.id, author: "admin", body: "NOTA-INTERNA-RESERVADA: cliente difícil" });
+    const base = Date.now() - 10 * 60 * 60 * 1000;
+    const inserted = await db
+      .insert(emailMessages)
+      .values([
+        {
+          caseId: c!.id,
+          direction: "IN" as const,
+          kind: "CUSTOMER_MESSAGE",
+          fromEmail: c!.email,
+          fromName: "Leopoldina Errázuriz",
+          toEmails: "postventa@example.test",
+          subject: "Consulta por mi cuadro",
+          bodyText: `Hola, soy Leopoldina, RUT 12.345.678-5, fono 987654321, correo ${c!.email}. ¿Cuándo llega mi cuadro?`,
+          status: "RECEIVED" as const,
+          createdAt: new Date(base),
+        },
+        {
+          caseId: c!.id,
+          direction: "OUT" as const,
+          kind: "MANUAL_EMAIL",
+          fromEmail: "postventa@example.test",
+          toEmails: c!.email,
+          subject: "Re: Consulta por mi cuadro",
+          bodyText: "Hola Leopoldina, estamos revisando tu caso.",
+          status: "SENT" as const,
+          createdAt: new Date(base + 60_000),
+        },
+      ])
+      .returning();
+    return { c: c!, first: inserted[0]!, db };
+  }
+
+  async function addFicha() {
+    const { saveKnowledge } = await import("@/lib/ai/knowledge");
+    await saveKnowledge({ title: "Plazos de despacho", body: "FICHA-ACTIVA: el despacho demora 10 días hábiles", active: true }, "t");
+  }
+
+  it("envía fichas y ejemplos rotulados, sin notas internas ni datos personales", async () => {
+    stubOk();
+    await addFicha();
+    const { draftReply } = await import("@/lib/ai/assist");
+    const { c, first } = await seedCase();
+
+    for (const input of [{ messageId: first.id }, { caseId: c.caseId }]) {
+      bodies = [];
+      const res = await draftReply(input);
+      expect(res).toMatchObject({ subject: "Re: Consulta por mi cuadro", body: OK_DRAFT.cuerpo });
+      expect(bodies).toHaveLength(1);
+      const sent = JSON.stringify(bodies[0]);
+      expect(sent).toContain("FICHA-ACTIVA");
+      expect(sent).toContain("solo tono y forma, no son fuente de datos");
+      expect(sent).toContain("¿Cuándo llega mi cuadro?");
+      expect(sent).not.toContain("NOTA-INTERNA-RESERVADA");
+      expect(sent).not.toContain("Leopoldina");
+      expect(sent).not.toContain("Errázuriz");
+      expect(sent).not.toContain(c.email);
+      expect(sent).not.toContain("987654321");
+      expect(sent).not.toContain("8765 4321");
+      expect(sent).not.toContain("12.345.678-5");
+      expect(sent).not.toContain(c.caseId);
+    }
+  });
+
+  it("sin correos entrantes usa el asunto que propone la IA", async () => {
+    stubOk();
+    const { draftReply } = await import("@/lib/ai/assist");
+    const { emailMessages } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const { c, db } = await seedCase();
+    await db.delete(emailMessages).where(eq(emailMessages.caseId, c.id));
+    expect(await draftReply({ caseId: c.caseId })).toMatchObject({ subject: OK_DRAFT.asunto, body: OK_DRAFT.cuerpo });
+  });
+
+  it("si OpenRouter falla devuelve null", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
+    vi.stubGlobal("fetch", async () => new Response("error", { status: 500 }));
+    const { draftReply } = await import("@/lib/ai/assist");
+    const { first } = await seedCase();
+    expect(await draftReply({ messageId: first.id })).toBeNull();
+  });
+
+  it("si falla la base de datos devuelve null en vez de lanzar", async () => {
+    stubOk();
+    const { draftReply } = await import("@/lib/ai/assist");
+    const { sql } = await import("drizzle-orm");
+    const { first, db } = await seedCase();
+    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+    await db.execute(sql`alter table ai_knowledge rename to ai_knowledge_fuera`);
+    try {
+      await expect(draftReply({ messageId: first.id })).resolves.toBeNull();
+      expect(errors.mock.calls.some((c) => String(c[0]).startsWith("[borrador]"))).toBe(true);
+    } finally {
+      await db.execute(sql`alter table ai_knowledge_fuera rename to ai_knowledge`);
+      errors.mockRestore();
+    }
+  });
+
+  it("sin clave devuelve null sin llamar", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "");
+    const calls: unknown[] = [];
+    vi.stubGlobal("fetch", async (...a: unknown[]) => {
+      calls.push(a);
+      return new Response("{}", { status: 200 });
+    });
+    const { draftReply } = await import("@/lib/ai/assist");
+    const { first } = await seedCase();
+    expect(await draftReply({ messageId: first.id })).toBeNull();
+    expect(calls).toHaveLength(0);
+  });
+
+  it("la acción devuelve la propuesta y audita solo el largo", async () => {
+    stubOk();
+    const { draftReplyAction } = await import("@/lib/admin/ai-actions");
+    const { auditEvents } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const { c, db } = await seedCase();
+    const fd = new FormData();
+    fd.set("draftCaseId", c.caseId);
+    const res = await draftReplyAction({ status: "idle" }, fd);
+    expect(res).toMatchObject({ status: "ok", subject: "Re: Consulta por mi cuadro", body: OK_DRAFT.cuerpo });
+    const rows = await db.select().from(auditEvents).where(eq(auditEvents.type, "AI_DRAFT_GENERATED"));
+    const row = rows.find((r) => r.caseId === c.id);
+    expect(row?.payload).toEqual({ length: OK_DRAFT.cuerpo.length });
+  });
+
+  it("la acción avisa si no hay clave o si la IA falla", async () => {
+    const { draftReplyAction } = await import("@/lib/admin/ai-actions");
+    const { ADMIN } = await import("@/lib/copy/es-admin");
+    const { first } = await seedCase();
+    const fd = new FormData();
+    fd.set("draftMessageId", first.id);
+    vi.stubEnv("OPENROUTER_API_KEY", "");
+    expect(await draftReplyAction({ status: "idle" }, fd)).toEqual({ status: "error", message: ADMIN.ai.draftNoKey });
+    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
+    vi.stubGlobal("fetch", async () => new Response("error", { status: 500 }));
+    expect(await draftReplyAction({ status: "idle" }, fd)).toEqual({ status: "error", message: ADMIN.ai.draftFailed });
+  });
+
+  it("sendEmailAction no envía un mensaje con partes por completar", async () => {
+    const { sendEmailAction } = await import("@/lib/admin/actions");
+    const { ADMIN } = await import("@/lib/copy/es-admin");
+    const { emailMessages } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const { c, db } = await seedCase();
+    const fd = new FormData();
+    fd.set("caseId", c.caseId);
+    fd.set("to", c.email);
+    fd.set("subject", "Asunto con borrador pendiente");
+    fd.set("body", "Hola:\n\nTu cuadro llega el [completar: fecha]. Saludos.");
+    expect(await sendEmailAction({ status: "idle" }, fd)).toEqual({ status: "error", message: ADMIN.ai.draftIncomplete });
+    expect(await db.select().from(emailMessages).where(eq(emailMessages.subject, "Asunto con borrador pendiente"))).toHaveLength(0);
   });
 });

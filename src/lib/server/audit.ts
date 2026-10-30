@@ -29,7 +29,8 @@ export type AuditType =
   | "EMAIL_LINKED"
   | "CUSTOMER_CALLED"
   | "MESSAGE_HANDLED"
-  | "AI_KNOWLEDGE_CHANGED";
+  | "AI_KNOWLEDGE_CHANGED"
+  | "AI_DRAFT_GENERATED";
 
 export interface AuditInput {
   type: AuditType;

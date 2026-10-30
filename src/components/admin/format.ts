@@ -88,6 +88,7 @@ export const AUDIT_TYPE_LABELS: Record<string, string> = {
   CUSTOMER_CALLED: "Llamada al cliente",
   MESSAGE_HANDLED: "Correo marcado como atendido",
   AI_KNOWLEDGE_CHANGED: "Entrenamiento de la IA modificado",
+  AI_DRAFT_GENERATED: "Propuesta de respuesta con IA",
 };
 
 export function labelAuditType(t: string): string {

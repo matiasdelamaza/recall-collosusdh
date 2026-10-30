@@ -468,5 +468,13 @@ export const ADMIN = {
       failed: "No se pudo generar el resumen.",
       retry: "Reintentar",
     },
+    draftButton: "Proponer respuesta con IA",
+    drafting: "Generando propuesta…",
+    draftReady: "Propuesta lista. Revísala y completa las partes marcadas [completar: …] antes de enviar.",
+    draftFailed: "No se pudo generar la propuesta. Inténtalo de nuevo o escribe la respuesta a mano.",
+    draftNoKey: "La propuesta con IA no está disponible: falta configurar la clave de OpenRouter.",
+    draftIncomplete: "El mensaje tiene partes por completar ([completar: …]). Reemplázalas por el dato correcto antes de enviar.",
+    replaceConfirm: "¿Reemplazar el asunto y el mensaje que escribiste por la propuesta de la IA?",
+    draftDefaultSubject: "Tu caso de reemplazo de cuadro",
   },
 } as const;

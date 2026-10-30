@@ -247,6 +247,8 @@ export async function sendEmailAction(_prev: SendEmailActionState, formData: For
   const body = str(formData, "body", 7000);
   if (subject.length < 3 || subject.length > 150) return { status: "error", message: I.invalidSubject };
   if (body.length < 10 || body.length > 6000) return { status: "error", message: I.invalidBody };
+  // Una propuesta de la IA con partes por completar no puede salir tal cual.
+  if (/\[completar/i.test(subject) || /\[completar/i.test(body)) return { status: "error", message: ADMIN.ai.draftIncomplete };
   const caseIdInput = str(formData, "caseId", 20);
   const c = caseIdInput ? await loadCase(caseIdInput) : null;
   if (caseIdInput && !c) return { status: "error", message: ADMIN.caseDetail.messages.invalid };

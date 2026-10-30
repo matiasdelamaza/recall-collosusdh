@@ -12,7 +12,7 @@ import { ADMIN } from "@/lib/copy/es-admin";
 import { EMPTY_MAIL_STATS, caseSignal, getMailStats, getThread, markMessagesRead } from "@/lib/recall/mailbox";
 
 export const dynamic = "force-dynamic";
-// El resumen con IA puede tardar hasta ~40 s (también al pulsar "Actualizar").
+// El resumen y la propuesta con IA pueden tardar hasta ~40 s.
 export const maxDuration = 60;
 
 const I = ADMIN.inbox;
@@ -101,6 +101,8 @@ export default async function AdminThreadPage({ params, searchParams }: { params
                 serial: c?.serialNumber ?? null,
                 replySubject: lastIn ? replySubject(lastIn.subject) : undefined,
               }}
+              draft={{ messageId: message.id }}
+              aiEnabled={Boolean(process.env.OPENROUTER_API_KEY)}
             />
           </section>
         </div>
