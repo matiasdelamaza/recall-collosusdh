@@ -2,7 +2,7 @@
  * Consultas de casos para el panel interno (SOLO servidor).
  */
 import "server-only";
-import { and, asc, count, desc, eq, ilike, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, type SQL } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import {
   auditEvents,
@@ -12,7 +12,6 @@ import {
   CASE_STATUSES,
   PRIORITIES,
   REQUEST_TYPES,
-  SERIAL_VERIFICATION_STATUSES,
   TRI_STATE,
   type AuditEvent,
   type CaseFile,
@@ -36,15 +35,21 @@ export interface CaseListFilters {
   damage?: TriState;
   accident?: "YES" | "NO";
   requestType?: RequestType;
-  /** "ALL" = todas las verificaciones. Sin filtro explícito la lista muestra solo unidades afectadas. */
-  verification?: SerialVerificationStatus | typeof VERIFICATION_ALL;
+  /** "ALL" = todas las verificaciones de CASE_LIST_VERIFICATIONS (por defecto). */
+  verification?: (typeof CASE_LIST_VERIFICATIONS)[number] | typeof VERIFICATION_ALL;
   page?: number;
   pageSize?: number;
 }
 
 export const DEFAULT_PAGE_SIZE = 50;
 
-/** Valor del filtro Verificación para ver todos los casos (afectadas, no afectadas y en revisión). */
+/**
+ * Casos muestra solo unidades afectadas y no identificadas (30-10-2026, pedido de Cross Mountain).
+ * El resto (p. ej. tanda reforzada) queda solo en Consultas.
+ */
+export const CASE_LIST_VERIFICATIONS = ["AFFECTED", "NOT_IDENTIFIED"] as const satisfies readonly SerialVerificationStatus[];
+
+/** Valor del filtro Verificación para ver todas las de CASE_LIST_VERIFICATIONS. */
 export const VERIFICATION_ALL = "ALL";
 
 /** Valores del filtro Estado: sin cerrados (por defecto) o todos los estados. */
@@ -68,11 +73,7 @@ export function parseCaseFilters(params: Record<string, string | string[] | unde
     damage: inList(pick("damage"), TRI_STATE),
     accident: inList(pick("accident"), ["YES", "NO"] as const),
     requestType: inList(pick("requestType"), REQUEST_TYPES),
-    // Casos parte mostrando solo unidades afectadas (27-10-2026, pedido de Cross Mountain); una búsqueda abarca todos.
-    verification:
-      pick("verification") === VERIFICATION_ALL
-        ? VERIFICATION_ALL
-        : (inList(pick("verification"), SERIAL_VERIFICATION_STATUSES) ?? (pick("q") ? VERIFICATION_ALL : "AFFECTED")),
+    verification: inList(pick("verification"), CASE_LIST_VERIFICATIONS) ?? VERIFICATION_ALL,
     page,
     pageSize: DEFAULT_PAGE_SIZE,
   };
@@ -87,6 +88,7 @@ function buildWhere(filters: CaseListFilters): SQL | undefined {
   if (filters.accident) conds.push(eq(recallCases.accidentReported, filters.accident === "YES"));
   if (filters.requestType) conds.push(eq(recallCases.requestType, filters.requestType));
   if (filters.verification && filters.verification !== VERIFICATION_ALL) conds.push(eq(recallCases.serialVerificationStatus, filters.verification));
+  else conds.push(inArray(recallCases.serialVerificationStatus, [...CASE_LIST_VERIFICATIONS]));
 
   const q = filters.q?.trim();
   if (q) {

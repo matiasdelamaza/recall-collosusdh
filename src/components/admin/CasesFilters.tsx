@@ -1,6 +1,6 @@
-import { CASE_STATUSES, PRIORITIES, REQUEST_TYPES, SERIAL_VERIFICATION_STATUSES, TRI_STATE } from "@/db/schema";
+import { CASE_STATUSES, PRIORITIES, REQUEST_TYPES, TRI_STATE } from "@/db/schema";
 import { ADMIN } from "@/lib/copy/es-admin";
-import { STATUS_ALL, STATUS_OPEN, VERIFICATION_ALL, type CaseListFilters } from "@/lib/recall/cases";
+import { CASE_LIST_VERIFICATIONS, STATUS_ALL, STATUS_OPEN, VERIFICATION_ALL, type CaseListFilters } from "@/lib/recall/cases";
 import { labelPriority, labelRequestType, labelStatus, labelTri, labelVerification } from "./format";
 import { buttonPrimary, buttonSecondary, inputClass, labelClass, selectClass } from "./ui";
 
@@ -26,7 +26,7 @@ export function CasesFilters({ filters }: { filters: CaseListFilters }) {
       />
       <Select id="priority" label={F.priority} value={filters.priority ?? ""} options={PRIORITIES.map((s) => [s, labelPriority(s)])} />
       <Select id="requestType" label={F.requestType} value={filters.requestType ?? ""} options={REQUEST_TYPES.map((s) => [s, labelRequestType(s)])} />
-      <Select id="verification" label={F.verification} value={filters.verification ?? ""} allValue={VERIFICATION_ALL} options={SERIAL_VERIFICATION_STATUSES.map((s) => [s, labelVerification(s)])} />
+      <Select id="verification" label={F.verification} value={filters.verification ?? ""} allValue={VERIFICATION_ALL} options={CASE_LIST_VERIFICATIONS.map((s) => [s, labelVerification(s)])} />
       <Select id="damage" label={F.damage} value={filters.damage ?? ""} options={TRI_STATE.map((s) => [s, labelTri(s)])} />
       <Select
         id="accident"

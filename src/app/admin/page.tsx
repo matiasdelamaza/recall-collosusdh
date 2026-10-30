@@ -4,7 +4,7 @@ import { CasesTable } from "@/components/admin/CasesTable";
 import { PageHeader, buttonSecondary } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/session";
 import { ADMIN } from "@/lib/copy/es-admin";
-import { listCases, parseCaseFilters, STATUS_ALL, STATUS_OPEN, VERIFICATION_ALL } from "@/lib/recall/cases";
+import { listCases, parseCaseFilters, STATUS_ALL, STATUS_OPEN } from "@/lib/recall/cases";
 
 export const dynamic = "force-dynamic";
 
@@ -29,14 +29,6 @@ export default async function AdminCasesPage({ searchParams }: { searchParams: P
       </PageHeader>
 
       <CasesFilters filters={filters} />
-      {filters.verification === "AFFECTED" ? (
-        <p className="mb-3 text-sm text-ink-500">
-          {ADMIN.cases.onlyAffected}{" "}
-          <Link href={`/admin${filtersToQuery(filters, { verification: VERIFICATION_ALL, page: undefined })}`} className="font-semibold text-ink underline underline-offset-2">
-            {ADMIN.cases.showAll}
-          </Link>
-        </p>
-      ) : null}
       {filters.status === STATUS_OPEN ? (
         <p className="mb-3 text-sm text-ink-500">
           {ADMIN.cases.closedHidden}{" "}

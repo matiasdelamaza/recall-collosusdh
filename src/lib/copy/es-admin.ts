@@ -213,8 +213,6 @@ export const ADMIN = {
     },
     exportCsv: "Exportar CSV",
     exportXlsx: "Exportar Excel",
-    onlyAffected: "Mostrando solo unidades afectadas.",
-    showAll: "Ver todos los casos",
     closedHidden: "Los casos cerrados no se muestran.",
     showClosed: "Incluir cerrados",
     columns: {
