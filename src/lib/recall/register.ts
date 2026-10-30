@@ -19,6 +19,7 @@ import {
 import { MAX_ACTIVE_CASES_PER_SERIAL } from "@/lib/config";
 import { FORM_VALIDATION, SERIAL_VALIDATION } from "@/lib/copy/es";
 import { generateCaseId } from "@/lib/case-id";
+import { normalizePhone } from "@/lib/phone";
 import { CHILE_REGIONS } from "@/lib/regions";
 import { isValidRut, normalizeRut } from "@/lib/rut";
 import { normalizeSerial } from "@/lib/serial";
@@ -57,7 +58,7 @@ export const registrationSchema = z.object({
   customerName: clean(120).pipe(z.string().min(3, FORM_VALIDATION.customerName)),
   rut: z.string().refine((v) => isValidRut(v), FORM_VALIDATION.rut).transform(normalizeRut),
   email: clean(254).pipe(z.email(FORM_VALIDATION.email)).transform((v) => v.toLowerCase()),
-  phone: clean(30).pipe(z.string().regex(/^\+?[0-9][0-9 ()-]{6,19}$/, FORM_VALIDATION.phone)),
+  phone: clean(30).pipe(z.string().regex(/^\+?[0-9][0-9 ()-]{6,19}$/, FORM_VALIDATION.phone)).transform(normalizePhone),
   region: z.enum(CHILE_REGIONS, { error: FORM_VALIDATION.region }),
   city: clean(80).pipe(z.string().min(2, FORM_VALIDATION.city)),
   model: z.enum(BIKE_MODELS, { error: FORM_VALIDATION.model }),
