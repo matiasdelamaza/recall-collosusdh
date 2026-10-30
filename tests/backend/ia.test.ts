@@ -167,4 +167,53 @@ describe("contexto de la IA y entrenamiento", () => {
     await setExampleExcluded(kept.id, false, "t");
     expect((await buildAiContext()).examples).toContain("revisaremos tu bicicleta");
   });
+
+  it("ejemplos: 20 no excluidos, sin caso se anonimiza el saludo, solo enviados y tope de largo", async () => {
+    const { getDb } = await import("@/db/client");
+    const { emailMessages } = await import("@/db/schema");
+    const { buildAiContext, listExamplesForAdmin } = await knowledge();
+    const db = await getDb();
+    await db.delete(emailMessages);
+    const base = Date.now();
+    const rows = Array.from({ length: 30 }, (_, i) => ({
+      direction: "OUT" as const,
+      kind: "MANUAL_EMAIL",
+      fromEmail: "postventa@example.test",
+      toEmails: "juan.cliente@example.test",
+      subject: `S${i}`,
+      bodyText: `Hola Juan Pérez:\n\nRespuesta número ${i} a juan.cliente@example.test`,
+      status: "SENT" as const,
+      createdAt: new Date(base + i * 1000),
+      // los 5 más recientes y 3 más antiguos quedan excluidos
+      aiExcludedAt: i >= 25 || i < 3 ? new Date() : null,
+    }));
+    await db.insert(emailMessages).values(rows);
+    await db.insert(emailMessages).values([
+      { ...rows[0]!, subject: "Fallido", bodyText: "Correo fallido", status: "FAILED", aiExcludedAt: null, createdAt: new Date(base + 99_000) },
+      { ...rows[0]!, subject: "Rebotado", bodyText: "Correo rebotado", status: "BOUNCED", aiExcludedAt: null, createdAt: new Date(base + 98_000) },
+      { ...rows[0]!, subject: "Largo", bodyText: `Hola Ana:\n\n${"a".repeat(5000)}`, status: "SENT", aiExcludedAt: null, createdAt: new Date(base + 97_000) },
+    ]);
+    const { used, excluded } = await listExamplesForAdmin();
+    const ctx = await buildAiContext();
+    expect(used).toHaveLength(20);
+    expect(used.every((e) => !e.excluded)).toBe(true);
+    expect(excluded.length).toBeGreaterThan(0);
+    expect(excluded.every((e) => e.excluded)).toBe(true);
+    expect(used.map((e) => e.subject)).not.toContain("Fallido");
+    expect(used.map((e) => e.subject)).not.toContain("Rebotado");
+    // El contexto de la IA contiene exactamente los mismos 20 ejemplos que muestra la página.
+    expect(ctx.examples.split("\n\n---\n\n")).toHaveLength(20);
+    for (const e of used) expect(ctx.examples).toContain(`Asunto: ${e.subject}\n${e.text}`);
+    expect(ctx.examples).not.toContain("Juan");
+    expect(ctx.examples).not.toContain("juan.cliente@example.test");
+    expect(ctx.examples).toContain("Hola {nombre}");
+    expect(ctx.examples).not.toContain("Hola Ana");
+    expect(used.find((e) => e.subject === "Largo")!.text.length).toBe(3001);
+    expect(used.find((e) => e.subject === "Largo")!.text.endsWith("…")).toBe(true);
+  });
+
+  it("saveKnowledge normaliza saltos de línea antes de medir", async () => {
+    const { saveKnowledge } = await knowledge();
+    expect(await saveKnowledge({ title: "crlf", body: "a\r\n".repeat(3000).trim(), active: false }, "t")).toEqual({ ok: true });
+  });
 });

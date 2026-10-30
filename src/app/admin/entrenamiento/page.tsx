@@ -3,7 +3,7 @@ import { fmtDateTime, fmtNumber } from "@/components/admin/format";
 import { AlertBox, Badge, Card, Flash, PageHeader, buttonDanger, buttonPrimary, buttonSecondary, inputClass, labelClass } from "@/components/admin/ui";
 import { deleteKnowledgeAction, saveKnowledgeAction, toggleExampleAction } from "@/lib/admin/ai-actions";
 import { requireAdmin } from "@/lib/admin/session";
-import { EXAMPLES_MAX, KNOWLEDGE_BODY_MAX, KNOWLEDGE_TITLE_MAX, KNOWLEDGE_TOTAL_MAX, activeKnowledgeChars, fixedContext, listExampleReplies, listKnowledge } from "@/lib/ai/knowledge";
+import { EXAMPLES_MAX, KNOWLEDGE_BODY_MAX, KNOWLEDGE_TITLE_MAX, KNOWLEDGE_TOTAL_MAX, activeKnowledgeChars, fixedContext, listExamplesForAdmin, listKnowledge } from "@/lib/ai/knowledge";
 import { ADMIN } from "@/lib/copy/es-admin";
 
 export const dynamic = "force-dynamic";
@@ -15,10 +15,11 @@ export default async function AdminTrainingPage({ searchParams }: { searchParams
   await requireAdmin();
   const sp = await searchParams;
   const msgKey = Array.isArray(sp.msg) ? sp.msg[0] : sp.msg;
-  const msg = msgKey && msgKey in T.messages ? { key: msgKey, text: T.messages[msgKey as keyof typeof T.messages] } : null;
-  const [cards, examples] = await Promise.all([listKnowledge(), listExampleReplies({ includeExcluded: true })]);
+  const msg = msgKey && Object.hasOwn(T.messages, msgKey) ? { key: msgKey, text: T.messages[msgKey as keyof typeof T.messages] } : null;
+  const [cards, { used: usedExamples, excluded: excludedExamples }] = await Promise.all([listKnowledge(), listExamplesForAdmin()]);
+  const examples = [...usedExamples, ...excludedExamples];
   const used = activeKnowledgeChars(cards);
-  const examplesUsed = examples.filter((e) => !e.excluded).length;
+  const examplesUsed = usedExamples.length;
 
   return (
     <>

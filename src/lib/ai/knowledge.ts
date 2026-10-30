@@ -4,7 +4,7 @@
  * Todo texto de ejemplo se anonimiza antes de salir de este módulo.
  */
 import "server-only";
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNotNull, isNull, notInArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
 import { aiKnowledge, emailMessages, recallCases, type AiKnowledgeRow } from "@/db/schema";
 import { ADMIN } from "@/lib/copy/es-admin";
@@ -37,8 +37,8 @@ export function activeKnowledgeChars(rows: AiKnowledgeRow[]): number {
 }
 
 export async function saveKnowledge(input: { id?: string; title: string; body: string; active: boolean }, actor: string): Promise<SaveKnowledgeResult> {
-  const title = input.title.trim();
-  const body = input.body.trim();
+  const title = input.title.replace(/\r\n/g, "\n").trim();
+  const body = input.body.replace(/\r\n/g, "\n").trim();
   if (!title || title.length > KNOWLEDGE_TITLE_MAX || !body || body.length > KNOWLEDGE_BODY_MAX) return { ok: false, error: "invalid" };
 
   const db = await getDb();
@@ -82,36 +82,66 @@ export interface ExampleReply {
   createdAt: Date;
 }
 
-/** Últimas respuestas manuales del equipo (anonimizadas y sin firma), más recientes primero. */
-export async function listExampleReplies(opts: { includeExcluded?: boolean } = {}): Promise<ExampleReply[]> {
+/** Máximo de caracteres de cada ejemplo. */
+export const EXAMPLE_TEXT_MAX = 3000;
+/** Estados de envío que no cuentan como respuesta real al cliente. */
+const NOT_SENT = ["FAILED", "BOUNCED", "COMPLAINED"] as const;
+
+/** Sin caso no hay nombre conocido: el nombre del saludo inicial se reemplaza igual. */
+function redactGreeting(text: string): string {
+  return text.replace(/^(\s*(?:Hola|Estimad[oa]s?(?:\/a)?))[ \t]+[^:,\n]+/i, "$1 {nombre}");
+}
+
+type ExampleFilter = "used" | "excluded" | "all";
+
+async function queryExamples(filter: ExampleFilter): Promise<ExampleReply[]> {
   const db = await getDb();
-  const base = eq(emailMessages.kind, "MANUAL_EMAIL");
+  const conds = [eq(emailMessages.kind, "MANUAL_EMAIL"), eq(emailMessages.direction, "OUT"), notInArray(emailMessages.status, [...NOT_SENT])];
+  if (filter === "used") conds.push(isNull(emailMessages.aiExcludedAt));
+  if (filter === "excluded") conds.push(isNotNull(emailMessages.aiExcludedAt));
   const rows = await db
     .select({
       id: emailMessages.id,
       subject: emailMessages.subject,
       bodyText: emailMessages.bodyText,
+      toEmails: emailMessages.toEmails,
       excludedAt: emailMessages.aiExcludedAt,
       createdAt: emailMessages.createdAt,
+      hasCase: emailMessages.caseId,
       customerName: recallCases.customerName,
       caseId: recallCases.caseId,
       serial: recallCases.serialNumber,
     })
     .from(emailMessages)
     .leftJoin(recallCases, eq(emailMessages.caseId, recallCases.id))
-    .where(opts.includeExcluded ? base : and(base, isNull(emailMessages.aiExcludedAt)))
+    .where(and(...conds))
     .orderBy(desc(emailMessages.createdAt))
     .limit(EXAMPLES_MAX);
   return rows.map((r) => {
     const ctx = { names: [r.customerName], caseId: r.caseId, serial: r.serial };
-    return {
-      id: r.id,
-      subject: redactForAi(r.subject, ctx),
-      text: redactForAi(stripManualFooter(r.bodyText), ctx),
-      excluded: r.excludedAt !== null,
-      createdAt: r.createdAt,
-    };
+    let body = stripManualFooter(r.bodyText);
+    let subject = r.subject;
+    // Además del patrón general de correos, se quitan literalmente las direcciones del destinatario.
+    for (const addr of r.toEmails.split(/[,;\s]+/).filter(Boolean)) {
+      body = body.split(addr).join("[correo]");
+      subject = subject.split(addr).join("[correo]");
+    }
+    if (!r.hasCase) body = redactGreeting(body);
+    let text = redactForAi(body, ctx);
+    if (text.length > EXAMPLE_TEXT_MAX) text = `${text.slice(0, EXAMPLE_TEXT_MAX)}…`;
+    return { id: r.id, subject: redactForAi(subject, ctx), text, excluded: r.excludedAt !== null, createdAt: r.createdAt };
   });
+}
+
+/** Últimas respuestas manuales enviadas (anonimizadas y sin firma), más recientes primero. */
+export async function listExampleReplies(opts: { includeExcluded?: boolean } = {}): Promise<ExampleReply[]> {
+  return queryExamples(opts.includeExcluded ? "all" : "used");
+}
+
+/** Lo que usa la IA (las últimas 20 no excluidas) y, aparte, las excluidas más recientes. Misma consulta que buildAiContext. */
+export async function listExamplesForAdmin(): Promise<{ used: ExampleReply[]; excluded: ExampleReply[] }> {
+  const [used, excluded] = await Promise.all([queryExamples("used"), queryExamples("excluded")]);
+  return { used, excluded };
 }
 
 export async function setExampleExcluded(messageId: string, excluded: boolean, actor: string): Promise<void> {
