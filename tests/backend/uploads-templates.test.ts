@@ -3,6 +3,7 @@ import { fakeJpeg, fakePng, fakeText } from "./helpers";
 
 const { detectImageType, sanitizeFilename, buildStorageKey } = await import("@/lib/server/uploads");
 const { customerConfirmationEmail, customerResultAffectedEmail, customerResultNotIdentifiedEmail, internalNotificationEmail } = await import("@/lib/email/templates");
+const { EMAIL } = await import("@/lib/copy/es");
 const { assertSafeKey } = await import("@/lib/storage/local");
 
 describe("detección de tipo de imagen por magic bytes", () => {
@@ -42,7 +43,7 @@ describe("detección de tipo de imagen por magic bytes", () => {
 
 const baseCase = {
   caseId: "RCDH-ABC23",
-  customerName: "Juana <Pérez>",
+  customerName: "<Juana> Pérez",
   email: "juana@example.test",
   phone: "+56 9 1234 5678",
   rut: "12345678-5",
@@ -64,6 +65,12 @@ const ctx = { siteUrl: "https://recallcollosusdh.cl" };
 const ENGLISH_FORBIDDEN = /\b(stop riding|affected|manual review|replacement frame|safety recall|your bike is safe|defective|case id|serial number)\b/i;
 
 describe("plantillas de correo", () => {
+  it("saluda solo con el primer nombre, con mayúscula inicial", () => {
+    expect(EMAIL.greeting("bruno eitel")).toBe("Hola Bruno,");
+    expect(EMAIL.greeting("  Lucas Francisco Toro Ataya ")).toBe("Hola Lucas,");
+    expect(EMAIL.greeting("")).toBe("Hola,");
+  });
+
   it("confirmación de reemplazo: español, instrucción de no uso, datos del caso, sin contacto inventado", () => {
     const m = customerConfirmationEmail(baseCase, ctx);
     expect(m.subject).toBe("Confirmación de registro — Aviso de suspensión de uso Polygon Collosus DH");
@@ -72,8 +79,8 @@ describe("plantillas de correo", () => {
     expect(m.text).toContain("DEMO-AFECTADA-0001");
     expect(m.text).toContain("se informarán en recallcollosusdh.cl");
     expect(m.text).not.toMatch(ENGLISH_FORBIDDEN);
-    expect(m.html).toContain("Juana &lt;Pérez&gt;");
-    expect(m.html).not.toContain("<Pérez>");
+    expect(m.html).toContain("Hola &lt;Juana&gt;,");
+    expect(m.html).not.toContain("<Juana>");
   });
 
   it("confirmación de revisión manual usa recomendación en vez de orden absoluta", () => {
