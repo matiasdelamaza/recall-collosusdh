@@ -39,7 +39,7 @@ export async function callOpenRouterJson<T>(opts: OpenRouterJsonOptions<T>): Pro
   const { tag } = opts;
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) {
-    console.warn(`[${tag}] sin OPENROUTER_API_KEY; se usan solo las reglas`);
+    console.warn(`[${tag}] sin OPENROUTER_API_KEY; se omite el análisis con IA`);
     return null;
   }
   try {
@@ -61,7 +61,7 @@ export async function callOpenRouterJson<T>(opts: OpenRouterJsonOptions<T>): Pro
       }),
     });
     if (!res.ok) {
-      if (res.status === 429) console.warn(`[${tag}] límite de OpenRouter; se usan solo las reglas`);
+      if (res.status === 429) console.warn(`[${tag}] límite de OpenRouter; se omite el análisis con IA`);
       else console.error(`[${tag}] error de OpenRouter ${res.status}:`, (await res.text()).slice(0, 300));
       return null;
     }

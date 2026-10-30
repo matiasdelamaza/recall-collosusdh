@@ -217,3 +217,195 @@ describe("contexto de la IA y entrenamiento", () => {
     expect(await saveKnowledge({ title: "crlf", body: "a\r\n".repeat(3000).trim(), active: false }, "t")).toEqual({ ok: true });
   });
 });
+
+describe("resumen del caso", () => {
+  let n = 0;
+  const OK_SUMMARY = { resumen: "Cliente pide estado del reemplazo", pide: "Saber cuándo llega el cuadro", pendiente: ["Confirmar fecha"], alerta: "" };
+  type Body = { messages: { role: string; content: string }[] };
+  let bodies: Body[] = [];
+  const stubOk = () => {
+    bodies = [];
+    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
+    vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
+      bodies.push(JSON.parse(String(init.body)));
+      return new Response(JSON.stringify({ choices: [{ finish_reason: "stop", message: { content: JSON.stringify(OK_SUMMARY) } }] }), { status: 200 });
+    });
+  };
+  const userText = (b: Body) => b.messages.find((m) => m.role === "user")!.content;
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  async function seedCase(opts: { messages?: number; bodyOf?: (i: number) => string } = {}) {
+    const { getDb } = await import("@/db/client");
+    const { emailMessages, recallCases } = await import("@/db/schema");
+    const db = await getDb();
+    const i = ++n;
+    const [c] = await db
+      .insert(recallCases)
+      .values({
+        caseId: `RCDH-RS${String(i).padStart(3, "0")}`,
+        customerName: "Bartolomé Iturriaga",
+        rut: "12345678-5",
+        email: `bartolome${i}@example.test`,
+        phone: "+56 9 8765 4321",
+        region: "Metropolitana de Santiago",
+        city: "Santiago",
+        serialNumber: `S-RS${i}`,
+        serialRaw: `S-RS${i}`,
+        model: "COLLOSUS_DH7",
+        size: "L",
+        damageReported: "YES",
+        accidentReported: true,
+        acknowledgedStopRiding: true,
+        serialVerificationStatus: "AFFECTED",
+        requestType: "REPLACEMENT",
+        caseStatus: "VALIDATED",
+      })
+      .returning();
+    const base = Date.now() - 10 * 60 * 60 * 1000;
+    const count = opts.messages ?? 2;
+    const rows = Array.from({ length: count }, (_, k) => ({
+      caseId: c!.id,
+      direction: (k % 2 === 0 ? "IN" : "OUT") as "IN" | "OUT",
+      kind: k % 2 === 0 ? "CUSTOMER_MESSAGE" : "MANUAL_EMAIL",
+      fromEmail: k % 2 === 0 ? c!.email : "postventa@example.test",
+      fromName: k % 2 === 0 ? "Bartolomé Iturriaga" : null,
+      toEmails: k % 2 === 0 ? "postventa@example.test" : c!.email,
+      subject: `Asunto ${k}`,
+      bodyText: opts.bodyOf ? opts.bodyOf(k) : `Mensaje ${k} de Bartolomé, fono 987654321`,
+      status: (k % 2 === 0 ? "RECEIVED" : "SENT") as "RECEIVED" | "SENT",
+      createdAt: new Date(base + k * 60_000),
+    }));
+    const inserted = await db.insert(emailMessages).values(rows).returning();
+    return { c: c!, first: inserted[0]!, db };
+  }
+
+  it("guarda el resumen y no vuelve a llamar hasta que llega un correo nuevo", async () => {
+    stubOk();
+    const { getCaseSummary } = await import("@/lib/ai/assist");
+    const { emailMessages, aiSummaries } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const { c, first, db } = await seedCase();
+
+    const s1 = await getCaseSummary(first.id);
+    expect(s1?.content).toEqual(OK_SUMMARY);
+    expect(bodies).toHaveLength(1);
+    const user = userText(bodies[0]!);
+    expect(user).not.toContain("Bartolomé");
+    expect(user).not.toContain("Iturriaga");
+    expect(user).not.toContain(c.email);
+    expect(user).not.toContain("987654321");
+    expect(user).not.toContain(c.caseId);
+    expect(user).toContain("Cliente");
+    expect(user).toContain("Postventa");
+    const [row] = await db.select().from(aiSummaries).where(eq(aiSummaries.threadKey, c.id));
+    expect(row?.content).toEqual(OK_SUMMARY);
+
+    await getCaseSummary(first.id);
+    expect(bodies).toHaveLength(1);
+
+    await db.insert(emailMessages).values({
+      caseId: c.id,
+      direction: "IN",
+      kind: "CUSTOMER_MESSAGE",
+      fromEmail: c.email,
+      toEmails: "postventa@example.test",
+      subject: "Otra consulta",
+      bodyText: "¿Hay novedades?",
+      status: "RECEIVED",
+    });
+    await getCaseSummary(first.id);
+    expect(bodies).toHaveLength(2);
+  });
+
+  it("force: true siempre llama", async () => {
+    stubOk();
+    const { getCaseSummary } = await import("@/lib/ai/assist");
+    const { first } = await seedCase();
+    await getCaseSummary(first.id);
+    await getCaseSummary(first.id, { force: true });
+    await getCaseSummary(first.id, { force: true });
+    expect(bodies).toHaveLength(3);
+  });
+
+  it("hilo sin caso: clave por remitente y sin el nombre del remitente", async () => {
+    stubOk();
+    const { getCaseSummary } = await import("@/lib/ai/assist");
+    const { getDb } = await import("@/db/client");
+    const { emailMessages, aiSummaries } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const db = await getDb();
+    const from = `ximena.sincaso${++n}@example.test`;
+    const [m] = await db
+      .insert(emailMessages)
+      .values({
+        direction: "IN",
+        kind: "CUSTOMER_MESSAGE",
+        fromEmail: from,
+        fromName: "Ximena Valdivieso",
+        toEmails: "postventa@example.test",
+        subject: "Consulta de Ximena",
+        bodyText: "Hola, soy Ximena Valdivieso y tengo una Collosus. Escríbanme a " + from,
+        status: "RECEIVED",
+      })
+      .returning();
+    const s = await getCaseSummary(m!.id);
+    expect(s).not.toBeNull();
+    const user = userText(bodies[0]!);
+    expect(user).not.toContain("Ximena");
+    expect(user).not.toContain("Valdivieso");
+    expect(user).not.toContain(from);
+    expect(user).toContain("tengo una Collosus");
+    const rows = await db.select().from(aiSummaries).where(eq(aiSummaries.threadKey, `email:${from}`));
+    expect(rows).toHaveLength(1);
+  });
+
+  it("solo envía los últimos 15 correos y cada cuerpo hasta 3.000 caracteres", async () => {
+    stubOk();
+    const { getCaseSummary, buildThreadText } = await import("@/lib/ai/assist");
+    const { first } = await seedCase({ messages: 60, bodyOf: (k) => (k === 50 ? `Correo ${k} ${"z".repeat(50_000)}` : `Correo ${k} contenido`) });
+    await getCaseSummary(first.id);
+    const user = userText(bodies[0]!);
+    const headers = user.match(/^### Correo \d+/gm) ?? [];
+    expect(headers).toHaveLength(15);
+    expect(user).not.toContain("Correo 44 contenido");
+    expect(user).toContain("Correo 45 contenido");
+    expect(user).toContain("Correo 59 contenido");
+    expect(user).not.toContain("z".repeat(3000));
+    expect(user).toContain("z".repeat(2000));
+
+    const text = buildThreadText(
+      [{ ...first, bodyText: "9".repeat(10_000) + " fono 987654321" }],
+      {},
+    );
+    const body = text.split("\n").slice(2).join("\n");
+    expect(body.length).toBeLessThanOrEqual(3000);
+  });
+
+  it("si OpenRouter falla devuelve null y no guarda nada", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
+    vi.stubGlobal("fetch", async () => new Response("error", { status: 500 }));
+    const { getCaseSummary } = await import("@/lib/ai/assist");
+    const { aiSummaries } = await import("@/db/schema");
+    const { eq } = await import("drizzle-orm");
+    const { c, first, db } = await seedCase();
+    expect(await getCaseSummary(first.id)).toBeNull();
+    expect(await db.select().from(aiSummaries).where(eq(aiSummaries.threadKey, c.id))).toHaveLength(0);
+  });
+
+  it("sin clave devuelve null sin llamar", async () => {
+    vi.stubEnv("OPENROUTER_API_KEY", "");
+    const calls: unknown[] = [];
+    vi.stubGlobal("fetch", async (...a: unknown[]) => {
+      calls.push(a);
+      return new Response("{}", { status: 200 });
+    });
+    const { getCaseSummary } = await import("@/lib/ai/assist");
+    const { first } = await seedCase();
+    expect(await getCaseSummary(first.id)).toBeNull();
+    expect(calls).toHaveLength(0);
+  });
+});

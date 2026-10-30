@@ -1,9 +1,10 @@
 "use server";
 /**
- * Server actions de la sección Entrenamiento de la IA.
+ * Server actions de la IA: sección Entrenamiento y resumen del caso en la bandeja.
  */
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { getCaseSummary } from "@/lib/ai/assist";
 import { deleteKnowledge, saveKnowledge, setExampleExcluded } from "@/lib/ai/knowledge";
 import { requireAdmin } from "./session";
 
@@ -53,4 +54,13 @@ export async function toggleExampleAction(formData: FormData): Promise<void> {
   if (!id) done("invalid");
   await setExampleExcluded(id, excluded, actor);
   done(excluded ? "excluded" : "included");
+}
+
+/** Vuelve a generar el resumen del caso aunque no haya correos nuevos. */
+export async function refreshSummaryAction(formData: FormData): Promise<void> {
+  await requireAdmin();
+  const messageId = str(formData, "messageId", 64);
+  if (!UUID.test(messageId)) return;
+  await getCaseSummary(messageId, { force: true });
+  revalidatePath(`/admin/bandeja/${messageId}`);
 }

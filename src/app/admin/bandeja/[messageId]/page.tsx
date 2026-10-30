@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
+import { CaseSummaryCard, CaseSummarySkeleton } from "@/components/admin/CaseSummaryCard";
 import { CallForm } from "@/components/admin/CallForm";
 import { EmailComposer } from "@/components/admin/EmailComposer";
 import { Avatar, MessageTimeline, SignalBadge, SignalReasons, baseSubject, telHref } from "@/components/admin/mail";
@@ -102,6 +104,9 @@ export default async function AdminThreadPage({ params, searchParams }: { params
         </div>
 
         <aside className="grid min-w-0 content-start gap-4">
+          <Suspense fallback={<CaseSummarySkeleton />}>
+            <CaseSummaryCard messageId={message.id} />
+          </Suspense>
           {c ? (
             <Card title={ADMIN.caseDetail.sections.customer}>
               <div className="grid gap-2 text-sm">

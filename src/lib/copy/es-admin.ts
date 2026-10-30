@@ -455,5 +455,16 @@ export const ADMIN = {
       excluded: "Respuesta excluida de los ejemplos.",
       included: "Respuesta incluida de nuevo en los ejemplos.",
     },
+    summary: {
+      title: "Resumen con IA",
+      loading: "Preparando el resumen…",
+      asks: "Qué pide",
+      pending: "Pendiente",
+      generatedAt: (when: string) => `Generado el ${when}`,
+      disclaimer: "Generado con IA: revísalo antes de actuar.",
+      refresh: "Actualizar",
+      failed: "No se pudo generar el resumen.",
+      retry: "Reintentar",
+    },
   },
 } as const;
