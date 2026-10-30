@@ -118,7 +118,7 @@ describe("Seguimiento por correo a clientes con unidad afectada", () => {
     expect(done.text).toContain("✓ Reemplazo realizado");
 
     const weekly = customerFollowUpEmail(c, "BROADCAST", { siteUrl: "https://recallcollosusdh.cl" }, { subject: "Novedades", body: "Mensaje de Postventa." });
-    expect(weekly.subject).toBe("Novedades");
+    expect(weekly.subject).toBe("Novedades – caso RCDH-ABC23");
     expect(weekly.text).toContain("Mensaje de Postventa.");
   });
 });
