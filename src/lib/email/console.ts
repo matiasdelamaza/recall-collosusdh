@@ -18,7 +18,7 @@ export function createConsoleEmailProvider(from: string): EmailProvider {
           "──────────────────────────────────────────────────────────────────────",
         ].join("\n"),
       );
-      return { ok: true, provider: "console", id: `console-${Date.now()}` };
+      return { ok: true, provider: "console", id: `console-${crypto.randomUUID()}` };
     },
   };
 }

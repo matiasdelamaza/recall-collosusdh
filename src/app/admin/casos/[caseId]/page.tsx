@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { CallForm } from "@/components/admin/CallForm";
 import { CaseActions } from "@/components/admin/CaseActions";
+import { EmailComposer } from "@/components/admin/EmailComposer";
+import { MessageTimeline, SignalBadge, SignalReasons } from "@/components/admin/mail";
 import {
   fmtDateTime,
   fmtRut,
@@ -17,6 +20,7 @@ import { AlertBox, Card, FieldRow, Flash, PageHeader, PriorityBadge, StatusBadge
 import { requireAdmin } from "@/lib/admin/session";
 import { ADMIN } from "@/lib/copy/es-admin";
 import { getCaseByCaseId } from "@/lib/recall/cases";
+import { EMPTY_MAIL_STATS, caseSignal, getCaseMessages, getMailStats } from "@/lib/recall/mailbox";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +35,7 @@ const MESSAGES: Record<string, { kind: "ok" | "error"; text: string }> = {
   noteAdded: { kind: "ok", text: D.messages.noteAdded },
   replacementSaved: { kind: "ok", text: D.messages.replacementSaved },
   invalid: { kind: "error", text: D.messages.invalid },
+  called: { kind: "ok", text: ADMIN.mesa.called },
 };
 
 export default async function AdminCaseDetailPage({ params, searchParams }: { params: Promise<{ caseId: string }>; searchParams: Promise<Search> }) {
@@ -42,6 +47,9 @@ export default async function AdminCaseDetailPage({ params, searchParams }: { pa
   const { case: c, files, notes, audit } = detail;
   const msgKey = Array.isArray(sp.msg) ? sp.msg[0] : sp.msg;
   const msg = msgKey ? MESSAGES[msgKey] : undefined;
+  const [messages, stats] = await Promise.all([getCaseMessages(c.id), getMailStats([c.id])]);
+  const signal = caseSignal(c, stats.get(c.id) ?? EMPTY_MAIL_STATS);
+  const lastIn = [...messages].reverse().find((m) => m.direction === "IN");
 
   return (
     <>
@@ -51,6 +59,7 @@ export default async function AdminCaseDetailPage({ params, searchParams }: { pa
         </Link>
       </div>
       <PageHeader title={`${D.title} ${c.caseId}`}>
+        <SignalBadge level={signal.level} />
         <PriorityBadge priority={c.priority} />
         <VerificationBadge status={c.serialVerificationStatus} />
         <StatusBadge status={c.caseStatus} />
@@ -141,6 +150,33 @@ export default async function AdminCaseDetailPage({ params, searchParams }: { pa
                 ))}
               </ul>
             )}
+          </Card>
+
+          <Card title={ADMIN.inbox.caseCardTitle}>
+            {signal.reasons.length > 0 ? (
+              <div className="mb-3 text-sm font-semibold text-alert-700">
+                <SignalReasons reasons={signal.reasons} />
+              </div>
+            ) : null}
+            {messages.length === 0 ? <p className="mb-3 text-sm text-ink-500">{ADMIN.inbox.caseCardEmpty}</p> : <MessageTimeline messages={messages} linkEach />}
+            <div className="mt-4 grid gap-4 border-t border-line pt-4">
+              <div>
+                <p className="mb-1 text-xs text-ink-500">
+                  {ADMIN.mesa.lastCall}: {c.lastCallAt ? fmtDateTime(c.lastCallAt) : ADMIN.mesa.never}
+                </p>
+                <CallForm caseId={c.caseId} back={`/admin/casos/${c.caseId}`} />
+              </div>
+              <EmailComposer
+                title={lastIn ? ADMIN.inbox.composeTitle : ADMIN.inbox.composeNewTitle}
+                target={{
+                  caseId: c.caseId,
+                  to: c.email,
+                  firstName: c.customerName.split(/\s+/)[0] ?? null,
+                  serial: c.serialNumber,
+                  replySubject: lastIn ? (/^re:/i.test(lastIn.subject) ? lastIn.subject : `Re: ${lastIn.subject}`) : undefined,
+                }}
+              />
+            </div>
           </Card>
 
           <Card title={D.sections.notes}>

@@ -689,3 +689,58 @@ export function outreachDistributorEmail(ctx: EmailContext): RenderedEmail {
   ], { siteUrl: ctx.siteUrl });
   return { subject: t.subject, text, html };
 }
+
+// ── Mesa de control ────────────────────────────────────────────────────
+
+/**
+ * Correo escrito por Postventa desde la bandeja (respuesta o mensaje nuevo). El cuerpo es texto plano
+ * del panel (puede partir de una plantilla); se agrega la referencia del caso y la firma.
+ */
+export function manualEmail(c: Pick<RecallCase, "caseId" | "serialNumber"> | null, message: { subject: string; body: string }, ctx: EmailContext): RenderedEmail {
+  const rows: [string, string][] = c ? [[EMAIL.caseIdLabel, c.caseId], [EMAIL.serialLabel, c.serialNumber]] : [];
+  const contact = contactLines(ctx);
+  const text = [message.body, "", ...rows.map(([k, v]) => `${k}: ${v}`), ...(rows.length ? [""] : []), EMAIL.signature, "", siteLine(ctx), "", EMAIL.footer].join("\n");
+  const html = wrapHtml(message.subject, [
+    { type: "p", text: message.body },
+    ...(rows.length ? [{ type: "kv" as const, rows }] : []),
+    { type: "contact", lines: contact.filter((l) => l !== CONTACT.team && l !== CONTACT.company) },
+    { type: "signature", text: EMAIL.signature },
+  ], { siteUrl: ctx.siteUrl });
+  return { subject: message.subject, text, html };
+}
+
+export interface UrgentMessageEmailData {
+  caseId: string | null;
+  customerName: string | null;
+  phone: string | null;
+  fromEmail: string;
+  subject: string;
+  reason: string;
+  excerpt: string;
+  messageId: string;
+}
+
+/** Alerta interna: llegó un correo de alta prioridad, hay que llamar al cliente. */
+export function internalUrgentMessageEmail(d: UrgentMessageEmailData, ctx: EmailContext): RenderedEmail {
+  const base = ctx.siteUrl.replace(/\/$/, "");
+  const subject = `LLAMAR AHORA · ${d.caseId ?? d.fromEmail} · correo de alta prioridad`;
+  const intro = "Llegó un correo de alta prioridad a la mesa de control. Llama al cliente lo antes posible y marca la llamada en el panel.";
+  const link = `${base}/admin/bandeja/${d.messageId}`;
+  const rows: [string, string][] = [
+    ["Motivo", d.reason],
+    ["Caso", d.caseId ?? "Sin caso asociado"],
+    ["Cliente", d.customerName ?? "—"],
+    ["Teléfono", d.phone ?? "Sin teléfono (no tiene caso)"],
+    ["Correo", d.fromEmail],
+    ["Asunto", d.subject],
+  ];
+  const text = [`*** ${intro} ***`, "", ...rows.map(([k, v]) => `${k}: ${v}`), "", "Mensaje:", d.excerpt, "", `Abrir en la bandeja: ${link}`, "", EMAIL.footer].join("\n");
+  const html = wrapHtml(subject, [
+    { type: "heading", text: "Llamar ahora" },
+    { type: "alert", text: intro },
+    { type: "kv", rows },
+    { type: "box", title: "Mensaje", text: d.excerpt },
+    { type: "button", label: "Abrir en la bandeja", href: link },
+  ], { siteUrl: ctx.siteUrl, tone: "alert" });
+  return { subject, text, html };
+}

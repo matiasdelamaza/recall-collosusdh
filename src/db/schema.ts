@@ -189,6 +189,8 @@ export const recallCases = pgTable(
     resultNotifiedAt: timestamp("result_notified_at", { withTimezone: true }),
     /** Último correo de seguimiento al cliente (cambio de etapa, novedad semanal o comunicado). */
     lastCustomerUpdateAt: timestamp("last_customer_update_at", { withTimezone: true }),
+    /** Última llamada de Postventa al cliente (marcada desde la mesa de control). */
+    lastCallAt: timestamp("last_call_at", { withTimezone: true }),
     closedAt: timestamp("closed_at", { withTimezone: true }),
   },
   (t) => [
@@ -246,6 +248,57 @@ export const auditEvents = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index("audit_events_case_id_idx").on(t.caseId), index("audit_events_created_at_idx").on(t.createdAt)],
+);
+
+/**
+ * Bandeja de correo (mesa de control): todo correo enviado a un cliente y todo correo recibido
+ * en la casilla de Postventa. Los estados de entrega llegan por webhook de Resend.
+ */
+export const EMAIL_DIRECTIONS = ["IN", "OUT"] as const;
+export type EmailDirection = (typeof EMAIL_DIRECTIONS)[number];
+/** OUT: SENT → DELIVERED (o DELAYED), y terminales BOUNCED / COMPLAINED / FAILED. IN: RECEIVED. */
+export const EMAIL_STATUSES = ["SENT", "DELAYED", "DELIVERED", "BOUNCED", "COMPLAINED", "FAILED", "RECEIVED"] as const;
+export type EmailStatus = (typeof EMAIL_STATUSES)[number];
+/** Prioridad de un correo entrante (análisis automático). */
+export const MESSAGE_PRIORITIES = ["HIGH", "MEDIUM", "LOW"] as const;
+export type MessagePriority = (typeof MESSAGE_PRIORITIES)[number];
+
+export const emailMessages = pgTable(
+  "email_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    caseId: uuid("case_id").references(() => recallCases.id, { onDelete: "set null" }),
+    direction: text("direction").$type<EmailDirection>().notNull(),
+    /** OUT: tipo de envío (CUSTOMER_FOLLOW_UP, MANUAL_REPLY…). IN: CUSTOMER_MESSAGE. */
+    kind: text("kind").notNull(),
+    fromEmail: text("from_email").notNull(),
+    fromName: text("from_name"),
+    toEmails: text("to_emails").notNull(),
+    subject: text("subject").notNull(),
+    bodyText: text("body_text").notNull(),
+    /** Id del proveedor (Resend): enlaza los webhooks de entrega y evita duplicar entrantes. */
+    providerId: text("provider_id"),
+    status: text("status").$type<EmailStatus>().notNull(),
+    statusDetail: text("status_detail"),
+    statusAt: timestamp("status_at", { withTimezone: true }),
+    openedAt: timestamp("opened_at", { withTimezone: true }),
+    attachments: jsonb("attachments").$type<{ id?: string; filename: string | null; contentType: string; size?: number }[]>(),
+    // Solo entrantes
+    priority: text("priority").$type<MessagePriority>(),
+    triageReason: text("triage_reason"),
+    triageSource: text("triage_source"),
+    readAt: timestamp("read_at", { withTimezone: true }),
+    handledAt: timestamp("handled_at", { withTimezone: true }),
+    handledBy: text("handled_by"),
+    actor: text("actor"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("email_messages_provider_id_idx").on(t.providerId),
+    index("email_messages_case_id_idx").on(t.caseId),
+    index("email_messages_created_at_idx").on(t.createdAt),
+    index("email_messages_from_email_idx").on(t.fromEmail),
+  ],
 );
 
 /** Registro de consultas de serie (métricas + detección de enumeración). Sin IP en claro. */
@@ -322,3 +375,4 @@ export type CaseNote = typeof caseNotes.$inferSelect;
 export type AuditEvent = typeof auditEvents.$inferSelect;
 export type SerialLookup = typeof serialLookups.$inferSelect;
 export type SerialImport = typeof serialImports.$inferSelect;
+export type EmailMessageRow = typeof emailMessages.$inferSelect;

@@ -43,6 +43,13 @@
       "when": 1793314641769,
       "tag": "0005_seguimiento",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793365562507,
+      "tag": "0006_bandeja",
+      "breakpoints": true
     }
   ]
 }
