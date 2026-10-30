@@ -134,6 +134,9 @@ export async function sendBroadcast(message: { subject: string; body: string }, 
 /** Prueba de un comunicado a los correos internos, con un caso de ejemplo. */
 export async function sendBroadcastTest(message: { subject: string; body: string }, to: string[]): Promise<boolean> {
   const sample = { id: "", caseId: "RCDH-EJEMPLO", customerName: "Nombre Apellido", email: to.join(","), serialNumber: "H24000000", caseStatus: "VALIDATED" } as RecallCase;
-  return sendFollowUp({ ...sample, email: to[0]! }, "BROADCAST", { ...message, subject: `[PRUEBA] ${message.subject}` }, to);
+  // La hora deja cada prueba en su propia conversación: si se repite el asunto, Gmail agrupa las
+  // pruebas y oculta tras "…" el texto que ya apareció en la anterior.
+  const time = new Date().toLocaleTimeString("es-CL", { timeZone: "America/Santiago", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  return sendFollowUp({ ...sample, email: to[0]! }, "BROADCAST", { ...message, subject: `[PRUEBA ${time}] ${message.subject}` }, to);
 }
 

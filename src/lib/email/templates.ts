@@ -587,7 +587,9 @@ export function customerFollowUpEmail(c: FollowUpCaseData, kind: FollowUpKind, c
   const stageLabel = current ?? STATUS_LABELS.caseStatus[c.caseStatus];
   const replaced = c.caseStatus === "REPLACED";
   const t = kind === "BROADCAST" ? null : kind === "WEEKLY" ? FOLLOW_UP.weekly : replaced ? FOLLOW_UP.replaced : FOLLOW_UP.stage;
-  const subject = message?.subject ?? (t ? t.subject(c.caseId) : FOLLOW_UP.broadcast.heading);
+  // Un comunicado lleva el número de caso: quien tiene varias bicicletas recibe asuntos distintos y
+  // Gmail no los agrupa ocultando tras "…" el texto repetido.
+  const subject = message ? `${message.subject} – caso ${c.caseId}` : t ? t.subject(c.caseId) : FOLLOW_UP.broadcast.heading;
   const heading = t ? t.heading : FOLLOW_UP.broadcast.heading;
   const body = message?.body ?? (kind === "WEEKLY" ? FOLLOW_UP.weekly.body(stageLabel) : replaced ? FOLLOW_UP.replaced.body : FOLLOW_UP.stage.body(stageLabel));
   const contact = contactLines(ctx);
