@@ -67,3 +67,104 @@ describe("análisis de prioridad anonimizado", () => {
     expect(res.priority).toBe(triageByRules(input).priority);
   });
 });
+
+describe("contexto de la IA y entrenamiento", () => {
+  let n = 0;
+  const knowledge = async () => await import("@/lib/ai/knowledge");
+  const clearKnowledge = async () => {
+    const { getDb } = await import("@/db/client");
+    const { aiKnowledge } = await import("@/db/schema");
+    await (await getDb()).delete(aiKnowledge);
+  };
+
+  it("saveKnowledge valida título y texto", async () => {
+    const { saveKnowledge } = await knowledge();
+    expect(await saveKnowledge({ title: "", body: "x", active: true }, "t")).toEqual({ ok: false, error: "invalid" });
+    expect(await saveKnowledge({ title: "x".repeat(121), body: "x", active: true }, "t")).toEqual({ ok: false, error: "invalid" });
+    expect(await saveKnowledge({ title: "t", body: "x".repeat(6001), active: true }, "t")).toEqual({ ok: false, error: "invalid" });
+    expect(await saveKnowledge({ title: "t", body: "x".repeat(6000), active: true }, "t")).toEqual({ ok: true });
+  });
+
+  it("limita el total de fichas activas a 40.000 caracteres", async () => {
+    await clearKnowledge();
+    const { saveKnowledge, listKnowledge } = await knowledge();
+    // Cada ficha cuenta título (100) + texto.
+    const title = "t".repeat(100);
+    for (let i = 0; i < 6; i++) expect((await saveKnowledge({ title, body: "x".repeat(6000), active: true }, "t")).ok).toBe(true); // 36.600
+    expect((await saveKnowledge({ title, body: "x".repeat(2300), active: true }, "t")).ok).toBe(true); // 39.000
+    expect(await saveKnowledge({ title: "n", body: "x".repeat(2000), active: true }, "t")).toEqual({ ok: false, error: "tooLong" });
+    // Una inactiva no cuenta.
+    expect(await saveKnowledge({ title: "n", body: "x".repeat(2000), active: false }, "t")).toEqual({ ok: true });
+    // Editar una activa para que crezca solo cuenta el nuevo tamaño, no se suma dos veces.
+    const rows = await listKnowledge();
+    const toShrink = rows.find((r) => r.body.length === 2300)!;
+    expect(await saveKnowledge({ id: toShrink.id, title, body: "x".repeat(2300 - 400), active: true }, "t")).toEqual({ ok: true });
+    expect(await saveKnowledge({ id: toShrink.id, title, body: "x".repeat(2300 + 1500), active: true }, "t")).toEqual({ ok: false, error: "tooLong" });
+  });
+
+  it("buildAiContext incluye fichas activas y ejemplos anonimizados sin pie", async () => {
+    await clearKnowledge();
+    const { getDb } = await import("@/db/client");
+    const { emailMessages, recallCases } = await import("@/db/schema");
+    const { manualEmail } = await import("@/lib/email/templates");
+    const { saveKnowledge, buildAiContext, listExampleReplies, setExampleExcluded } = await knowledge();
+    await saveKnowledge({ title: "Ficha activa", body: "Horario de atención lunes a viernes", active: true }, "t");
+    await saveKnowledge({ title: "Ficha inactiva", body: "Texto secreto inactivo", active: false }, "t");
+
+    const db = await getDb();
+    const [c] = await db
+      .insert(recallCases)
+      .values({
+        caseId: "RCDH-IAT01",
+        customerName: "Florencia Gutiérrez",
+        rut: "11111111-1",
+        email: "florencia.g@example.test",
+        phone: "+56 9 1111 2222",
+        region: "Metropolitana de Santiago",
+        city: "Santiago",
+        serialNumber: `S-IA${++n}`,
+        serialRaw: `S-IA${n}`,
+        model: "COLLOSUS_DH9",
+        size: "M",
+        damageReported: "NO",
+        accidentReported: false,
+        acknowledgedStopRiding: true,
+        serialVerificationStatus: "AFFECTED",
+        requestType: "REPLACEMENT",
+        caseStatus: "VALIDATED",
+      })
+      .returning();
+    const insert = async (kind: string, subject: string, body: string, extra: Partial<typeof emailMessages.$inferInsert> = {}) => {
+      const [row] = await db
+        .insert(emailMessages)
+        .values({ caseId: c!.id, direction: "OUT", kind, fromEmail: "postventa@example.test", toEmails: "florencia.g@example.test", subject, bodyText: body, status: "SENT", ...extra })
+        .returning();
+      return row!;
+    };
+    const rendered = (body: string) =>
+      manualEmail(c!, { subject: "x", body }, { siteUrl: "http://localhost:3000" } as Parameters<typeof manualEmail>[2]).text;
+    const kept = await insert("MANUAL_EMAIL", "Re: caso RCDH-IAT01", rendered("Hola Florencia Gutiérrez, revisaremos tu bicicleta. Escríbenos a florencia.g@example.test."));
+    await insert("MANUAL_EMAIL", "Excluido", rendered("Ejemplo excluido de la IA"), { aiExcludedAt: new Date() });
+    await insert("CUSTOMER_FOLLOW_UP", "Seguimiento", "Aviso automático del seguimiento");
+
+    const ctx = await buildAiContext();
+    expect(ctx.facts).toContain("Horario de atención lunes a viernes");
+    expect(ctx.facts).not.toContain("Texto secreto inactivo");
+    expect(ctx.facts).toContain("PREGUNTAS FRECUENTES");
+    expect(ctx.examples).toContain("revisaremos tu bicicleta");
+    expect(ctx.examples).not.toContain("Ejemplo excluido");
+    expect(ctx.examples).not.toContain("Aviso automático");
+    expect(ctx.examples).not.toContain("Equipo de Postventa");
+    expect(ctx.examples).not.toContain("RCDH-IAT01");
+    expect(ctx.examples).not.toContain("Número de caso");
+    expect(ctx.examples).not.toContain("Florencia");
+    expect(ctx.examples).not.toContain("florencia.g@example.test");
+
+    const all = await listExampleReplies({ includeExcluded: true });
+    expect(all.filter((e) => e.excluded)).toHaveLength(1);
+    await setExampleExcluded(kept.id, true, "t");
+    expect((await buildAiContext()).examples).toBe("");
+    await setExampleExcluded(kept.id, false, "t");
+    expect((await buildAiContext()).examples).toContain("revisaremos tu bicicleta");
+  });
+});

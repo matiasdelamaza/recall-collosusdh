@@ -37,6 +37,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <NavLink href="/admin/consultas">{ADMIN.nav.lookups}</NavLink>
               <NavLink href="/admin/series">{ADMIN.nav.serials}</NavLink>
               <NavLink href="/admin/comunicaciones">{ADMIN.nav.comms}</NavLink>
+              <NavLink href="/admin/entrenamiento">{ADMIN.nav.training}</NavLink>
               <form action={logoutAction}>
                 <button type="submit" className="rounded-sm px-3 py-1.5 font-semibold text-ink-500 hover:bg-paper-100 hover:text-ink">
                   {ADMIN.nav.logout}

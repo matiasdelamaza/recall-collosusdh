@@ -28,7 +28,8 @@ export type AuditType =
   | "EMAIL_BOUNCED"
   | "EMAIL_LINKED"
   | "CUSTOMER_CALLED"
-  | "MESSAGE_HANDLED";
+  | "MESSAGE_HANDLED"
+  | "AI_KNOWLEDGE_CHANGED";
 
 export interface AuditInput {
   type: AuditType;

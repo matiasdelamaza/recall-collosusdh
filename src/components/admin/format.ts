@@ -87,6 +87,7 @@ export const AUDIT_TYPE_LABELS: Record<string, string> = {
   EMAIL_LINKED: "Correo asociado al caso",
   CUSTOMER_CALLED: "Llamada al cliente",
   MESSAGE_HANDLED: "Correo marcado como atendido",
+  AI_KNOWLEDGE_CHANGED: "Entrenamiento de la IA modificado",
 };
 
 export function labelAuditType(t: string): string {
