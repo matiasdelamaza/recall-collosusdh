@@ -118,6 +118,14 @@ DATABASE_URL="postgresql://…" npm run db:migrate
 ```
 Ejecutar tras cada despliegue que incluya una migración nueva en `./drizzle`. Para crear una migración tras cambiar `src/db/schema.ts`: `npm run db:generate`, revisar el SQL y commitear.
 
+En el proyecto Supabase actual el build corre con `SKIP_DB_MIGRATIONS=true`: las migraciones nuevas se aplican a mano **antes** de desplegar el código que las usa, con los scripts de `docs/supabase/` (incluyen RLS, permisos para `recall_app`, la política `recall_app_all` y el registro en `drizzle.__drizzle_migrations`; el hash es el sha256 del archivo de `./drizzle`).
+
+| Script | Contenido |
+|---|---|
+| `docs/supabase/0001_rate_limit_hits.sql` | Tabla `rate_limit_hits` |
+| `docs/supabase/0002_serie_reforzada.sql` | Valor `REINFORCED` en los enums de verificación |
+| `docs/supabase/0007_ia.sql` | Tablas `ai_knowledge` y `ai_summaries`, columna `email_messages.ai_excluded_at` (IA en la Bandeja). Sin ella se rompen la bandeja y el webhook de correos entrantes |
+
 ## 6. Importar la base oficial de series de Polygon
 
 Formato CSV esperado (UTF-8, con o sin BOM, separador `,` o `;`, primera fila de cabeceras):

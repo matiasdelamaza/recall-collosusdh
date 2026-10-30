@@ -23,6 +23,8 @@ import { getCaseByCaseId } from "@/lib/recall/cases";
 import { EMPTY_MAIL_STATS, caseSignal, getCaseMessages, getMailStats } from "@/lib/recall/mailbox";
 
 export const dynamic = "force-dynamic";
+// La propuesta de respuesta con IA puede tardar hasta ~40 s.
+export const maxDuration = 60;
 
 type Search = Record<string, string | string[] | undefined>;
 const D = ADMIN.caseDetail;
@@ -175,6 +177,8 @@ export default async function AdminCaseDetailPage({ params, searchParams }: { pa
                   serial: c.serialNumber,
                   replySubject: lastIn ? (/^re:/i.test(lastIn.subject) ? lastIn.subject : `Re: ${lastIn.subject}`) : undefined,
                 }}
+                draft={{ caseId: c.caseId }}
+                aiEnabled={Boolean(process.env.OPENROUTER_API_KEY)}
               />
             </div>
           </Card>

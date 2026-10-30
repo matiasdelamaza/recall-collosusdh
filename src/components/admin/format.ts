@@ -20,6 +20,22 @@ export function fmtDate(d: Date | string | null | undefined): string {
   return dateFmt.format(date);
 }
 
+const dayKeyFmt = new Intl.DateTimeFormat("en-CA", { dateStyle: "short", timeZone: "America/Santiago" });
+const timeFmt = new Intl.DateTimeFormat("es-CL", { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "America/Santiago" });
+const dayMonthFmt = new Intl.DateTimeFormat("es-CL", { day: "numeric", month: "short", timeZone: "America/Santiago" });
+const shortDateFmt = new Intl.DateTimeFormat("es-CL", { dateStyle: "short", timeZone: "America/Santiago" });
+
+/** Fecha corta de bandeja: hora si es de hoy, día y mes si es de este año, fecha completa si no. */
+export function fmtInboxDate(d: Date | string, now: Date = new Date()): string {
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (Number.isNaN(date.getTime())) return "—";
+  const day = dayKeyFmt.format(date);
+  const today = dayKeyFmt.format(now);
+  if (day === today) return timeFmt.format(date);
+  if (day.slice(0, 4) === today.slice(0, 4)) return dayMonthFmt.format(date).replace(".", "");
+  return shortDateFmt.format(date);
+}
+
 export function fmtNumber(n: number): string {
   return numberFmt.format(n);
 }
@@ -71,6 +87,8 @@ export const AUDIT_TYPE_LABELS: Record<string, string> = {
   EMAIL_LINKED: "Correo asociado al caso",
   CUSTOMER_CALLED: "Llamada al cliente",
   MESSAGE_HANDLED: "Correo marcado como atendido",
+  AI_KNOWLEDGE_CHANGED: "Entrenamiento de la IA modificado",
+  AI_DRAFT_GENERATED: "Propuesta de respuesta con IA",
 };
 
 export function labelAuditType(t: string): string {

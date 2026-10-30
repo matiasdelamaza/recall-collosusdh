@@ -83,7 +83,7 @@ html {
 
 /* Foco visible y consistente (accesibilidad) */
 /* Los títulos que reciben el foco por programa (tabindex="-1", para lectores de pantalla) no lo muestran. */
-:where(a, button, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
+:where(a, button, summary, input, select, textarea, [tabindex]:not([tabindex="-1"])):focus-visible {
   outline: 3px solid var(--color-focus);
   outline-offset: 2px;
 }

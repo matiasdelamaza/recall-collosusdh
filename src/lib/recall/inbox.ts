@@ -87,7 +87,7 @@ export async function ingestInbound(e: InboundEmail): Promise<IngestResult> {
   const auto = isAutoReply(e);
   const triage = auto
     ? { priority: "LOW" as const, reason: "Respuesta automática", source: "RULES" as const }
-    : await triageMessage({ subject: e.subject, body: own, caseContext: c ? { accidentReported: c.accidentReported, damageReported: c.damageReported, caseStatus: c.caseStatus } : null });
+    : await triageMessage({ subject: e.subject, body: own, caseContext: c ? { accidentReported: c.accidentReported, damageReported: c.damageReported, caseStatus: c.caseStatus } : null, redact: { names: [c?.customerName, from.name], caseId: c?.caseId, serial: c?.serialNumber } });
 
   const [row] = await db
     .insert(emailMessages)

@@ -291,6 +291,8 @@ export const emailMessages = pgTable(
     handledAt: timestamp("handled_at", { withTimezone: true }),
     handledBy: text("handled_by"),
     actor: text("actor"),
+    /** Si no es null, el correo se excluye del contexto que se envía a la IA. */
+    aiExcludedAt: timestamp("ai_excluded_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -300,6 +302,30 @@ export const emailMessages = pgTable(
     index("email_messages_from_email_idx").on(t.fromEmail),
   ],
 );
+
+/** Resumen estructurado de un caso (hilo de correos) generado por la IA. */
+export type CaseSummary = { resumen: string; pide: string; pendiente: string[]; alerta: string };
+
+/** Conocimiento de entrenamiento de la IA: textos que el equipo agrega para guiar respuestas. */
+export const aiKnowledge = pgTable("ai_knowledge", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  active: boolean("active").notNull().default(true),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedBy: text("updated_by"),
+});
+export type AiKnowledgeRow = typeof aiKnowledge.$inferSelect;
+
+/** Resúmenes de IA en caché, uno por hilo; se invalidan al cambiar el último mensaje. */
+export const aiSummaries = pgTable("ai_summaries", {
+  threadKey: text("thread_key").primaryKey(),
+  lastMessageId: uuid("last_message_id").notNull(),
+  content: jsonb("content").$type<CaseSummary>().notNull(),
+  model: text("model").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
 
 /** Registro de consultas de serie (métricas + detección de enumeración). Sin IP en claro. */
 export const serialLookups = pgTable(

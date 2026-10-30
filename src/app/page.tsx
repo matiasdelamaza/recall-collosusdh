@@ -2,6 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { ContactSection } from "@/components/public/ContactSection";
 import { FaqSection } from "@/components/public/FaqSection";
+import { MabaWidget } from "@/components/public/MabaWidget";
 import { ModelsSection } from "@/components/public/ModelsSection";
 import { PageViewTracker } from "@/components/public/PageViewTracker";
 import { RecallFlow } from "@/components/public/RecallFlow";
@@ -63,6 +64,7 @@ export default async function Page() {
         <ContactSection contact={contact} />
       </main>
       <SiteFooter lastUpdated={formatLastUpdated(LAST_UPDATED)} />
+      <MabaWidget />
     </>
   );
 }

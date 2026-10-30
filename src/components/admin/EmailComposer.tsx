@@ -1,11 +1,14 @@
 "use client";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { sendEmailAction, type SendEmailActionState } from "@/lib/admin/actions";
+import { draftReplyAction, type DraftActionState } from "@/lib/admin/ai-actions";
 import { ADMIN } from "@/lib/copy/es-admin";
-import { buttonPrimary, inputClass, labelClass, selectClass } from "./ui";
+import { buttonPrimary, buttonSecondary, inputClass, labelClass, selectClass } from "./ui";
 
 const I = ADMIN.inbox;
+const A = ADMIN.ai;
 const initial: SendEmailActionState = { status: "idle" };
+const draftInitial: DraftActionState = { status: "idle" };
 
 export interface ComposerTarget {
   /** Número de caso público; si existe, el correo va al correo registrado del caso. */
@@ -27,12 +30,39 @@ function fill(text: string, t: ComposerTarget): string {
     .replace(/\s+\(\)/g, "");
 }
 
-export function EmailComposer({ target, title }: { target: ComposerTarget; title: string }) {
+export function EmailComposer({
+  target,
+  title,
+  draft,
+  aiEnabled = false,
+}: {
+  target: ComposerTarget;
+  title: string;
+  /** Hilo para la propuesta con IA: el correo abierto o el caso. Sin esto no se muestra el botón. */
+  draft?: { messageId?: string; caseId?: string };
+  /** true si el servidor tiene configurada la clave de OpenRouter. */
+  aiEnabled?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(sendEmailAction, initial);
   // Controlados: React reinicia los campos no controlados después de cada acción.
   const [templateId, setTemplateId] = useState("");
   const [subject, setSubject] = useState(target.replySubject ?? "");
   const [body, setBody] = useState("");
+  // Texto actual del mensaje, para decidir al llegar la propuesta si hay que confirmar el reemplazo.
+  const bodyRef = useRef(body);
+  useEffect(() => {
+    bodyRef.current = body;
+  }, [body]);
+  const [draftState, draftAction, drafting] = useActionState(async (prev: DraftActionState, formData: FormData) => {
+    const res = await draftReplyAction(prev, formData);
+    if (res.status !== "ok") return res;
+    // Si cancela el reemplazo, se conserva lo escrito y no se avisa "Propuesta lista".
+    if (bodyRef.current.trim() && !window.confirm(A.replaceConfirm)) return draftInitial;
+    setTemplateId("");
+    setSubject(res.subject);
+    setBody(fill(res.body, target));
+    return res;
+  }, draftInitial);
   const sentAt = state.status === "sent" ? state.at : 0;
   useEffect(() => {
     if (!sentAt) return;
@@ -84,11 +114,34 @@ export function EmailComposer({ target, title }: { target: ComposerTarget; title
         <textarea id="body" name="body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={6000} required rows={9} className={inputClass} />
         <p className="mt-1 text-xs text-ink-500">{I.bodyHelp}</p>
       </div>
-      <div>
-        <button type="submit" disabled={pending} className={buttonPrimary}>
+      {/* "Enviar" va primero: Enter en el asunto envía con el primer botón del formulario, no pide una propuesta. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="submit" disabled={pending || drafting} className={buttonPrimary}>
           {pending ? I.sending : I.send}
         </button>
+        {draft ? (
+          <>
+            <input type="hidden" name="draftMessageId" value={draft.messageId ?? ""} />
+            <input type="hidden" name="draftCaseId" value={draft.caseId ?? ""} />
+            <button type="submit" formAction={draftAction} formNoValidate disabled={!aiEnabled || drafting || pending} className={buttonSecondary}>
+              {drafting ? A.drafting : A.draftButton}
+            </button>
+          </>
+        ) : null}
       </div>
+      {draft ? (
+        <div aria-live="polite" className="text-xs">
+          {!aiEnabled ? (
+            <p className="text-ink-500">{A.draftNoKey}</p>
+          ) : drafting ? null : draftState.status === "error" ? (
+            <p role="alert" className="text-alert-700">
+              {draftState.message}
+            </p>
+          ) : draftState.status === "ok" ? (
+            <p className="text-ink-500">{A.draftReady}</p>
+          ) : null}
+        </div>
+      ) : null}
       <div aria-live="polite">
         {state.status === "error" ? (
           <p role="alert" className="rounded-md border border-alert bg-alert-50 px-3 py-2 text-sm text-alert-700">

@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { fmtDateTime } from "@/components/admin/format";
-import { EmailStatusBadge, MessagePriorityBadge } from "@/components/admin/mail";
-import { AlertBox, Badge, Card, PageHeader } from "@/components/admin/ui";
+import { InboxRowLink } from "@/components/admin/mail";
+import { AlertBox, PageHeader } from "@/components/admin/ui";
 import { requireAdmin } from "@/lib/admin/session";
 import { getEnv } from "@/lib/config";
 import { ADMIN } from "@/lib/copy/es-admin";
@@ -13,6 +12,8 @@ export const dynamic = "force-dynamic";
 const I = ADMIN.inbox;
 type Search = Record<string, string | string[] | undefined>;
 
+const PRIORITY_DOT: Record<MessagePriority, string> = { HIGH: "bg-alert", MEDIUM: "bg-caution", LOW: "bg-ink-300" };
+
 export default async function AdminInboxPage({ searchParams }: { searchParams: Promise<Search> }) {
   await requireAdmin();
   const sp = await searchParams;
@@ -22,85 +23,76 @@ export default async function AdminInboxPage({ searchParams }: { searchParams: P
   const rawPriority = Array.isArray(sp.p) ? sp.p[0] : sp.p;
   const priority = filter !== "out" && MESSAGE_PRIORITIES.includes(rawPriority as MessagePriority) ? (rawPriority as MessagePriority) : null;
   const [rows, counts, byPriority] = await Promise.all([listInbox(filter, priority), getInboxCounts(), countInboxByPriority(filter)]);
-  const chip = (active: boolean) => `rounded-sm border px-3 py-1.5 font-semibold ${active ? "border-ink bg-ink text-paper" : "border-line bg-paper hover:bg-paper-100"}`;
+  const now = new Date();
+  const chip = (active: boolean) =>
+    `inline-flex min-h-8 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors duration-150 ${active ? "border-ink bg-ink text-paper" : "border-line bg-paper text-ink-700 hover:bg-paper-100"}`;
 
   return (
     <>
       <PageHeader title={I.title} />
-      <p className="mb-4 max-w-3xl text-sm text-ink-500">{I.intro}</p>
+      <p className="-mt-3 mb-4 max-w-3xl text-sm text-ink-500">{I.intro}</p>
       {!getEnv().INBOX_EMAIL ? (
         <div className="mb-4">
           <AlertBox tone="caution">{ADMIN.mesa.noInbox}</AlertBox>
         </div>
       ) : null}
 
-      <nav aria-label={I.title} className="mb-2 flex flex-wrap gap-1 text-sm">
-        {INBOX_FILTERS.map((f) => (
-          <Link key={f} href={`/admin/bandeja?f=${f}${priority && f !== "out" ? `&p=${priority}` : ""}`} aria-current={f === filter ? "page" : undefined} className={chip(f === filter)}>
-            {I.filters[f]}
-            {f === "pending" && counts.pending > 0 ? ` (${counts.pending})` : ""}
-          </Link>
-        ))}
-      </nav>
-      {filter !== "out" ? (
-        <nav aria-label={I.priorityFilter} className="mb-4 flex flex-wrap items-center gap-1 text-sm">
-          <span className="mr-1 text-xs font-semibold uppercase tracking-wider text-ink-500">{I.priorityFilter}</span>
-          <Link href={`/admin/bandeja?f=${filter}`} aria-current={priority === null ? "page" : undefined} className={chip(priority === null)}>
-            {I.priorityAll}
-          </Link>
-          {MESSAGE_PRIORITIES.map((p) => (
-            <Link key={p} href={`/admin/bandeja?f=${filter}&p=${p}`} aria-current={p === priority ? "page" : undefined} className={chip(p === priority)}>
-              {I.priority[p]} ({byPriority[p]})
-            </Link>
-          ))}
+      <section className="overflow-hidden rounded-md border border-line bg-paper">
+        <nav aria-label={I.title} className="flex overflow-x-auto border-b border-line">
+          {INBOX_FILTERS.map((f) => {
+            const active = f === filter;
+            return (
+              <Link
+                key={f}
+                href={`/admin/bandeja?f=${f}${priority && f !== "out" ? `&p=${priority}` : ""}`}
+                aria-current={active ? "page" : undefined}
+                className={`-mb-px inline-flex min-h-11 shrink-0 items-center gap-2 border-b-[3px] px-4 text-sm transition-colors duration-150 focus-visible:outline-offset-[-3px] ${active ? "border-ink font-bold text-ink" : "border-transparent font-semibold text-ink-500 hover:bg-paper-100 hover:text-ink"}`}
+              >
+                {I.filters[f]}
+                {f === "pending" && counts.pending > 0 ? (
+                  <span className="rounded-full bg-alert px-1.5 py-0.5 text-[11px] font-bold leading-none text-paper tabular-nums">{counts.pending}</span>
+                ) : null}
+              </Link>
+            );
+          })}
         </nav>
-      ) : (
-        <div className="mb-4" />
-      )}
 
-      <Card>
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-3 py-2 sm:px-4">
+          {filter !== "out" ? (
+            <nav aria-label={I.priorityFilter} className="flex flex-wrap items-center gap-1.5">
+              <span className="mr-1 text-xs font-semibold text-ink-500">{I.priorityFilter}</span>
+              <Link href={`/admin/bandeja?f=${filter}`} aria-current={priority === null ? "page" : undefined} className={chip(priority === null)}>
+                {I.priorityAll}
+              </Link>
+              {MESSAGE_PRIORITIES.map((p) => (
+                <Link key={p} href={`/admin/bandeja?f=${filter}&p=${p}`} aria-current={p === priority ? "page" : undefined} className={chip(p === priority)}>
+                  <span aria-hidden className={`size-2 rounded-full ${PRIORITY_DOT[p]}`} />
+                  {I.priority[p]}
+                  <span className="tabular-nums opacity-70">{byPriority[p]}</span>
+                </Link>
+              ))}
+            </nav>
+          ) : (
+            <span />
+          )}
+          <span className="text-xs text-ink-500 tabular-nums">{I.shown(rows.length)}</span>
+        </div>
+
         {rows.length === 0 ? (
-          <p className="text-sm text-ink-500">{I.empty}</p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="text-left text-xs uppercase tracking-wider text-ink-500">
-                  <th className="px-3 py-2">{I.cols.priority}</th>
-                  <th className="px-3 py-2">{I.cols.date}</th>
-                  <th className="px-3 py-2">{I.cols.from}</th>
-                  <th className="px-3 py-2">{I.cols.case}</th>
-                  <th className="px-3 py-2">{I.cols.subject}</th>
-                  <th className="px-3 py-2">{I.cols.status}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((m) => {
-                  const incoming = m.direction === "IN";
-                  const unread = incoming && !m.readAt;
-                  return (
-                    <tr key={m.id} className={`border-t border-line align-top ${unread ? "font-semibold" : ""}`}>
-                      <td className="px-3 py-2">{incoming ? <MessagePriorityBadge priority={m.priority} /> : <Badge>{I.direction.OUT}</Badge>}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-ink-500">{fmtDateTime(m.createdAt)}</td>
-                      <td className="max-w-56 truncate px-3 py-2" title={incoming ? m.fromEmail : m.toEmails}>
-                        {incoming ? m.customerName ?? m.fromName ?? m.fromEmail : `→ ${m.customerName ?? m.toEmails}`}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 font-mono text-xs">{m.casePublicId ?? <span className="font-sans text-ink-500">{I.noCase}</span>}</td>
-                      <td className="px-3 py-2">
-                        <Link href={`/admin/bandeja/${m.id}`} className="underline underline-offset-2">
-                          {m.subject}
-                        </Link>
-                        {incoming && m.triageReason && m.priority !== "LOW" ? <span className="block text-xs font-normal text-ink-500">{m.triageReason}</span> : null}
-                      </td>
-                      <td className="px-3 py-2">{incoming ? m.handledAt ? <Badge>{I.status.RECEIVED}</Badge> : <Badge variant="alert">{I.pending}</Badge> : <EmailStatusBadge status={m.status} openedAt={m.openedAt} />}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="px-4 py-16 text-center">
+            <p className="text-sm font-semibold text-ink">{filter === "pending" ? I.emptyPending : I.empty}</p>
+            <p className="mt-1 text-sm text-ink-500">{I.emptyHelp}</p>
           </div>
+        ) : (
+          <ul className="divide-y divide-line">
+            {rows.map((m) => (
+              <li key={m.id} className="[contain-intrinsic-size:auto_60px] [content-visibility:auto]">
+                <InboxRowLink message={m} casePublicId={m.casePublicId} customerName={m.customerName} now={now} />
+              </li>
+            ))}
+          </ul>
         )}
-      </Card>
+      </section>
     </>
   );
 }
