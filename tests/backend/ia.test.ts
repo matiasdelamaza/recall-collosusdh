@@ -98,29 +98,28 @@ describe("contexto de la IA y entrenamiento", () => {
     await (await getDb()).delete(aiKnowledge);
   };
 
-  it("saveKnowledge valida título y texto", async () => {
-    const { saveKnowledge } = await knowledge();
-    expect(await saveKnowledge({ title: "", body: "x", active: true }, "t")).toEqual({ ok: false, error: "invalid" });
-    expect(await saveKnowledge({ title: "x".repeat(121), body: "x", active: true }, "t")).toEqual({ ok: false, error: "invalid" });
-    expect(await saveKnowledge({ title: "t", body: "x".repeat(6001), active: true }, "t")).toEqual({ ok: false, error: "invalid" });
-    expect(await saveKnowledge({ title: "t", body: "x".repeat(6000), active: true }, "t")).toEqual({ ok: true });
+  it("guarda un solo texto de contexto, lo reemplaza al volver a cargar y lo borra si queda vacío", async () => {
+    await clearKnowledge();
+    const { saveTeamContext, getTeamContext } = await knowledge();
+    expect(await getTeamContext()).toBe("");
+    expect(await saveTeamContext("  Horario: lunes a viernes  ", "t")).toEqual({ ok: true });
+    expect(await getTeamContext()).toBe("Horario: lunes a viernes");
+    expect(await saveTeamContext("Texto nuevo", "t")).toEqual({ ok: true });
+    expect(await getTeamContext()).toBe("Texto nuevo");
+    const { getDb } = await import("@/db/client");
+    const { aiKnowledge } = await import("@/db/schema");
+    expect(await (await getDb()).select().from(aiKnowledge)).toHaveLength(1);
+    expect(await saveTeamContext("   ", "t")).toEqual({ ok: true });
+    expect(await getTeamContext()).toBe("");
   });
 
-  it("limita el total de fichas activas a 40.000 caracteres", async () => {
+  it("limita el texto de contexto a 40.000 caracteres, contando saltos de línea normalizados", async () => {
     await clearKnowledge();
-    const { saveKnowledge, listKnowledge } = await knowledge();
-    // Cada ficha cuenta título (100) + texto.
-    const title = "t".repeat(100);
-    for (let i = 0; i < 6; i++) expect((await saveKnowledge({ title, body: "x".repeat(6000), active: true }, "t")).ok).toBe(true); // 36.600
-    expect((await saveKnowledge({ title, body: "x".repeat(2300), active: true }, "t")).ok).toBe(true); // 39.000
-    expect(await saveKnowledge({ title: "n", body: "x".repeat(2000), active: true }, "t")).toEqual({ ok: false, error: "tooLong" });
-    // Una inactiva no cuenta.
-    expect(await saveKnowledge({ title: "n", body: "x".repeat(2000), active: false }, "t")).toEqual({ ok: true });
-    // Editar una activa para que crezca solo cuenta el nuevo tamaño, no se suma dos veces.
-    const rows = await listKnowledge();
-    const toShrink = rows.find((r) => r.body.length === 2300)!;
-    expect(await saveKnowledge({ id: toShrink.id, title, body: "x".repeat(2300 - 400), active: true }, "t")).toEqual({ ok: true });
-    expect(await saveKnowledge({ id: toShrink.id, title, body: "x".repeat(2300 + 1500), active: true }, "t")).toEqual({ ok: false, error: "tooLong" });
+    const { saveTeamContext, getTeamContext } = await knowledge();
+    expect(await saveTeamContext("x".repeat(40_000), "t")).toEqual({ ok: true });
+    expect(await saveTeamContext("x".repeat(40_001), "t")).toEqual({ ok: false, error: "tooLong" });
+    expect((await getTeamContext()).length).toBe(40_000); // el anterior queda intacto
+    expect(await saveTeamContext("a\r\n".repeat(20_000).trim(), "t")).toEqual({ ok: true });
   });
 
   it("buildAiContext incluye fichas activas y ejemplos anonimizados sin pie", async () => {
@@ -128,9 +127,8 @@ describe("contexto de la IA y entrenamiento", () => {
     const { getDb } = await import("@/db/client");
     const { emailMessages, recallCases } = await import("@/db/schema");
     const { manualEmail } = await import("@/lib/email/templates");
-    const { saveKnowledge, buildAiContext, listExampleReplies, setExampleExcluded } = await knowledge();
-    await saveKnowledge({ title: "Ficha activa", body: "Horario de atención lunes a viernes", active: true }, "t");
-    await saveKnowledge({ title: "Ficha inactiva", body: "Texto secreto inactivo", active: false }, "t");
+    const { saveTeamContext, buildAiContext, listExampleReplies, setExampleExcluded } = await knowledge();
+    await saveTeamContext("Horario de atención lunes a viernes", "t");
 
     const db = await getDb();
     const [c] = await db
@@ -170,7 +168,7 @@ describe("contexto de la IA y entrenamiento", () => {
 
     const ctx = await buildAiContext();
     expect(ctx.facts).toContain("Horario de atención lunes a viernes");
-    expect(ctx.facts).not.toContain("Texto secreto inactivo");
+    expect(ctx.facts).toContain("CONTEXTO DEL EQUIPO");
     expect(ctx.facts).toContain("PREGUNTAS FRECUENTES");
     expect(ctx.examples).toContain("revisaremos tu bicicleta");
     expect(ctx.examples).not.toContain("Ejemplo excluido");
@@ -231,11 +229,6 @@ describe("contexto de la IA y entrenamiento", () => {
     expect(ctx.examples).not.toContain("Hola Ana");
     expect(used.find((e) => e.subject === "Largo")!.text.length).toBe(3001);
     expect(used.find((e) => e.subject === "Largo")!.text.endsWith("…")).toBe(true);
-  });
-
-  it("saveKnowledge normaliza saltos de línea antes de medir", async () => {
-    const { saveKnowledge } = await knowledge();
-    expect(await saveKnowledge({ title: "crlf", body: "a\r\n".repeat(3000).trim(), active: false }, "t")).toEqual({ ok: true });
   });
 });
 
@@ -553,8 +546,8 @@ describe("propuesta de respuesta", () => {
   }
 
   async function addFicha() {
-    const { saveKnowledge } = await import("@/lib/ai/knowledge");
-    await saveKnowledge({ title: "Plazos de despacho", body: "FICHA-ACTIVA: el despacho demora 10 días hábiles", active: true }, "t");
+    const { saveTeamContext } = await import("@/lib/ai/knowledge");
+    await saveTeamContext("FICHA-ACTIVA: el despacho demora 10 días hábiles", "t");
   }
 
   it("envía fichas y ejemplos rotulados, sin notas internas ni datos personales", async () => {

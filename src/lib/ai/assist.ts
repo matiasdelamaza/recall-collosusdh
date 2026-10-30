@@ -227,7 +227,7 @@ function replySubjectOf(subject: string): string {
 
 /**
  * Propuesta de respuesta para el hilo del correo `messageId` o del caso `caseId` (número público RCDH-…).
- * Usa fichas, contexto fijo, datos del caso y el hilo anonimizado; no envía notas internas.
+ * Usa el contexto del equipo, contexto fijo, datos del caso y el hilo anonimizado; no envía notas internas.
  * Null sin clave de OpenRouter, si no se encuentra el hilo o si la IA falla.
  */
 export async function draftReply(input: { messageId?: string; caseId?: string }): Promise<DraftReply | null> {

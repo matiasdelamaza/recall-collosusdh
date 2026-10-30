@@ -1,69 +1,60 @@
 /**
- * Contexto que se entrega a la IA: contexto fijo (preguntas frecuentes y plantillas), fichas de
- * entrenamiento que agrega el equipo y respuestas manuales anteriores usadas como ejemplo.
+ * Contexto que se entrega a la IA: contexto fijo (preguntas frecuentes y plantillas), el texto de
+ * contexto que carga el equipo y respuestas manuales anteriores usadas como ejemplo.
  * Todo texto de ejemplo se anonimiza antes de salir de este módulo.
  */
 import "server-only";
-import { and, desc, eq, isNotNull, isNull, notInArray } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, ne, notInArray } from "drizzle-orm";
 import { getDb } from "@/db/client";
-import { aiKnowledge, emailMessages, recallCases, type AiKnowledgeRow } from "@/db/schema";
+import { aiKnowledge, emailMessages, recallCases } from "@/db/schema";
 import { ADMIN } from "@/lib/copy/es-admin";
 import { EMAIL, FAQ } from "@/lib/copy/es";
 import { logAudit } from "@/lib/server/audit";
 import { redactForAi } from "./redact";
 
-export const KNOWLEDGE_TITLE_MAX = 120;
-export const KNOWLEDGE_BODY_MAX = 6000;
-/** Total de caracteres (título + texto) de las fichas activas. */
+/** Máximo de caracteres del texto de contexto del equipo. */
 export const KNOWLEDGE_TOTAL_MAX = 40_000;
 export const EXAMPLES_MAX = 20;
+/** Título con que se guarda el texto de contexto (una sola fila en ai_knowledge). */
+const TEAM_CONTEXT_TITLE = "Contexto del equipo";
 
-export type SaveKnowledgeResult = { ok: true } | { ok: false; error: "invalid" | "tooLong" };
+export type SaveKnowledgeResult = { ok: true } | { ok: false; error: "tooLong" };
 
-function size(k: { title: string; body: string }): number {
-  return k.title.length + k.body.length;
-}
-
-/** Fichas de entrenamiento, activas primero y luego por fecha de creación. */
-export async function listKnowledge(): Promise<AiKnowledgeRow[]> {
+/** Texto de contexto que cargó el equipo, con su última carga (null si no hay). */
+export async function getTeamContextRow(): Promise<{ body: string; updatedAt: Date; updatedBy: string | null } | null> {
   const db = await getDb();
-  const rows = await db.select().from(aiKnowledge);
-  return rows.sort((a, b) => Number(b.active) - Number(a.active) || a.createdAt.getTime() - b.createdAt.getTime());
+  const [row] = await db
+    .select({ body: aiKnowledge.body, updatedAt: aiKnowledge.updatedAt, updatedBy: aiKnowledge.updatedBy })
+    .from(aiKnowledge)
+    .where(eq(aiKnowledge.active, true))
+    .orderBy(asc(aiKnowledge.createdAt))
+    .limit(1);
+  return row ?? null;
 }
 
-/** Caracteres usados por las fichas activas. */
-export function activeKnowledgeChars(rows: AiKnowledgeRow[]): number {
-  return rows.filter((r) => r.active).reduce((n, r) => n + size(r), 0);
+/** Texto de contexto que cargó el equipo ("" si no hay). */
+export async function getTeamContext(): Promise<string> {
+  return (await getTeamContextRow())?.body ?? "";
 }
 
-export async function saveKnowledge(input: { id?: string; title: string; body: string; active: boolean }, actor: string): Promise<SaveKnowledgeResult> {
-  const title = input.title.replace(/\r\n/g, "\n").trim();
-  const body = input.body.replace(/\r\n/g, "\n").trim();
-  if (!title || title.length > KNOWLEDGE_TITLE_MAX || !body || body.length > KNOWLEDGE_BODY_MAX) return { ok: false, error: "invalid" };
+/** Reemplaza el texto de contexto del equipo; vacío lo borra. */
+export async function saveTeamContext(input: string, actor: string): Promise<SaveKnowledgeResult> {
+  const body = input.replace(/\r\n/g, "\n").trim();
+  if (body.length > KNOWLEDGE_TOTAL_MAX) return { ok: false, error: "tooLong" };
 
   const db = await getDb();
-  const all = await db.select().from(aiKnowledge);
-  if (input.id && !all.some((r) => r.id === input.id)) return { ok: false, error: "invalid" };
-  // El tope cuenta las fichas activas sin la que se está editando, más su nuevo tamaño si queda activa.
-  const others = all.filter((r) => r.active && r.id !== input.id).reduce((n, r) => n + size(r), 0);
-  if (input.active && others + size({ title, body }) > KNOWLEDGE_TOTAL_MAX) return { ok: false, error: "tooLong" };
-
-  const now = new Date();
-  let id = input.id;
-  if (id) {
-    await db.update(aiKnowledge).set({ title, body, active: input.active, updatedAt: now, updatedBy: actor }).where(eq(aiKnowledge.id, id));
+  const [first] = await db.select({ id: aiKnowledge.id }).from(aiKnowledge).orderBy(asc(aiKnowledge.createdAt)).limit(1);
+  if (!body) {
+    await db.delete(aiKnowledge);
+  } else if (first) {
+    await db.update(aiKnowledge).set({ title: TEAM_CONTEXT_TITLE, body, active: true, updatedAt: new Date(), updatedBy: actor }).where(eq(aiKnowledge.id, first.id));
+    // Quedaba de cuando había varias fichas: solo vale una.
+    await db.delete(aiKnowledge).where(ne(aiKnowledge.id, first.id));
   } else {
-    const [row] = await db.insert(aiKnowledge).values({ title, body, active: input.active, updatedBy: actor }).returning();
-    id = row!.id;
+    await db.insert(aiKnowledge).values({ title: TEAM_CONTEXT_TITLE, body, active: true, updatedBy: actor });
   }
-  await logAudit({ type: "AI_KNOWLEDGE_CHANGED", actor, payload: { action: input.id ? "update" : "create", id } });
+  await logAudit({ type: "AI_KNOWLEDGE_CHANGED", actor, payload: { action: body ? "save" : "clear", length: body.length } });
   return { ok: true };
-}
-
-export async function deleteKnowledge(id: string, actor: string): Promise<void> {
-  const db = await getDb();
-  await db.delete(aiKnowledge).where(eq(aiKnowledge.id, id));
-  await logAudit({ type: "AI_KNOWLEDGE_CHANGED", actor, payload: { action: "delete", id } });
 }
 
 /** Quita el pie que `manualEmail` agrega (número de caso, serie, firma, sitio y aviso automático). */
@@ -155,11 +146,10 @@ export function fixedContext(): string {
   return `${FAQ.title}\n\n${faq}\n\nPLANTILLAS\n\n${templates}`;
 }
 
-/** Hechos para la IA: contexto fijo y fichas activas del equipo (sin ejemplos). */
+/** Hechos para la IA: contexto fijo y texto de contexto del equipo (sin ejemplos). */
 export async function buildFacts(): Promise<string> {
-  const knowledge = await listKnowledge();
-  const cards = knowledge.filter((k) => k.active).map((k) => `## ${k.title}\n${k.body}`);
-  return [fixedContext(), ...(cards.length ? ["FICHAS DEL EQUIPO", ...cards] : [])].join("\n\n");
+  const team = await getTeamContext();
+  return [fixedContext(), ...(team ? ["CONTEXTO DEL EQUIPO", team] : [])].join("\n\n");
 }
 
 /** Hechos más respuestas de ejemplo (para la propuesta de respuesta). */
