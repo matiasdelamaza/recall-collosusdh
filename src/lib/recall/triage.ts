@@ -96,7 +96,10 @@ const OpenRouterResponseSchema = z.object({
 /** Prioridad propuesta por Claude vía OpenRouter. Devuelve null si no hay clave, falla o se rehúsa. */
 async function triageByAi(input: TriageInput): Promise<Omit<TriageResult, "source"> | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) return null;
+  if (!apiKey) {
+    console.warn("[triage] sin OPENROUTER_API_KEY; se usan solo las reglas");
+    return null;
+  }
   const ctx = input.caseContext
     ? `Caso registrado: accidente declarado ${input.caseContext.accidentReported ? "sí" : "no"}; daño declarado ${input.caseContext.damageReported}; etapa ${input.caseContext.caseStatus}.`
     : "El remitente no tiene un caso registrado.";
@@ -123,12 +126,23 @@ async function triageByAi(input: TriageInput): Promise<Omit<TriageResult, "sourc
       else console.error(`[triage] error de OpenRouter ${res.status}:`, (await res.text()).slice(0, 300));
       return null;
     }
-    const data = OpenRouterResponseSchema.safeParse(await res.json());
-    if (!data.success) return null;
-    const message = data.data.choices[0]!.message;
-    if (message.refusal || !message.content) return null;
-    const parsed = AiTriageSchema.safeParse(JSON.parse(message.content));
-    if (!parsed.success) return null;
+    const json: unknown = await res.json();
+    const data = OpenRouterResponseSchema.safeParse(json);
+    if (!data.success) {
+      // OpenRouter puede responder 200 con { error } en el cuerpo.
+      console.error("[triage] respuesta inesperada de OpenRouter:", JSON.stringify(json).slice(0, 300));
+      return null;
+    }
+    const choice = data.data.choices[0]!;
+    if (choice.message.refusal || !choice.message.content) {
+      console.warn(`[triage] OpenRouter no devolvió texto (finish_reason=${choice.finish_reason ?? "?"}, rehúsa=${Boolean(choice.message.refusal)})`);
+      return null;
+    }
+    const parsed = AiTriageSchema.safeParse(JSON.parse(choice.message.content));
+    if (!parsed.success) {
+      console.warn("[triage] la IA respondió fuera del formato pedido");
+      return null;
+    }
     return { priority: parsed.data.priority, reason: parsed.data.reason.slice(0, 200) };
   } catch (err) {
     console.error("[triage] fallo del análisis con IA:", err);
